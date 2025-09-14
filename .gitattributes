@@ -1,0 +1,2 @@
+otelcol-contrib filter=lfs diff=lfs merge=lfs -text
+otelcol-contrib.tgz filter=lfs diff=lfs merge=lfs -text
