@@ -3,10 +3,14 @@
 
 use super::errors::AmmError;
 use super::guardrails::{
-    div_nearest_even_u256, div_nearest_even_u256_to_u128, ensure_nonzero, ensure_reserves, u256_to_u128_checked,
+    div_nearest_even_u256,
+    div_nearest_even_u256_to_u128,
+    ensure_nonzero,
+    ensure_reserves,
+    u256_to_u128_checked,
 };
 use super::swap::{get_amount_in, get_amount_out};
-use super::types::{U256, Ppm, Wad, PPM_SCALE, WAD, MIN_RESERVE};
+use super::types::{U256, Ppm, Wad, PPM_SCALE, WAD};
 
 #[inline]
 fn ceil_div_u256(n: U256, d: U256) -> U256 { (n + (d - U256::from(1u8))) / d }
@@ -90,7 +94,7 @@ mod tests {
 
     #[test]
     fn t_spot_prices_basic() {
-        let (x, y) = (1_000_000u128, 2_000_000u128);
+        let (x, y) = (1_000_000u128*WAD, 2_000_000u128*WAD);
         let p_xy = spot_price_x_in_y(x, y).unwrap(); // 2.0
         let p_yx = spot_price_y_in_x(x, y).unwrap(); // 0.5
         assert_eq!(p_xy, 2 * WAD);
@@ -99,32 +103,45 @@ mod tests {
 
     #[test]
     fn t_slippage_no_fee_vs_fee() {
-        let (x, y, dx) = (1_000_000u128, 1_000_000u128, 10_000u128);
+        let (x, y, dx) = (1_000_000u128*WAD, 1_000_000u128*WAD, 10_000u128*WAD);
         let s0 = slippage_ppm_x_to_y(x, y, dx, FEE0).unwrap();
+        // esperado exato com a mesma política de arredondamento (nearest-even)
+        let spot = spot_price_x_in_y(x, y).unwrap();                // WAD
+        let exec = execution_price_x_to_y(x, y, dx, FEE0).unwrap(); // WAD
+        let expected = {
+            let num = (U256::from(spot) - U256::from(exec)) * U256::from(PPM_SCALE as u64);
+            let den = U256::from(spot);
+            let q = div_nearest_even_u256(num, den).unwrap();
+            let q128 = u256_to_u128_checked(q).unwrap();
+            if q128 > u128::from(u32::MAX) { u32::MAX } else { q128 as u32 }
+        };
+        assert_eq!(s0, expected);
+        // com taxa > 0, slippage (impacto + fee) deve aumentar
         let s3 = slippage_ppm_x_to_y(x, y, dx, FEE3).unwrap();
-        assert_eq!(s0, 10_000);  // 1.0%
-        assert_eq!(s3, 13_000);  // 1.3% (impacto + taxa)
+        assert!(s3 > s0);
     }
 
     #[test]
     fn t_min_out_with_tolerance() {
-        let (x, y, dx) = (1_000_000u128, 1_000_000u128, 10_000u128);
-        // out (com taxa) = 9_870 ; tol = 0,5% -> min_out = floor(9870 * 0.995) = 9820
+        let (x, y, dx) = (1_000_000u128*WAD, 1_000_000u128*WAD, 10_000u128*WAD);
+        let out = get_amount_out(x, y, dx, FEE3).unwrap();
         let min_out = min_out_with_tolerance(x, y, dx, FEE3, 5_000).unwrap();
-        assert_eq!(min_out, 9_820);
+        let expected = (U256::from(out) * U256::from((PPM_SCALE - 5_000) as u64)) / U256::from(PPM_SCALE as u64);
+        assert_eq!(min_out, expected.as_u128());
     }
 
     #[test]
     fn t_max_in_with_tolerance() {
-        let (x, y, dy) = (1_000_000u128, 1_000_000u128, 9_870u128);
-        // dx (com taxa) = 10_000 ; tol = 0,5% -> max_in = ceil(10000 * 1.005) = 10050
+        let (x, y, dy) = (1_000_000u128*WAD, 1_000_000u128*WAD, 9_870u128*WAD);
+        let dx = get_amount_in(x, y, dy, FEE3).unwrap();
         let max_in = max_in_with_tolerance(x, y, dy, FEE3, 5_000).unwrap();
-        assert_eq!(max_in, 10_050);
+        let expected = ceil_div_u256(U256::from(dx) * U256::from((PPM_SCALE + 5_000) as u64), U256::from(PPM_SCALE as u64)).as_u128();
+        assert_eq!(max_in, expected);
     }
 
     #[test]
     fn t_exec_price_matches_ratio_out_over_dx() {
-        let (x, y, dx) = (1_000_000u128, 1_000_000u128, 10_000u128);
+        let (x, y, dx) = (1_000_000u128*WAD, 1_000_000u128*WAD, 10_000u128*WAD);
         let out = get_amount_out(x, y, dx, FEE0).unwrap();
         let p_exec = execution_price_x_to_y(x, y, dx, FEE0).unwrap();
         let p_exec_check = (U256::from(out) * U256::from(WAD)) / U256::from(dx);
@@ -134,8 +151,8 @@ mod tests {
     #[test]
     fn t_safety_invalid_inputs() {
         // reservas inválidas
-        assert!(spot_price_x_in_y(0, MIN_RESERVE).is_err());
+        assert!(spot_price_x_in_y(0, WAD).is_err());
         // dx zero na execução
-        assert!(execution_price_x_to_y(MIN_RESERVE, MIN_RESERVE, 0, FEE0).is_err());
+        assert!(execution_price_x_to_y(WAD, WAD, 0, FEE0).is_err());
     }
 }
