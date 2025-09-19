@@ -299,7 +299,8 @@ echo " Total files in source: $total_files"
 echo " Files tracked with LFS: ${large_file_count}"
 if [[ $large_file_count -gt 0 ]]; then
   echo " Sample LFS files (up to 10):"
-  for lf in "${large_files[@]:0:10}";    echo " - $lf"
+  for lf in "${large_files[@]:0:10}"; do
+    echo " - $lf"
   done
 fi
 
