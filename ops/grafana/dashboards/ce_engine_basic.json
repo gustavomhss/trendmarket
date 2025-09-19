@@ -1,0 +1,26 @@
+{
+    "id": null,
+    "title": "CE — Q1 Observability",
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 1,
+    "refresh": "5s",
+    "panels": [
+      {
+        "type": "timeseries",
+        "title": "swap_latency_ms",
+        "targets": [
+          { "expr": "sum(rate({__name__=~\"swap_latency_ms.*\"}[5m]))", "refId": "A" }
+        ],
+        "gridPos": { "h": 9, "w": 24, "x": 0, "y": 0 }
+      },
+      {
+        "type": "timeseries",
+        "title": "invariant_error_rel",
+        "targets": [
+          { "expr": "sum(rate({__name__=~\"invariant_error_rel.*\"}[5m]))", "refId": "A" }
+        ],
+        "gridPos": { "h": 9, "w": 24, "x": 0, "y": 9 }
+      }
+    ]
+  }
