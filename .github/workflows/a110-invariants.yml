@@ -1,0 +1,113 @@
+name: A110 — Invariants Gate
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
+jobs:
+  run-gate:
+    name: Run invariants gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo directories
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.rustup
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Install nextest
+        uses: taiki-e/install-action@v2
+        with:
+          tool: nextest
+
+      - name: Run invariant suite
+        run: |
+          bash scripts/a110_run_invariants.sh
+        env:
+          NEXTEST_PROFILE: ci
+
+      - name: Execute invariants gate
+        run: |
+          python3 scripts/a110_gate.py
+
+      - name: Upload gate artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: a110-invariants-artifacts
+          path: artifacts
+
+      - name: Comment on pull request
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const core = require('@actions/core');
+            const {context} = require('@actions/github');
+            const fs = require('fs');
+            const path = 'artifacts/a110-summary.md';
+            if (!fs.existsSync(path)) {
+              core.info(`Summary file not found at ${path}; skipping comment.`);
+              return;
+            }
+            const body = fs.readFileSync(path, 'utf8');
+            if (!body.trim()) {
+              core.info('Summary file is empty; skipping comment.');
+              return;
+            }
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body,
+            });
+
+      - name: Evaluate gate status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const core = require('@actions/core');
+            const fs = require('fs');
+            const path = 'artifacts/a110-summary.json';
+            if (!fs.existsSync(path)) {
+              core.setFailed(`Summary JSON not found at ${path}.`);
+              return;
+            }
+            let data;
+            try {
+              data = JSON.parse(fs.readFileSync(path, 'utf8'));
+            } catch (error) {
+              core.setFailed(`Failed to parse ${path}: ${error.message}`);
+              return;
+            }
+            const gateStatus = data.gate_status;
+            const shouldFail = gateStatus === 'fail' || (gateStatus === undefined && data.gate_should_fail === true);
+            if (shouldFail) {
+              core.setFailed('Gate reported failure status.');
+              return;
+            }
+            const statusMessage = gateStatus !== undefined ? gateStatus : (data.gate_should_fail ? 'fail' : 'pass');
+            core.info(`Gate status: ${statusMessage}`);
