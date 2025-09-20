@@ -1,0 +1,11 @@
+{
+  "timestamp_utc": "2025-09-20T04:33:19Z",
+  "duration_seconds": 5,
+  "signal": "none",
+  "commands": [
+    {"name": "[P1] cargo nextest run", "exit_code": 0, "artifact": "artifacts/junit.xml"},
+    {"name": "[P2] cargo test", "exit_code": 0, "artifact": "artifacts/cargo-test.log"}
+  ],
+  "failures": {"p1": 0, "p2": 0, "p3": 0},
+  "gate_should_fail": false
+}
