@@ -1,0 +1,97 @@
+use std::{env, fs, io, path::Path};
+use ce_core::amm::errors::AmmError;
+use ce_core::amm::ref_bigdecimal::{golden_amount_in, golden_amount_out, RefIn, RefOut};
+use ce_core::amm::types::{Ppm, Wad, WAD};
+
+#[derive(Clone, Copy, Debug)]
+enum Op { OUT, IN }
+
+#[derive(Debug, Clone)]
+struct CaseDef { id: &'static str, op: Op, x: Wad, y: Wad, dx: Wad, dy: Wad, fee_ppm: Ppm }
+
+const W: Wad = WAD; const FEE0: Ppm = 0; const FEE3: Ppm = 3000; // 0,30%
+
+fn cases_v1() -> Vec<CaseDef> { vec![
+    // OUT — simétrico, sem taxa
+    CaseDef { id: "OUT_SYM_NOFEE", op: Op::OUT, x: 1_000_000*W, y: 1_000_000*W, dx: 10_000*W, dy: 0, fee_ppm: FEE0 },
+    // OUT — simétrico, com taxa
+    CaseDef { id: "OUT_SYM_FEE", op: Op::OUT, x: 1_000_000*W, y: 1_000_000*W, dx: 10_000*W, dy: 0, fee_ppm: FEE3 },
+    // OUT — assimétrico (x pequeno, y grande)
+    CaseDef { id: "OUT_ASYM_NOFEE", op: Op::OUT, x: 1_000*W, y: 1_000_000_000*W, dx: 100*W, dy: 0, fee_ppm: FEE0 },
+    // OUT — dx mínimo com taxa (espera InputTooSmall)
+    CaseDef { id: "OUT_FEE_DX1_TOO_SMALL", op: Op::OUT, x: 5_000_000*W, y: 4_000_000*W, dx: 1, dy: 0, fee_ppm: FEE3 },
+    // OUT — guarda min reserve (y pequena)
+    CaseDef { id: "OUT_MIN_RESERVE_GUARD", op: Op::OUT, x: 1_000_000*W, y: W + 5, dx: 10_000*W, dy: 0, fee_ppm: FEE0 },
+    // IN — simétrico com taxa
+    CaseDef { id: "IN_SYM_FEE", op: Op::IN, x: 1_000_000*W, y: 1_000_000*W, dx: 0, dy: 9_870*W, fee_ppm: FEE3 },
+    // IN — sem taxa
+    CaseDef { id: "IN_SYM_NOFEE", op: Op::IN, x: 1_000_000*W, y: 1_000_000*W, dx: 0, dy: 9_900*W, fee_ppm: FEE0 },
+    // IN — dy muito grande (viola min reserve)
+    CaseDef { id: "IN_MIN_RESERVE_BREACH", op: Op::IN, x: 1_000_000*W, y: 1_000_000*W, dx: 0, dy: 1_000_000*W - W, fee_ppm: FEE0 },
+    // IN — assimétrico com taxa
+    CaseDef { id: "IN_ASYM_FEE", op: Op::IN, x: 1_000*W, y: 1_000_000_000*W, dx: 0, dy: 90*W, fee_ppm: FEE3 },
+] }
+
+// ---------- CSV schema ----------
+// id,op,x_wad,y_wad,dx_wad,dy_wad,fee_ppm,expect_kind,expect_wad
+// expect_kind = "ok" ou "err:<AmmError>" ; expect_wad só é preenchido em "ok"
+
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+struct CsvRow { id: String, op: String, x_wad: String, y_wad: String, dx_wad: String, dy_wad: String, fee_ppm: u32, expect_kind: String, expect_wad: String }
+
+fn make_row_from_out(id: &str, x: Wad, y: Wad, dx: Wad, fee_ppm: Ppm) -> CsvRow {
+    match golden_amount_out(x, y, dx, fee_ppm) {
+        Ok(RefOut { out_policy, .. }) => CsvRow { id: id.into(), op: "OUT".into(), x_wad: x.to_string(), y_wad: y.to_string(), dx_wad: dx.to_string(), dy_wad: "0".into(), fee_ppm, expect_kind: "ok".into(), expect_wad: out_policy.to_string() },
+        Err(e) => CsvRow { id: id.into(), op: "OUT".into(), x_wad: x.to_string(), y_wad: y.to_string(), dx_wad: dx.to_string(), dy_wad: "0".into(), fee_ppm, expect_kind: format!("err:{:?}", e), expect_wad: String::new() },
+    }
+}
+fn make_row_from_in(id: &str, x: Wad, y: Wad, dy: Wad, fee_ppm: Ppm) -> CsvRow {
+    match golden_amount_in(x, y, dy, fee_ppm) {
+        Ok(RefIn { in_policy, .. }) => CsvRow { id: id.into(), op: "IN".into(), x_wad: x.to_string(), y_wad: y.to_string(), dx_wad: "0".into(), dy_wad: dy.to_string(), fee_ppm, expect_kind: "ok".into(), expect_wad: in_policy.to_string() },
+        Err(e) => CsvRow { id: id.into(), op: "IN".into(), x_wad: x.to_string(), y_wad: y.to_string(), dx_wad: "0".into(), dy_wad: dy.to_string(), fee_ppm, expect_kind: format!("err:{:?}", e), expect_wad: String::new() },
+    }
+}
+fn gen_rows() -> Vec<CsvRow> { let mut rows = Vec::new(); for c in cases_v1() { match c.op { Op::OUT => rows.push(make_row_from_out(c.id, c.x, c.y, c.dx, c.fee_ppm)), Op::IN => rows.push(make_row_from_in(c.id, c.x, c.y, c.dy, c.fee_ppm)), } } rows }
+
+fn write_csv(path: &str, rows: &[CsvRow]) -> io::Result<()> { let mut wtr = csv::WriterBuilder::new().has_headers(true).from_path(path)?; for r in rows { wtr.serialize(r)?; } wtr.flush()?; Ok(()) }
+
+fn sha256_hex(bytes: &[u8]) -> String { use sha2::{Digest, Sha256}; let mut hasher = Sha256::new(); hasher.update(bytes); hex::encode(hasher.finalize()) }
+fn write_checksum(csv_path: &str) -> io::Result<String> { let data = fs::read(csv_path)?; let hex = sha256_hex(&data); let chk_path = format!("{}.sha256", csv_path); fs::write(&chk_path, format!("{}  {}
+", hex, csv_path))?; Ok(chk_path) }
+
+fn cmd_gen(path: &str) -> io::Result<()> { if let Some(dir) = Path::new(path).parent() { fs::create_dir_all(dir)?; } let rows = gen_rows(); write_csv(path, &rows)?; let chk = write_checksum(path)?; eprintln!("✅ gerado: {}
+✅ checksum: {}", path, chk); Ok(()) }
+
+fn parse_u128(s: &str) -> Result<u128, String> { s.parse::<u128>().map_err(|e| format!("u128 parse error '{}': {}", s, e)) }
+
+fn cmd_check(path: &str) -> Result<(), String> {
+    let mut rdr = csv::ReaderBuilder::new().has_headers(true).from_path(path).map_err(|e| format!("csv open: {}", e))?;
+    let mut fails = 0usize;
+    for rec in rdr.deserialize::<CsvRow>() {
+        let r: CsvRow = rec.map_err(|e| format!("csv read: {}", e))?;
+        let x = parse_u128(&r.x_wad)?; let y = parse_u128(&r.y_wad)?; let dx = parse_u128(&r.dx_wad)?; let dy = parse_u128(&r.dy_wad)?;
+        match r.op.as_str() {
+            "OUT" => match ce_core::amm::swap::get_amount_out(x, y, dx, r.fee_ppm) {
+                Ok(out) => if r.expect_kind == "ok" { let exp = parse_u128(&r.expect_wad)?; if out != exp { eprintln!("❌ {} OUT: got={}, expect={}", r.id, out, exp); fails += 1; } } else { eprintln!("❌ {} OUT: expected error ({}), got ok={} ", r.id, r.expect_kind, out); fails += 1; },
+                Err(e) => if r.expect_kind.starts_with("err:") { let want = &r.expect_kind[4..]; if format!("{:?}", e) != want { eprintln!("❌ {} OUT: got err={:?}, expect err={}", r.id, e, want); fails += 1; } } else { eprintln!("❌ {} OUT: got err={:?}, expect ok({})", r.id, e, r.expect_wad); fails += 1; }
+            },
+            "IN" => match ce_core::amm::swap::get_amount_in(x, y, dy, r.fee_ppm) {
+                Ok(inp) => if r.expect_kind == "ok" { let exp = parse_u128(&r.expect_wad)?; if inp != exp { eprintln!("❌ {} IN: got={}, expect={}", r.id, inp, exp); fails += 1; } } else { eprintln!("❌ {} IN: expected error ({}), got ok={} ", r.id, r.expect_kind, inp); fails += 1; },
+                Err(e) => if r.expect_kind.starts_with("err:") { let want = &r.expect_kind[4..]; if format!("{:?}", e) != want { eprintln!("❌ {} IN: got err={:?}, expect err={}", r.id, e, want); fails += 1; } } else { eprintln!("❌ {} IN: got err={:?}, expect ok({})", r.id, e, r.expect_wad); fails += 1; }
+            },
+            other => return Err(format!("op inválido: {}", other)),
+        }
+    }
+    if fails == 0 { eprintln!("✅ check sem diffs: {}", path); Ok(()) } else { Err(format!("{} diffs encontrados", fails)) }
+}
+
+fn usage() { eprintln!("Uso: golden_runner <gen|check> [caminho_csv]
+  gen   → gera CSV + .sha256 (default: goldens/amm_cpmw_v1.csv)
+  check → valida CSV contra core atual"); }
+
+fn main() { let args: Vec<String> = env::args().collect(); if args.len() < 2 { usage(); std::process::exit(2); }
+    let sub = args[1].as_str(); let path = args.get(2).map(|s| s.as_str()).unwrap_or("goldens/amm_cpmw_v1.csv");
+    match sub { "gen" => if let Err(e) = cmd_gen(path) { eprintln!("erro: {}", e); std::process::exit(1); },
+                "check" => match cmd_check(path) { Ok(()) => {}, Err(e) => { eprintln!("erro: {}", e); std::process::exit(1); } },
+                _ => { usage(); std::process::exit(2); } }
+}

@@ -1,8 +1,8 @@
 //! Liquidez (CPMM): mint inicial, add e remove de shares.
 //! Políticas (ADR-0001):
-//! - shares_mint: floor
-//! - amounts_out em burn: floor
-//! - validações via guardrails (mínimos/overflow)
+//! - shares_mint: **floor**
+//! - amounts_out em burn: **floor**
+//! - validações de mínimos/overflow via guardrails
 
 use super::errors::AmmError;
 use super::guardrails::{
@@ -18,6 +18,7 @@ fn isqrt_u256(n: U256) -> U256 {
     let mut high = n;
     while low < high {
         let mid = (low + high + U256::from(1u8)) >> 1; // ceil((low+high)/2)
+        // evitar overflow: mid*mid <= n  <=>  mid <= n/mid
         if mid <= n / mid { low = mid; } else { high = mid - U256::from(1u8); }
     }
     low
@@ -40,7 +41,7 @@ pub fn add_liquidity(x: Wad, y: Wad, dx: Wad, dy: Wad, total_shares: Wad) -> Res
     ensure_reserves(x, y)?;
     ensure_nonzero(dx)?;
     ensure_nonzero(dy)?;
-    if total_shares == 0 { return Err(AmmError::Overflow); }
+    if total_shares == 0 { return Err(AmmError::Overflow); } // uso errado: pool não deveria estar vazia
 
     let s = U256::from(total_shares);
     let sx = (U256::from(dx) * s) / U256::from(x); // floor
@@ -49,7 +50,7 @@ pub fn add_liquidity(x: Wad, y: Wad, dx: Wad, dy: Wad, total_shares: Wad) -> Res
     let shares = u256_to_u128_checked(mint)?;
     if shares == 0 { return Err(AmmError::InputTooSmall); }
 
-    // pós-condição: reservas só aumentam
+    // pós-condição de segurança: reservas só aumentam
     let _x1 = checked_add(x, dx)?;
     let _y1 = checked_add(y, dy)?;
     Ok(shares)
@@ -79,12 +80,12 @@ pub fn remove_liquidity(x: Wad, y: Wad, burn_shares: Wad, total_shares: Wad) -> 
 }
 
 // -------------------------
-// TESTES
+// TESTES (WAD-scaled)
 // -------------------------
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::amm::types::{WAD, MIN_RESERVE};
+    use crate::amm::types::WAD;
 
     #[test]
     fn t_initial_mint_symmetrical() {
@@ -118,8 +119,8 @@ mod tests {
 
     #[test]
     fn t_add_liquidity_too_small() {
-        // garante floor=0 reduzindo S ligeiramente abaixo de X (proporção ~0)
-        let (x, y, s) = (1_000_000u128*WAD, 1_000_000u128*WAD, 999_999u128*WAD);
+        // S pequeno o bastante para floor(...) == 0 e falhar com InputTooSmall
+        let (x, y, s) = (1_000_000u128*WAD, 1_000_000u128*WAD, 100u128);
         let (dx, dy) = (1u128, 1u128);
         let err = add_liquidity(x, y, dx, dy, s).unwrap_err();
         assert_eq!(err, AmmError::InputTooSmall);

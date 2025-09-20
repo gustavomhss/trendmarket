@@ -1,0 +1,85 @@
+From d62f2bd7c5fe97d1e08a047e851b0e167759febc Mon Sep 17 00:00:00 2001
+From: Gustavo Schneiter <gmhschn@gmail.com>
+Date: Mon, 15 Sep 2025 20:53:34 -0300
+Subject: [PATCH] =?UTF-8?q?test(crd-7-11):=20property-based=20fuzz=20(10k)?=
+ =?UTF-8?q?=20=E2=80=94=20(P1)=20|=CE=94k/k|=E2=89=A41e-9,=20(P2)=20k?=
+ =?UTF-8?q?=E2=80=99=E2=89=A5k,=20(P3)=20no=20overflow/NaN?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ scripts/run_fuzz.sh      |  4 ++++
+ tests/fuzz_invariants.rs | 49 ++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 53 insertions(+)
+ create mode 100755 scripts/run_fuzz.sh
+ create mode 100644 tests/fuzz_invariants.rs
+
+diff --git a/scripts/run_fuzz.sh b/scripts/run_fuzz.sh
+new file mode 100755
+index 0000000..e103784
+--- /dev/null
++++ b/scripts/run_fuzz.sh
+@@ -0,0 +1,4 @@
++#!/usr/bin/env bash
++set -euo pipefail
++# Executa 10k casos (config no próprio teste)
++cargo test --test fuzz_invariants -- --nocapture
+diff --git a/tests/fuzz_invariants.rs b/tests/fuzz_invariants.rs
+new file mode 100644
+index 0000000..cf0743f
+--- /dev/null
++++ b/tests/fuzz_invariants.rs
+@@ -0,0 +1,49 @@
++use proptest::prelude::*;
++use credit_engine_core::amm::swap::get_amount_out; // se sua função morar em cpmm, troque swap->cpmm
++use credit_engine_core::amm::types::{Wad, WAD, U256, Ppm};
++
++
++#[inline]
++fn to_wad(v: u128) -> Wad { v * WAD }
++#[inline]
++fn k(x: Wad, y: Wad) -> U256 { U256::from(x) * U256::from(y) }
++
++
++proptest! {
++#![proptest_config(ProptestConfig { cases: 10_000, .. ProptestConfig::default() })]
++
++
++#[test]
++fn invariants_hold(
++rx_base in 1u128..=1_000_000_000u128,
++ry_base in 1u128..=1_000_000_000u128,
++dx_base in 1u128..=1_000_000u128,
++fee_ppm in 0u32..=3000u32, // até 0.3%
++) {
++let (rx, ry, dx) = (to_wad(rx_base), to_wad(ry_base), to_wad(dx_base));
++let k0 = k(rx, ry);
++
++
++let dy: Wad = get_amount_out(rx, ry, dx, fee_ppm as Ppm).expect("swap ok");
++
++
++// (P3) Sanidade: dy em (0, ry]
++prop_assert!(dy > 0u128 && dy <= ry, "dy out of range: dy={}, ry={}", dy, ry);
++
++
++let k1 = k(rx + dx, ry - dy);
++
++
++if fee_ppm == 0 {
++// (P1) Conservação de k (tolerância 1e-9)
++let delta = if k1 >= k0 { k1 - k0 } else { k0 - k1 };
++let tol = k0 / U256::from(1_000_000_000u64);
++prop_assert!(delta <= tol,
++"|Δk|={} > tol={} (k0={}, k1={}, rx={}, ry={}, dx={}, dy={})",
++delta, tol, k0, k1, rx, ry, dx, dy);
++} else {
++// (P2) Com taxa: k' ≥ k
++prop_assert!(k1 >= k0, "k' < k with fee: k0={}, k1={}, fee_ppm={}", k0, k1, fee_ppm);
++}
++}
++}
+-- 
+2.50.1
+

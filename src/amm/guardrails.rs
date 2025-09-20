@@ -2,17 +2,25 @@
 //! Objetivo: entradas seguras e divisões/multiplicações sem estouro.
 
 use super::errors::AmmError;
-use super::types::{U256, Wad, MIN_RESERVE};
+use super::types::{Wad, MIN_RESERVE, U256};
 
 #[inline]
 pub fn ensure_nonzero(amount: Wad) -> Result<(), AmmError> {
-    if amount == 0 { Err(AmmError::ZeroAmount) } else { Ok(()) }
+    if amount == 0 {
+        Err(AmmError::ZeroAmount)
+    } else {
+        Ok(())
+    }
 }
 
 #[inline]
 pub fn ensure_reserves(x: Wad, y: Wad) -> Result<(), AmmError> {
-    if x == 0 || y == 0 { return Err(AmmError::ZeroReserve); }
-    if x < MIN_RESERVE || y < MIN_RESERVE { return Err(AmmError::MinReserveBreached); }
+    if x == 0 || y == 0 {
+        return Err(AmmError::ZeroReserve);
+    }
+    if x < MIN_RESERVE || y < MIN_RESERVE {
+        return Err(AmmError::MinReserveBreached);
+    }
     Ok(())
 }
 
@@ -33,19 +41,33 @@ pub fn mul_u128_to_u256(a: Wad, b: Wad) -> U256 {
 
 #[inline]
 pub fn u256_to_u128_checked(v: U256) -> Result<Wad, AmmError> {
-    if v > U256::from(u128::MAX) { Err(AmmError::Overflow) } else { Ok(v.as_u128()) }
+    if v > U256::from(u128::MAX) {
+        Err(AmmError::Overflow)
+    } else {
+        Ok(v.as_u128())
+    }
 }
 
 /// Divisão com arredondamento *nearest (ties-to-even)* em U256 → U256
 pub fn div_nearest_even_u256(n: U256, d: U256) -> Result<U256, AmmError> {
-    if d.is_zero() { return Err(AmmError::Overflow); }
-    let q = n / d;        // quociente
-    let r = n % d;        // resto
-    let two_r = r << 1;   // 2*r
-    if two_r < d { return Ok(q); }
-    if two_r > d { return Ok(q + U256::from(1u8)); }
+    if d.is_zero() {
+        return Err(AmmError::Overflow);
+    }
+    let q = n / d; // quociente
+    let r = n % d; // resto
+    let two_r = r << 1; // 2*r
+    if two_r < d {
+        return Ok(q);
+    }
+    if two_r > d {
+        return Ok(q + U256::from(1u8));
+    }
     // empate: arredonda para o par
-    if (q & U256::from(1u8)) == U256::from(1u8) { Ok(q + U256::from(1u8)) } else { Ok(q) }
+    if (q & U256::from(1u8)) == U256::from(1u8) {
+        Ok(q + U256::from(1u8))
+    } else {
+        Ok(q)
+    }
 }
 
 /// Versão que retorna u128 (com checagem de overflow no downcast)
@@ -72,11 +94,23 @@ mod tests {
         // feliz
         assert!(ensure_reserves(MIN_RESERVE, MIN_RESERVE).is_ok());
         // zero
-        assert_eq!(ensure_reserves(0, MIN_RESERVE).unwrap_err(), AmmError::ZeroReserve);
-        assert_eq!(ensure_reserves(MIN_RESERVE, 0).unwrap_err(), AmmError::ZeroReserve);
+        assert_eq!(
+            ensure_reserves(0, MIN_RESERVE).unwrap_err(),
+            AmmError::ZeroReserve
+        );
+        assert_eq!(
+            ensure_reserves(MIN_RESERVE, 0).unwrap_err(),
+            AmmError::ZeroReserve
+        );
         // abaixo do mínimo
-        assert_eq!(ensure_reserves(MIN_RESERVE - 1, MIN_RESERVE).unwrap_err(), AmmError::MinReserveBreached);
-        assert_eq!(ensure_reserves(MIN_RESERVE, MIN_RESERVE - 1).unwrap_err(), AmmError::MinReserveBreached);
+        assert_eq!(
+            ensure_reserves(MIN_RESERVE - 1, MIN_RESERVE).unwrap_err(),
+            AmmError::MinReserveBreached
+        );
+        assert_eq!(
+            ensure_reserves(MIN_RESERVE, MIN_RESERVE - 1).unwrap_err(),
+            AmmError::MinReserveBreached
+        );
     }
 
     #[test]

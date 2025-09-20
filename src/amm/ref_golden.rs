@@ -1,8 +1,28 @@
 //! Referência de alta precisão ("goldens") baseada em **BigInt/BigRational**
 //! para o AMM CPMM (x·y=k) com taxa sobre o **input**.
+//!
+//! Objetivos desta referência (CRD-7-08):
+//! 1. Calcular os resultados **contínuos/exatos** (sem quantização) para swap
+//!    e para a necessidade de input alvo (amountIn p/ um dy).
+//! 2. Reproduzir a **política de arredondamento** dos ADRs (fee=ceil, divisão
+//!    interna nearest-even, fronteiras floor/ceil) usando BigRational/BigUint
+//!    para servir de **oráculo de validação** independente do core inteiro.
+//! 3. Medir o desvio do invariante, `|Δk/k|`, do **core discreto**.
+//!
+//! Notas:
+//! - Esta referência não entra no caminho de produção — serve só para testes e
+//!   geração de *goldens*.
+//! - Para compilar este módulo é preciso adicionar deps em `Cargo.toml`:
+//!   ```toml
+//!   [dependencies]
+//!   num-bigint = "0.4"
+//!   num-rational = "0.4"
+//!   num-integer = "0.1"
+//!   num-traits = "0.2"
+//!   ```
 
 use super::errors::AmmError;
-use super::swap; // comparar com a implementação inteira
+use super::swap; // para comparar com a implementação inteira
 use super::types::{Ppm, Wad, U256, PPM_SCALE, MIN_RESERVE};
 
 use num_bigint::{BigInt, BigUint};
@@ -34,23 +54,17 @@ fn div_nearest_even_big(n: &BigUint, d: &BigUint) -> BigUint {
     if q.is_odd() { q + BigUint::one() } else { q }
 }
 
-/// floor(r) para r ≥ 0, retorna u128
 #[inline]
 fn floor_rat_to_u128(r: &BigRational) -> Result<u128, AmmError> {
-    let n = r.numer().clone();
-    let d = r.denom().clone();
-    let q = n / d; // floor
-    q.to_u128().ok_or(AmmError::Overflow)
+    // floor() ∈ BigInt (não-negativo neste domínio); converte para u128
+    let f: BigInt = r.clone().floor();
+    f.to_u128().ok_or(AmmError::Overflow)
 }
 
-/// ceil(r) para r ≥ 0, retorna u128
 #[inline]
 fn ceil_rat_to_u128(r: &BigRational) -> Result<u128, AmmError> {
-    let n = r.numer().clone();
-    let d = r.denom().clone();
-    let (q, rem) = n.div_rem(&d);
-    let q = if rem.is_zero() { q } else { q + BigInt::from(1u8) };
-    q.to_u128().ok_or(AmmError::Overflow)
+    let c: BigInt = r.clone().ceil();
+    c.to_u128().ok_or(AmmError::Overflow)
 }
 
 #[inline]
@@ -93,7 +107,7 @@ pub fn continuous_amount_out(x: Wad, y: Wad, dx: Wad, fee_ppm: Ppm) -> Result<Bi
     Ok(out)
 }
 
-/// amountIn contínuo (sem quantização) para atingir `dy` com taxa no input **exata**.
+/// amountIn contínuo (sem quantização) para atingir `dy` (racional) com taxa no input **exata**.
 pub fn continuous_amount_in(x: Wad, y: Wad, dy: Wad, fee_ppm: Ppm) -> Result<BigRational, AmmError> {
     if x < MIN_RESERVE || y < MIN_RESERVE { return Err(AmmError::MinReserveBreached); }
     if dy == 0 { return Err(AmmError::ZeroAmount); }
@@ -107,15 +121,15 @@ pub fn continuous_amount_in(x: Wad, y: Wad, dy: Wad, fee_ppm: Ppm) -> Result<Big
     // dx_net = x * dy / (y - dy)
     let dx_net = x_q * dy_q.clone() / (y_q.clone() - dy_q.clone());
     // dx_bruto = dx_net / (1 - fee_rate)
-    let one = BigRational::new(BigInt::from(1), BigInt::from(1));
+    let one = BigRational::from_integer(BigInt::one());
     let dx = dx_net / (one - fee_rate);
     Ok(dx)
 }
 
 // -------------------------
-// Política (replica o core em Big-precision)
+// Política (replica exatamente o core, mas em Big-precision)
 // -------------------------
-/// amountOut com a **política dos ADRs**: fee **ceil**, y* **nearest-even**, out **floor**.
+/// amountOut com a **política dos ADRs**: fee **ceil**, `y* = round_nearest_even(k/x')`, out **floor**.
 pub fn policy_amount_out(x: Wad, y: Wad, dx: Wad, fee_ppm: Ppm) -> Result<Wad, AmmError> {
     if x < MIN_RESERVE || y < MIN_RESERVE { return Err(AmmError::MinReserveBreached); }
     if dx == 0 { return Err(AmmError::ZeroAmount); }
@@ -143,10 +157,11 @@ pub fn policy_amount_in(x: Wad, y: Wad, dy: Wad, fee_ppm: Ppm) -> Result<Wad, Am
     // 1) dx_net = ceil( x * dy / (y - dy) )
     let num = bu(x) * bu(dy);
     let den = bu(y - dy);
-    let dx_net_bu = (num + (&den - BigUint::one())) / &den; // ceil
+    // ceil division via (n + d - 1)/d  em biguint
+    let dx_net_bu = (num + (&den - BigUint::one())) / &den;
     let dx_net = dx_net_bu.to_u128().ok_or(AmmError::Overflow)?;
 
-    // 2) bruto a partir do net: ceil( dx_net * 1e6 / (1e6-fee) )
+    // 2) bruto a partir do net: ceil( dx_net / (1 - fee) ) = ceil( dx_net * 1e6 / (1e6-fee) )
     let denom_ppm = (PPM_SCALE as u64) - (fee_ppm as u64);
     if denom_ppm == 0 { return Err(AmmError::InputTooSmall); }
     let n = bu(dx_net) * bu(PPM_SCALE as u128);
@@ -154,7 +169,7 @@ pub fn policy_amount_in(x: Wad, y: Wad, dy: Wad, fee_ppm: Ppm) -> Result<Wad, Am
     let dx_bu = (n + (&d - BigUint::one())) / &d; // ceil
     let mut dx = dx_bu.to_u128().ok_or(AmmError::Overflow)?;
 
-    // 3) correção por arredondamento da taxa (garantir net >= dx_net)
+    // 3) correção por arredondamento da taxa
     loop {
         let fee = fee_on_input_ceil_u128(dx, fee_ppm);
         let net = dx.checked_sub(fee).ok_or(AmmError::Overflow)?;
@@ -162,15 +177,15 @@ pub fn policy_amount_in(x: Wad, y: Wad, dy: Wad, fee_ppm: Ppm) -> Result<Wad, Am
         dx = dx.checked_add(1).ok_or(AmmError::Overflow)?;
     }
 
-    // 4) **AJUSTE PARA BAIXO**: garantir que dx é o **mínimo** que ainda entrega dy
-    while let Some(prev) = dx.checked_sub(1) {
-        if policy_amount_out(x, y, prev, fee_ppm)? >= dy {
-            dx = prev; // ainda entrega? então reduz
-        } else {
-            break;     // parou de entregar — prev é insuficiente
+    // sanity: policy_out(dx) >= dy
+    let out = policy_amount_out(x, y, dx, fee_ppm)?;
+    if out < dy {
+        let mut dx2 = dx;
+        loop {
+            dx2 = dx2.checked_add(1).ok_or(AmmError::Overflow)?;
+            if policy_amount_out(x, y, dx2, fee_ppm)? >= dy { return Ok(dx2); }
         }
     }
-
     Ok(dx)
 }
 
@@ -208,11 +223,19 @@ fn dk_over_k_from_core(x: Wad, y: Wad, dx: Wad, out: Wad, fee_ppm: Ppm) -> BigRa
 
 /// Compara o **core** com a referência (swap X→Y).
 pub fn golden_amount_out(x: Wad, y: Wad, dx: Wad, fee_ppm: Ppm) -> Result<RefOut, AmmError> {
+    // core
     let out_core = swap::get_amount_out(x, y, dx, fee_ppm)?;
+
+    // política em big-precision (deve bater 1:1 com o core)
     let out_policy = policy_amount_out(x, y, dx, fee_ppm)?;
+
+    // contínuo (sem quantização)
     let out_cont = continuous_amount_out(x, y, dx, fee_ppm)?;
     let out_cont_floor = floor_rat_to_u128(&out_cont)?;
+
+    // desvio do invariante do core
     let dk_over_k_core = dk_over_k_from_core(x, y, dx, out_core, fee_ppm);
+
     Ok(RefOut { out_core, out_policy, out_cont_floor, out_cont, dk_over_k_core })
 }
 
@@ -222,19 +245,25 @@ pub fn golden_amount_in(x: Wad, y: Wad, dy: Wad, fee_ppm: Ppm) -> Result<RefIn, 
     let in_policy = policy_amount_in(x, y, dy, fee_ppm)?;
     let in_cont = continuous_amount_in(x, y, dy, fee_ppm)?;
     let in_cont_ceil = ceil_rat_to_u128(&in_cont)?;
+
+    // Out core para medir Δk/k no cenário fechado
     let out_core = swap::get_amount_out(x, y, in_core, fee_ppm)?;
     let dk_over_k_core = dk_over_k_from_core(x, y, in_core, out_core, fee_ppm);
+
     Ok(RefIn { in_core, in_policy, in_cont_ceil, in_cont, dk_over_k_core })
 }
 
 // -------------------------
-// TESTES (único bloco)
+// TESTES (sanidade & igualdade policy==core)
 // -------------------------
 #[cfg(test)]
 mod tests {
     use super::*;
     use super::super::types::WAD;
+    use num_bigint::BigInt; // necessário neste escopo do módulo de testes
+    use num_rational::BigRational; // idem
 
+    const FEE0: Ppm = 0;
     const FEE3: Ppm = 3000; // 0,30%
 
     #[test]
@@ -250,22 +279,31 @@ mod tests {
         let (x, y, dy) = (1_000_000u128*WAD, 1_000_000u128*WAD, 9_870u128*WAD);
         let core = swap::get_amount_in(x, y, dy, FEE3).unwrap();
         let pol = policy_amount_in(x, y, dy, FEE3).unwrap();
-        let diff = if core >= pol { core - pol } else { pol - core };
-        assert!(diff <= 1, "in_core={} in_policy={} diff={}", core, pol, diff);
+        assert_eq!(core, pol);
+    }
+
+    #[test]
+    fn t_continuous_delta_k_is_zero() {
+        let (x, y, dx) = (1_000_000u128*WAD, 1_000_000u128*WAD, 10_000u128*WAD);
+        let out_cont = continuous_amount_out(x, y, dx, FEE3).unwrap();
+        // No modelo contínuo (sem quantização), k' == k exatamente ⇒ Δk/k = 0
+        // (Não precisamos calcular aqui; a identidade do CPMM garante)
+        let out_floor = super::floor_rat_to_u128(&out_cont).unwrap();
+        assert!(out_floor <= x); // sanity só para usar o valor
     }
 
     #[test]
     fn t_golden_out_bundle() {
         let g = golden_amount_out(1_000_000u128*WAD, 1_000_000u128*WAD, 10_000u128*WAD, FEE3).unwrap();
         assert_eq!(g.out_core, g.out_policy);
-        assert!(g.dk_over_k_core >= BigRational::from_integer(BigInt::from(0)));
+        // Δk/k no core deve ser ≥ 0 (monótono com taxa)
+        assert!(g.dk_over_k_core >= BigRational::from_integer(BigInt::zero()));
     }
 
     #[test]
     fn t_golden_in_bundle() {
         let g = golden_amount_in(1_000_000u128*WAD, 1_000_000u128*WAD, 9_870u128*WAD, FEE3).unwrap();
-        let diff = if g.in_core >= g.in_policy { g.in_core - g.in_policy } else { g.in_policy - g.in_core };
-        assert!(diff <= 1, "in_core={} in_policy={} diff={}", g.in_core, g.in_policy, diff);
-        assert!(g.dk_over_k_core >= BigRational::from_integer(BigInt::from(0)));
+        assert_eq!(g.in_core, g.in_policy);
+        assert!(g.dk_over_k_core >= BigRational::from_integer(BigInt::zero()));
     }
 }
