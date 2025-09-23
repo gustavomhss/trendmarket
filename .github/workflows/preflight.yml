@@ -1,0 +1,23 @@
+name: preflight
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - run: cargo fmt --check
+      - run: cargo clippy -- -D warnings
+      - run: cargo check --all-targets
+      - run: cargo check --all-features
+      - run: cargo test
+      - run: cargo test --all-features
+      - name: invariants
+        run: |
+          if [ -f scripts/a110_run_invariants.sh ]; then
+            bash scripts/a110_run_invariants.sh
+          else
+            echo "no invariants"
+          fi
