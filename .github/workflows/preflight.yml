@@ -3,7 +3,7 @@ on:
   push:
     branches:
       - share/head-20250923-002307
-  workflow_dispatch
+        workflow_dispatch
 jobs:
   build:
     runs-on: ubuntu-latest
