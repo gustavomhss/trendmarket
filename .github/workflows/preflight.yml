@@ -1,5 +1,9 @@
 name: preflight
-on: workflow_dispatch
+on:
+  push:
+    branches:
+      - share/pre-nuke-20250922-235409
+  workflow_dispatch:
 jobs:
   build:
     runs-on: ubuntu-latest
