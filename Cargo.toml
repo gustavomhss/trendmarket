@@ -3,6 +3,7 @@ name = "credit-engine-core"
 version = "0.1.0"
 edition = "2021"
 
+autobins = false
 [dependencies]
 anyhow = "1"
 num-bigint = "0.4"
@@ -52,10 +53,6 @@ harness = false
 default = []
 obs = []
 
-[[bin]]
-name = "obs_demo"
-path = "src/bin/obs_demo.rs"
-required-features = ["obs"]
 
 [[bin]]
 name = "obs_demo"
