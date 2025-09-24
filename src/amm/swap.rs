@@ -36,10 +36,10 @@ pub fn get_amount_out(x: Wad, y: Wad, dx: Wad, fee_ppm: Ppm) -> Result<Wad, AmmE
     // taxa sobre o input
     let dx_fee = fee_on_input_ceil(dx, fee_ppm);
     let dx_net = dx.checked_sub(dx_fee).ok_or(crate::amm_err!(
-        crate::amm::error::AmmErrorCode::OverflowNumeric
+        crate::amm::error_catalog::AmmErrorCode::OverflowNumeric
     ))?;
     if dx_net == 0 {
-        crate::amm_bail!(crate::amm::error::AmmErrorCode::ZeroAmount);
+        crate::amm_bail!(crate::amm::error_catalog::AmmErrorCode::ZeroAmount);
     }
 
     // x' = x + dx_net (checado)
@@ -51,15 +51,15 @@ pub fn get_amount_out(x: Wad, y: Wad, dx: Wad, fee_ppm: Ppm) -> Result<Wad, AmmE
 
     // out = floor(y - y*)
     let out = y.checked_sub(y_star).ok_or(crate::amm_err!(
-        crate::amm::error::AmmErrorCode::OverflowNumeric
+        crate::amm::error_catalog::AmmErrorCode::OverflowNumeric
     ))?;
 
     // y' >= min_reserve
     let y1 = y.checked_sub(out).ok_or(crate::amm_err!(
-        crate::amm::error::AmmErrorCode::OverflowNumeric
+        crate::amm::error_catalog::AmmErrorCode::OverflowNumeric
     ))?;
     if y1 < MIN_RESERVE {
-        crate::amm_bail!(crate::amm::error::AmmErrorCode::MinReserveBreached);
+        crate::amm_bail!(crate::amm::error_catalog::AmmErrorCode::MinReserveBreached);
     }
 
     Ok(out)
@@ -80,26 +80,26 @@ pub fn get_amount_in(x: Wad, y: Wad, dy: Wad, fee_ppm: Ppm) -> Result<Wad, AmmEr
     // Não pode esvaziar o pool além do mínimo
     if dy
         >= y.checked_sub(MIN_RESERVE).ok_or(crate::amm_err!(
-            crate::amm::error::AmmErrorCode::OverflowNumeric
+            crate::amm::error_catalog::AmmErrorCode::OverflowNumeric
         ))?
     {
-        crate::amm_bail!(crate::amm::error::AmmErrorCode::MinReserveBreached);
+        crate::amm_bail!(crate::amm::error_catalog::AmmErrorCode::MinReserveBreached);
     }
 
     // -------- upper bound (chute via ADR-0002) --------
     // dx_net = ceil( x * dy / (y - dy) )
     let num = U256::from(x) * U256::from(dy);
     let den = U256::from(y.checked_sub(dy).ok_or(crate::amm_err!(
-        crate::amm::error::AmmErrorCode::OverflowNumeric
+        crate::amm::error_catalog::AmmErrorCode::OverflowNumeric
     ))?);
     let dx_net = ceil_div_u256(num, den).as_u128();
 
     // dx_gross = ceil( dx_net * 1e6 / (1e6 - fee) )
     let denom_ppm = (PPM_SCALE as u64)
         .checked_sub(fee_ppm as u64)
-        .ok_or(crate::amm_err!(crate::amm::error::AmmErrorCode::ZeroAmount))?;
+        .ok_or(crate::amm_err!(crate::amm::error_catalog::AmmErrorCode::ZeroAmount))?;
     if denom_ppm == 0 {
-        crate::amm_bail!(crate::amm::error::AmmErrorCode::ZeroAmount);
+        crate::amm_bail!(crate::amm::error_catalog::AmmErrorCode::ZeroAmount);
     }
     let mut hi = ceil_div_u256(
         U256::from(dx_net) * U256::from(PPM_SCALE as u64),
@@ -117,7 +117,7 @@ pub fn get_amount_in(x: Wad, y: Wad, dy: Wad, fee_ppm: Ppm) -> Result<Wad, AmmEr
             break;
         }
         hi = hi.checked_mul(2).ok_or(crate::amm_err!(
-            crate::amm::error::AmmErrorCode::OverflowNumeric
+            crate::amm::error_catalog::AmmErrorCode::OverflowNumeric
         ))?;
     }
 
@@ -218,14 +218,14 @@ mod tests {
     #[test]
     fn t_dx_zero_rejected() {
         let err = get_amount_out(1_000_000u128 * WAD, 1_000_000u128 * WAD, 0, FEE0).unwrap_err();
-        assert_eq!(err.code, crate::amm::error::AmmErrorCode::ZeroAmount);
+        assert_eq!(err.code, crate::amm::error_catalog::AmmErrorCode::ZeroAmount);
     }
 
     #[test]
     fn t_dx_net_zero_due_fee_rejected() {
         // dx=1 wei e fee>0 ⇒ fee=1 ⇒ dx_net=0
         let err = get_amount_out(5_000_000u128 * WAD, 4_000_000u128 * WAD, 1, FEE3).unwrap_err();
-        assert_eq!(err.code, crate::amm::error::AmmErrorCode::ZeroAmount);
+        assert_eq!(err.code, crate::amm::error_catalog::AmmErrorCode::ZeroAmount);
     }
 
     #[test]
@@ -236,14 +236,14 @@ mod tests {
         let err = get_amount_in(x, y, dy, FEE0).unwrap_err();
         assert_eq!(
             err.code,
-            crate::amm::error::AmmErrorCode::MinReserveBreached
+            crate::amm::error_catalog::AmmErrorCode::MinReserveBreached
         );
     }
 
     #[test]
     fn t_zero_reserve_rejected() {
         let err = get_amount_out(0, 1_000_000u128 * WAD, 10 * WAD, FEE0).unwrap_err();
-        assert_eq!(err.code, crate::amm::error::AmmErrorCode::ZeroReserve);
+        assert_eq!(err.code, crate::amm::error_catalog::AmmErrorCode::ZeroReserve);
     }
 
     #[test]
@@ -253,7 +253,7 @@ mod tests {
         let err = get_amount_out(x, y, dx, FEE0).unwrap_err();
         assert_eq!(
             err.code,
-            crate::amm::error::AmmErrorCode::MinReserveBreached
+            crate::amm::error_catalog::AmmErrorCode::MinReserveBreached
         );
     }
 }

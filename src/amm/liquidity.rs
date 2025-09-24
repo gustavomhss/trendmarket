@@ -38,7 +38,7 @@ pub fn initial_mint(x: Wad, y: Wad) -> Result<Wad, AmmError> {
     let s = isqrt_u256(k);
     let shares = u256_to_u128_checked(s)?;
     if shares == 0 {
-        crate::amm_bail!(crate::amm::error::AmmErrorCode::ZeroAmount);
+        crate::amm_bail!(crate::amm::error_catalog::AmmErrorCode::ZeroAmount);
     }
     Ok(shares)
 }
@@ -50,7 +50,7 @@ pub fn add_liquidity(x: Wad, y: Wad, dx: Wad, dy: Wad, total_shares: Wad) -> Res
     ensure_nonzero(dx)?;
     ensure_nonzero(dy)?;
     if total_shares == 0 {
-        crate::amm_bail!(crate::amm::error::AmmErrorCode::OverflowNumeric);
+        crate::amm_bail!(crate::amm::error_catalog::AmmErrorCode::OverflowNumeric);
     } // uso errado: pool não deveria estar vazia
 
     let s = U256::from(total_shares);
@@ -59,7 +59,7 @@ pub fn add_liquidity(x: Wad, y: Wad, dx: Wad, dy: Wad, total_shares: Wad) -> Res
     let mint = if sx < sy { sx } else { sy };
     let shares = u256_to_u128_checked(mint)?;
     if shares == 0 {
-        crate::amm_bail!(crate::amm::error::AmmErrorCode::ZeroAmount);
+        crate::amm_bail!(crate::amm::error_catalog::AmmErrorCode::ZeroAmount);
     }
 
     // pós-condição de segurança: reservas só aumentam
@@ -80,10 +80,10 @@ pub fn remove_liquidity(
     ensure_reserves(x, y)?;
     ensure_nonzero(burn_shares)?;
     if total_shares == 0 {
-        crate::amm_bail!(crate::amm::error::AmmErrorCode::OverflowNumeric);
+        crate::amm_bail!(crate::amm::error_catalog::AmmErrorCode::OverflowNumeric);
     }
     if burn_shares > total_shares {
-        crate::amm_bail!(crate::amm::error::AmmErrorCode::OverflowNumeric);
+        crate::amm_bail!(crate::amm::error_catalog::AmmErrorCode::OverflowNumeric);
     }
 
     let bx = (U256::from(x) * U256::from(burn_shares)) / U256::from(total_shares);
@@ -95,11 +95,11 @@ pub fn remove_liquidity(
     let x1 = checked_sub(x, x_out)?;
     let y1 = checked_sub(y, y_out)?;
     if x1 < MIN_RESERVE || y1 < MIN_RESERVE {
-        crate::amm_bail!(crate::amm::error::AmmErrorCode::MinReserveBreached);
+        crate::amm_bail!(crate::amm::error_catalog::AmmErrorCode::MinReserveBreached);
     }
 
     if x_out == 0 && y_out == 0 {
-        crate::amm_bail!(crate::amm::error::AmmErrorCode::ZeroAmount);
+        crate::amm_bail!(crate::amm::error_catalog::AmmErrorCode::ZeroAmount);
     }
     Ok((x_out, y_out))
 }
@@ -125,7 +125,7 @@ mod tests {
         let err = initial_mint(x, y).unwrap_err();
         assert_eq!(
             err.code,
-            crate::amm::error::AmmErrorCode::MinReserveBreached
+            crate::amm::error_catalog::AmmErrorCode::MinReserveBreached
         );
     }
 
@@ -159,7 +159,7 @@ mod tests {
         let (x, y, s) = (1_000_000u128 * WAD, 1_000_000u128 * WAD, 100u128);
         let (dx, dy) = (1u128, 1u128);
         let err = add_liquidity(x, y, dx, dy, s).unwrap_err();
-        assert_eq!(err.code, crate::amm::error::AmmErrorCode::ZeroAmount);
+        assert_eq!(err.code, crate::amm::error_catalog::AmmErrorCode::ZeroAmount);
     }
 
     #[test]
@@ -184,7 +184,7 @@ mod tests {
             1_000_000u128 * WAD,
         );
         let err = remove_liquidity(x, y, s + 1, s).unwrap_err();
-        assert_eq!(err.code, crate::amm::error::AmmErrorCode::OverflowNumeric);
+        assert_eq!(err.code, crate::amm::error_catalog::AmmErrorCode::OverflowNumeric);
     }
 
     #[test]
@@ -196,7 +196,7 @@ mod tests {
             1_000_000u128 * WAD,
         )
         .unwrap_err();
-        assert_eq!(err.code, crate::amm::error::AmmErrorCode::ZeroAmount);
+        assert_eq!(err.code, crate::amm::error_catalog::AmmErrorCode::ZeroAmount);
     }
 
     #[test]
@@ -205,7 +205,7 @@ mod tests {
         let err = remove_liquidity(x, y, 999_999u128 * WAD, s).unwrap_err();
         assert_eq!(
             err.code,
-            crate::amm::error::AmmErrorCode::MinReserveBreached
+            crate::amm::error_catalog::AmmErrorCode::MinReserveBreached
         );
     }
 }

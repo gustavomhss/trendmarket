@@ -58,13 +58,13 @@ fn div_nearest_even_big(n: &BigUint, d: &BigUint) -> BigUint {
 fn floor_rat_to_u128(r: &BigRational) -> Result<u128, AmmError> {
     // floor() ∈ BigInt (não-negativo neste domínio); converte para u128
     let f: BigInt = r.clone().floor();
-    f.to_u128().ok_or(AmmError::Overflow)
+    f.to_u128().ok_or(crate::amm_err!(crate::amm::error_catalog::AmmErrorCode::OverflowNumeric))
 }
 
 #[inline]
 fn ceil_rat_to_u128(r: &BigRational) -> Result<u128, AmmError> {
     let c: BigInt = r.clone().ceil();
-    c.to_u128().ok_or(AmmError::Overflow)
+    c.to_u128().ok_or(crate::amm_err!(crate::amm::error_catalog::AmmErrorCode::OverflowNumeric))
 }
 
 #[inline]
@@ -90,8 +90,8 @@ fn fee_on_input_ceil_u128(dx: Wad, fee_ppm: Ppm) -> Wad {
 // -------------------------
 /// amountOut contínuo (sem quantização), taxa no input **exata** (sem ceil).
 pub fn continuous_amount_out(x: Wad, y: Wad, dx: Wad, fee_ppm: Ppm) -> Result<BigRational, AmmError> {
-    if x < MIN_RESERVE || y < MIN_RESERVE { return Err(AmmError::MinReserveBreached); }
-    if dx == 0 { return Err(AmmError::ZeroAmount); }
+    if x < MIN_RESERVE || y < MIN_RESERVE { return crate::amm_bail!(crate::amm::error_catalog::AmmErrorCode::MinReserveBreached); }
+    if dx == 0 { return crate::amm_bail!(crate::amm::error_catalog::AmmErrorCode::ZeroAmount); }
 
     let fee_rate = fee_rate_ppm_to_q(fee_ppm);                    // r ∈ [0,1]
     let dx_q = q_from_u128(dx, 1);
@@ -109,9 +109,9 @@ pub fn continuous_amount_out(x: Wad, y: Wad, dx: Wad, fee_ppm: Ppm) -> Result<Bi
 
 /// amountIn contínuo (sem quantização) para atingir `dy` (racional) com taxa no input **exata**.
 pub fn continuous_amount_in(x: Wad, y: Wad, dy: Wad, fee_ppm: Ppm) -> Result<BigRational, AmmError> {
-    if x < MIN_RESERVE || y < MIN_RESERVE { return Err(AmmError::MinReserveBreached); }
-    if dy == 0 { return Err(AmmError::ZeroAmount); }
-    if dy >= y - MIN_RESERVE { return Err(AmmError::MinReserveBreached); }
+    if x < MIN_RESERVE || y < MIN_RESERVE { return crate::amm_bail!(crate::amm::error_catalog::AmmErrorCode::MinReserveBreached); }
+    if dy == 0 { return crate::amm_bail!(crate::amm::error_catalog::AmmErrorCode::ZeroAmount); }
+    if dy >= y - MIN_RESERVE { return crate::amm_bail!(crate::amm::error_catalog::AmmErrorCode::MinReserveBreached); }
 
     let fee_rate = fee_rate_ppm_to_q(fee_ppm);
     let x_q = q_from_u128(x, 1);
@@ -131,50 +131,50 @@ pub fn continuous_amount_in(x: Wad, y: Wad, dy: Wad, fee_ppm: Ppm) -> Result<Big
 // -------------------------
 /// amountOut com a **política dos ADRs**: fee **ceil**, `y* = round_nearest_even(k/x')`, out **floor**.
 pub fn policy_amount_out(x: Wad, y: Wad, dx: Wad, fee_ppm: Ppm) -> Result<Wad, AmmError> {
-    if x < MIN_RESERVE || y < MIN_RESERVE { return Err(AmmError::MinReserveBreached); }
-    if dx == 0 { return Err(AmmError::ZeroAmount); }
+    if x < MIN_RESERVE || y < MIN_RESERVE { return crate::amm_bail!(crate::amm::error_catalog::AmmErrorCode::MinReserveBreached); }
+    if dx == 0 { return crate::amm_bail!(crate::amm::error_catalog::AmmErrorCode::ZeroAmount); }
 
     let dx_fee = fee_on_input_ceil_u128(dx, fee_ppm);
-    let dx_net = dx.checked_sub(dx_fee).ok_or(AmmError::Overflow)?;
-    if dx_net == 0 { return Err(AmmError::InputTooSmall); }
+    let dx_net = dx.checked_sub(dx_fee).ok_or(crate::amm_err!(crate::amm::error_catalog::AmmErrorCode::OverflowNumeric))?;
+    if dx_net == 0 { return crate::amm_bail!(crate::amm::error_catalog::AmmErrorCode::InputTooSmall); }
 
-    let x1 = x.checked_add(dx_net).ok_or(AmmError::Overflow)?;
+    let x1 = x.checked_add(dx_net).ok_or(crate::amm_err!(crate::amm::error_catalog::AmmErrorCode::OverflowNumeric))?;
     let k = k_big(x, y);
     let y_star = div_nearest_even_big(&k, &bu(x1));               // inteiro (nearest-even)
 
     // out = floor(y - y*)
-    if y_star > bu(y) { return Err(AmmError::Overflow); }
+    if y_star > bu(y) { return crate::amm_bail!(crate::amm::error_catalog::AmmErrorCode::OverflowNumeric); }
     let out_bu = bu(y) - y_star;
-    out_bu.to_u128().ok_or(AmmError::Overflow)
+    out_bu.to_u128().ok_or(crate::amm_err!(crate::amm::error_catalog::AmmErrorCode::OverflowNumeric))
 }
 
 /// amountIn com a **política** (ceil dos dois passos + correção final se necessário).
 pub fn policy_amount_in(x: Wad, y: Wad, dy: Wad, fee_ppm: Ppm) -> Result<Wad, AmmError> {
-    if x < MIN_RESERVE || y < MIN_RESERVE { return Err(AmmError::MinReserveBreached); }
-    if dy == 0 { return Err(AmmError::ZeroAmount); }
-    if dy >= y - MIN_RESERVE { return Err(AmmError::MinReserveBreached); }
+    if x < MIN_RESERVE || y < MIN_RESERVE { return crate::amm_bail!(crate::amm::error_catalog::AmmErrorCode::MinReserveBreached); }
+    if dy == 0 { return crate::amm_bail!(crate::amm::error_catalog::AmmErrorCode::ZeroAmount); }
+    if dy >= y - MIN_RESERVE { return crate::amm_bail!(crate::amm::error_catalog::AmmErrorCode::MinReserveBreached); }
 
     // 1) dx_net = ceil( x * dy / (y - dy) )
     let num = bu(x) * bu(dy);
     let den = bu(y - dy);
     // ceil division via (n + d - 1)/d  em biguint
     let dx_net_bu = (num + (&den - BigUint::one())) / &den;
-    let dx_net = dx_net_bu.to_u128().ok_or(AmmError::Overflow)?;
+    let dx_net = dx_net_bu.to_u128().ok_or(crate::amm_err!(crate::amm::error_catalog::AmmErrorCode::OverflowNumeric))?;
 
     // 2) bruto a partir do net: ceil( dx_net / (1 - fee) ) = ceil( dx_net * 1e6 / (1e6-fee) )
     let denom_ppm = (PPM_SCALE as u64) - (fee_ppm as u64);
-    if denom_ppm == 0 { return Err(AmmError::InputTooSmall); }
+    if denom_ppm == 0 { return crate::amm_bail!(crate::amm::error_catalog::AmmErrorCode::InputTooSmall); }
     let n = bu(dx_net) * bu(PPM_SCALE as u128);
     let d = bu(denom_ppm as u128);
     let dx_bu = (n + (&d - BigUint::one())) / &d; // ceil
-    let mut dx = dx_bu.to_u128().ok_or(AmmError::Overflow)?;
+    let mut dx = dx_bu.to_u128().ok_or(crate::amm_err!(crate::amm::error_catalog::AmmErrorCode::OverflowNumeric))?;
 
     // 3) correção por arredondamento da taxa
     loop {
         let fee = fee_on_input_ceil_u128(dx, fee_ppm);
-        let net = dx.checked_sub(fee).ok_or(AmmError::Overflow)?;
+        let net = dx.checked_sub(fee).ok_or(crate::amm_err!(crate::amm::error_catalog::AmmErrorCode::OverflowNumeric))?;
         if net >= dx_net { break; }
-        dx = dx.checked_add(1).ok_or(AmmError::Overflow)?;
+        dx = dx.checked_add(1).ok_or(crate::amm_err!(crate::amm::error_catalog::AmmErrorCode::OverflowNumeric))?;
     }
 
     // sanity: policy_out(dx) >= dy
@@ -182,7 +182,7 @@ pub fn policy_amount_in(x: Wad, y: Wad, dy: Wad, fee_ppm: Ppm) -> Result<Wad, Am
     if out < dy {
         let mut dx2 = dx;
         loop {
-            dx2 = dx2.checked_add(1).ok_or(AmmError::Overflow)?;
+            dx2 = dx2.checked_add(1).ok_or(crate::amm_err!(crate::amm::error_catalog::AmmErrorCode::OverflowNumeric))?;
             if policy_amount_out(x, y, dx2, fee_ppm)? >= dy { return Ok(dx2); }
         }
     }
