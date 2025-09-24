@@ -11,11 +11,14 @@ static EXPORTER: OnceCell<PrometheusExporter> = OnceCell::new();
 
 pub fn init(service_name: &str, commit_sha: &str, metrics_addr: &str) -> Result<()> {
     // ==== Resource comum
-    let resource = Resource::new(vec![
-        KeyValue::new("service.name", service_name.to_string()),
-        KeyValue::new("service.version", env!("CARGO_PKG_VERSION")),
-        KeyValue::new("commit.sha", commit_sha.to_string()),
-    ]);
+    let resource = Resource::builder()
+        .with_service_name("credit-engine-core")
+        .with_attributes(vec![
+            KeyValue::new("service.name", service_name.to_string()),
+            KeyValue::new("service.version", env!("CARGO_PKG_VERSION")),
+            KeyValue::new("commit.sha", commit_sha.to_string()),
+        ])
+        .build();
 
     // ==== METRICS (Prometheus)
     let exporter = opentelemetry_prometheus::exporter()
@@ -37,7 +40,9 @@ pub fn init(service_name: &str, commit_sha: &str, metrics_addr: &str) -> Result<
                 .tonic()
                 .with_endpoint("http://127.0.0.1:4317"),
         )
-        .with_trace_config(opentelemetry_sdk::trace::config().with_resource(resource.clone()))
+        .with_trace_config(
+            opentelemetry_sdk::trace::Config::default().with_resource(resource.clone()),
+        )
         .install_simple()?;
     let otel_layer = OpenTelemetryLayer::new(tracer);
 

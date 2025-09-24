@@ -10,9 +10,13 @@ num-bigint = "0.4"
 num-integer = "0.1"
 num-rational = "0.4"
 num-traits = "0.2"
+once_cell = { version = "1", optional = true }
 opentelemetry = { version = "0.29", features = ["trace", "metrics"] }
 opentelemetry-otlp = { version = "0.29", features = ["http-proto"] }
+opentelemetry-prometheus = { version = "0.29", optional = true }
 opentelemetry_sdk = { version = "0.29", features = ["metrics", "rt-tokio"] }
+prometheus = { version = "0.13", optional = true }
+tiny_http = { version = "0.12", optional = true }
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 tracing = "0.1"
 tracing-opentelemetry = "0.30"
@@ -51,7 +55,13 @@ name = "bench_liquidity"
 harness = false
 [features]
 default = []
-obs = []
+
+    obs = ["dep:once_cell","dep:tiny_http","dep:prometheus","dep:opentelemetry-prometheus"]
+  
+once_cell = ["dep:once_cell"]
+tiny_http = ["dep:tiny_http"]
+prometheus = ["dep:prometheus"]
+opentelemetry-prometheus = ["dep:opentelemetry-prometheus"]
 
 
 [[bin]]
