@@ -232,3 +232,13 @@ mod tests {
         assert_eq!(err_block.context.get("reserve").unwrap(), "0");
     }
 }
+
+
+
+impl AmmError {
+    pub const ZeroAmount: Self = Self { code: AmmErrorCode::ZeroAmount };
+    pub const ZeroReserve: Self = Self { code: AmmErrorCode::ZeroReserve };
+    pub const MinReserveBreached: Self = Self { code: AmmErrorCode::MinReserveBreached };
+    pub const InputTooSmall: Self = Self { code: AmmErrorCode::InputTooSmall };
+    pub const Overflow: Self = Self { code: AmmErrorCode::OverflowNumeric };
+}
