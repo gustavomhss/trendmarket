@@ -11,7 +11,7 @@ fn histogram() -> Histogram<f64> {
         meter
             .f64_histogram("op_duration_seconds")
             .with_description("operation duration")
-            .build()()
+            .build()
     })
     .clone()
 }
