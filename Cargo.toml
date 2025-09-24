@@ -51,3 +51,8 @@ harness = false
 [features]
 default = []
 obs = []
+
+[[bin]]
+name = "obs_demo"
+path = "src/bin/obs_demo.rs"
+required-features = ["obs"]
