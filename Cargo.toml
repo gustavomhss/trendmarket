@@ -48,3 +48,6 @@ harness = false
 [[bench]]
 name = "bench_liquidity"
 harness = false
+[features]
+default = []
+obs = []
