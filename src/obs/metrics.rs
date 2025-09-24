@@ -18,9 +18,8 @@ pub fn start_metrics_http(addr: &str) {
                 let resp = tiny_http::Response::from_string(body).with_header(hdr);
                 let _ = req.respond(resp);
             } else {
-                let _ = req.respond(
-                    tiny_http::Response::from_string("not found").with_status_code(404),
-                );
+                let _ = req
+                    .respond(tiny_http::Response::from_string("not found").with_status_code(404));
             }
         }
     });
