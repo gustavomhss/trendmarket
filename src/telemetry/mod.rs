@@ -1,15 +1,26 @@
 use anyhow::Result;
-use opentelemetry::{global, KeyValue};
 use opentelemetry::trace::TracerProvider as _;
+use opentelemetry::{global, KeyValue};
 use opentelemetry_otlp::{Protocol, WithExportConfig};
 use opentelemetry_sdk::{metrics::SdkMeterProvider, resource::Resource, trace::SdkTracerProvider};
 use tracing_subscriber::{layer::SubscriberExt, EnvFilter, Registry};
 
-pub struct TelemetryHandle { pub tracer_provider: SdkTracerProvider, pub meter_provider: SdkMeterProvider }
-impl TelemetryHandle { pub fn shutdown(self) -> Result<()> { self.tracer_provider.shutdown()?; self.meter_provider.shutdown()?; Ok(()) } }
+pub struct TelemetryHandle {
+    pub tracer_provider: SdkTracerProvider,
+    pub meter_provider: SdkMeterProvider,
+}
+impl TelemetryHandle {
+    pub fn shutdown(self) -> Result<()> {
+        self.tracer_provider.shutdown()?;
+        self.meter_provider.shutdown()?;
+        Ok(())
+    }
+}
 
 pub fn init(service_name: &str) -> Result<TelemetryHandle> {
-    let resource = Resource::builder().with_service_name(service_name.to_string()).build();
+    let resource = Resource::builder()
+        .with_service_name(service_name.to_string())
+        .build();
 
     let base = std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT")
         .unwrap_or_else(|_| "http://localhost:4318".to_string());
@@ -52,7 +63,10 @@ pub fn init(service_name: &str) -> Result<TelemetryHandle> {
     let subscriber = Registry::default().with(filter).with(otel_layer);
     tracing::subscriber::set_global_default(subscriber).expect("set_global_default");
 
-    Ok(TelemetryHandle { tracer_provider, meter_provider })
+    Ok(TelemetryHandle {
+        tracer_provider,
+        meter_provider,
+    })
 }
 
 pub fn bump_test_metric() {

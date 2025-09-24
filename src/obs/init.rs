@@ -1,11 +1,11 @@
 use anyhow::Result;
 use once_cell::sync::OnceCell;
 use opentelemetry::{global, KeyValue};
-use opentelemetry_prometheus::PrometheusExporter;
-use opentelemetry_sdk::{Resource, metrics::SdkMeterProvider};
 use opentelemetry_otlp::WithExportConfig;
-use tracing_subscriber::{layer::SubscriberExt, EnvFilter, Registry};
+use opentelemetry_prometheus::PrometheusExporter;
+use opentelemetry_sdk::{metrics::SdkMeterProvider, Resource};
 use tracing_opentelemetry::OpenTelemetryLayer;
+use tracing_subscriber::{layer::SubscriberExt, EnvFilter, Registry};
 
 static EXPORTER: OnceCell<PrometheusExporter> = OnceCell::new();
 
@@ -32,15 +32,24 @@ pub fn init(service_name: &str, commit_sha: &str, metrics_addr: &str) -> Result<
     // Jaeger all-in-one expõe OTLP gRPC em :4317 por padrão
     let tracer = opentelemetry_otlp::new_pipeline()
         .tracing()
-        .with_exporter(opentelemetry_otlp::new_exporter().tonic().with_endpoint("http://127.0.0.1:4317"))
+        .with_exporter(
+            opentelemetry_otlp::new_exporter()
+                .tonic()
+                .with_endpoint("http://127.0.0.1:4317"),
+        )
         .with_trace_config(opentelemetry_sdk::trace::config().with_resource(resource.clone()))
         .install_simple()?;
     let otel_layer = OpenTelemetryLayer::new(tracer);
 
     // ==== Subscriber (fmt + otel)
-    let fmt_layer = tracing_subscriber::fmt::layer().with_target(false).with_ansi(true);
+    let fmt_layer = tracing_subscriber::fmt::layer()
+        .with_target(false)
+        .with_ansi(true);
     let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into());
-    let subscriber = Registry::default().with(env_filter).with(fmt_layer).with(otel_layer);
+    let subscriber = Registry::default()
+        .with(env_filter)
+        .with(fmt_layer)
+        .with(otel_layer);
     tracing::subscriber::set_global_default(subscriber)?;
 
     // ==== HTTP /metrics
@@ -56,11 +65,16 @@ fn start_metrics_http(addr: &str) {
         for mut req in server.incoming_requests() {
             if req.url() == "/metrics" {
                 let body = prometheus_text();
-                let hdr = tiny_http::Header::from_bytes(&b"Content-Type"[..], &b"text/plain; version=0.0.4"[..]).unwrap();
+                let hdr = tiny_http::Header::from_bytes(
+                    &b"Content-Type"[..],
+                    &b"text/plain; version=0.0.4"[..],
+                )
+                .unwrap();
                 let resp = tiny_http::Response::from_string(body).with_header(hdr);
                 let _ = req.respond(resp);
             } else {
-                let _ = req.respond(tiny_http::Response::from_string("not found").with_status_code(404));
+                let _ = req
+                    .respond(tiny_http::Response::from_string("not found").with_status_code(404));
             }
         }
     });

@@ -1,5 +1,5 @@
-use std::{io::Write, thread};
 use anyhow::Result;
+use std::{io::Write, thread};
 
 pub fn spawn(addr: &str) -> Result<std::thread::JoinHandle<()>> {
     let addr = addr.to_string();
@@ -11,7 +11,8 @@ pub fn spawn(addr: &str) -> Result<std::thread::JoinHandle<()>> {
                 let mut resp = tiny_http::Response::from_data(body);
                 let _ = req.respond(resp.with_status_code(200));
             } else {
-                let _ = req.respond(tiny_http::Response::from_string("not found").with_status_code(404));
+                let _ = req
+                    .respond(tiny_http::Response::from_string("not found").with_status_code(404));
             }
         }
     });

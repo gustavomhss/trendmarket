@@ -6,15 +6,20 @@ construct_uint! {
     pub struct U256(4);
 }
 
-pub type Wad = u128;  // escala 1e18
-pub type Ppm = u32;   // 0..=1_000_000
+pub type Wad = u128; // escala 1e18
+pub type Ppm = u32; // 0..=1_000_000
 
 pub const WAD: Wad = 1_000_000_000_000_000_000u128; // 1e18
-pub const PPM_SCALE: Ppm = 1_000_000;                // 1e6
-pub const MIN_RESERVE: Wad = WAD;                    // mínimo por reserva
+pub const PPM_SCALE: Ppm = 1_000_000; // 1e6
+pub const MIN_RESERVE: Wad = WAD; // mínimo por reserva
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct Reserves { pub x: Wad, pub y: Wad }
+pub struct Reserves {
+    pub x: Wad,
+    pub y: Wad,
+}
 impl Reserves {
-    pub fn new(x: Wad, y: Wad) -> Self { Self { x, y } }
+    pub fn new(x: Wad, y: Wad) -> Self {
+        Self { x, y }
+    }
 }

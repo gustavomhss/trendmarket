@@ -16,22 +16,26 @@ pub fn ensure_nonzero(amount: Wad) -> Result<(), AmmError> {
 #[inline]
 pub fn ensure_reserves(x: Wad, y: Wad) -> Result<(), AmmError> {
     if x == 0 || y == 0 {
-        return Err(AmmError::ZeroReserve);
+        crate::amm_bail!(crate::amm::error::AmmErrorCode::ZeroReserve);
     }
     if x < MIN_RESERVE || y < MIN_RESERVE {
-        return Err(AmmError::MinReserveBreached);
+        crate::amm_bail!(crate::amm::error::AmmErrorCode::MinReserveBreached);
     }
     Ok(())
 }
 
 #[inline]
 pub fn checked_add(a: Wad, b: Wad) -> Result<Wad, AmmError> {
-    a.checked_add(b).ok_or(AmmError::Overflow)
+    a.checked_add(b).ok_or(crate::amm_err!(
+        crate::amm::error::AmmErrorCode::OverflowNumeric
+    ))
 }
 
 #[inline]
 pub fn checked_sub(a: Wad, b: Wad) -> Result<Wad, AmmError> {
-    a.checked_sub(b).ok_or(AmmError::Overflow)
+    a.checked_sub(b).ok_or(crate::amm_err!(
+        crate::amm::error::AmmErrorCode::OverflowNumeric
+    ))
 }
 
 #[inline]
@@ -51,7 +55,7 @@ pub fn u256_to_u128_checked(v: U256) -> Result<Wad, AmmError> {
 /// Divisão com arredondamento *nearest (ties-to-even)* em U256 → U256
 pub fn div_nearest_even_u256(n: U256, d: U256) -> Result<U256, AmmError> {
     if d.is_zero() {
-        return Err(AmmError::Overflow);
+        crate::amm_bail!(crate::amm::error::AmmErrorCode::OverflowNumeric);
     }
     let q = n / d; // quociente
     let r = n % d; // resto
@@ -86,7 +90,10 @@ mod tests {
     #[test]
     fn t_ensure_nonzero() {
         assert!(ensure_nonzero(1).is_ok());
-        assert_eq!(ensure_nonzero(0).unwrap_err(), AmmError::ZeroAmount);
+        assert_eq!(
+            ensure_nonzero(0).unwrap_err().code,
+            crate::amm::error::AmmErrorCode::ZeroAmount
+        );
     }
 
     #[test]
