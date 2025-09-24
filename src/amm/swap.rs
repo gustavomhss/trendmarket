@@ -97,7 +97,9 @@ pub fn get_amount_in(x: Wad, y: Wad, dy: Wad, fee_ppm: Ppm) -> Result<Wad, AmmEr
     // dx_gross = ceil( dx_net * 1e6 / (1e6 - fee) )
     let denom_ppm = (PPM_SCALE as u64)
         .checked_sub(fee_ppm as u64)
-        .ok_or(crate::amm_err!(crate::amm::error_catalog::AmmErrorCode::ZeroAmount))?;
+        .ok_or(crate::amm_err!(
+            crate::amm::error_catalog::AmmErrorCode::ZeroAmount
+        ))?;
     if denom_ppm == 0 {
         crate::amm_bail!(crate::amm::error_catalog::AmmErrorCode::ZeroAmount);
     }
@@ -218,14 +220,20 @@ mod tests {
     #[test]
     fn t_dx_zero_rejected() {
         let err = get_amount_out(1_000_000u128 * WAD, 1_000_000u128 * WAD, 0, FEE0).unwrap_err();
-        assert_eq!(err.code, crate::amm::error_catalog::AmmErrorCode::ZeroAmount);
+        assert_eq!(
+            err.code,
+            crate::amm::error_catalog::AmmErrorCode::ZeroAmount
+        );
     }
 
     #[test]
     fn t_dx_net_zero_due_fee_rejected() {
         // dx=1 wei e fee>0 ⇒ fee=1 ⇒ dx_net=0
         let err = get_amount_out(5_000_000u128 * WAD, 4_000_000u128 * WAD, 1, FEE3).unwrap_err();
-        assert_eq!(err.code, crate::amm::error_catalog::AmmErrorCode::ZeroAmount);
+        assert_eq!(
+            err.code,
+            crate::amm::error_catalog::AmmErrorCode::ZeroAmount
+        );
     }
 
     #[test]
@@ -243,7 +251,10 @@ mod tests {
     #[test]
     fn t_zero_reserve_rejected() {
         let err = get_amount_out(0, 1_000_000u128 * WAD, 10 * WAD, FEE0).unwrap_err();
-        assert_eq!(err.code, crate::amm::error_catalog::AmmErrorCode::ZeroReserve);
+        assert_eq!(
+            err.code,
+            crate::amm::error_catalog::AmmErrorCode::ZeroReserve
+        );
     }
 
     #[test]

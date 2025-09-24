@@ -1,3 +1,4 @@
+#![cfg(feature = "obs")]
 use anyhow::Result;
 use tracing::{info, span, Level};
 

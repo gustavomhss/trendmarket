@@ -159,7 +159,10 @@ mod tests {
         let (x, y, s) = (1_000_000u128 * WAD, 1_000_000u128 * WAD, 100u128);
         let (dx, dy) = (1u128, 1u128);
         let err = add_liquidity(x, y, dx, dy, s).unwrap_err();
-        assert_eq!(err.code, crate::amm::error_catalog::AmmErrorCode::ZeroAmount);
+        assert_eq!(
+            err.code,
+            crate::amm::error_catalog::AmmErrorCode::ZeroAmount
+        );
     }
 
     #[test]
@@ -184,7 +187,10 @@ mod tests {
             1_000_000u128 * WAD,
         );
         let err = remove_liquidity(x, y, s + 1, s).unwrap_err();
-        assert_eq!(err.code, crate::amm::error_catalog::AmmErrorCode::OverflowNumeric);
+        assert_eq!(
+            err.code,
+            crate::amm::error_catalog::AmmErrorCode::OverflowNumeric
+        );
     }
 
     #[test]
@@ -196,7 +202,10 @@ mod tests {
             1_000_000u128 * WAD,
         )
         .unwrap_err();
-        assert_eq!(err.code, crate::amm::error_catalog::AmmErrorCode::ZeroAmount);
+        assert_eq!(
+            err.code,
+            crate::amm::error_catalog::AmmErrorCode::ZeroAmount
+        );
     }
 
     #[test]
