@@ -233,12 +233,17 @@ mod tests {
     }
 }
 
-
-
 impl AmmError {
-    pub const ZeroAmount: Self = Self { code: AmmErrorCode::ZeroAmount };
-    pub const ZeroReserve: Self = Self { code: AmmErrorCode::ZeroReserve };
-    pub const MinReserveBreached: Self = Self { code: AmmErrorCode::MinReserveBreached };
-    pub const InputTooSmall: Self = Self { code: AmmErrorCode::InputTooSmall };
-    pub const Overflow: Self = Self { code: AmmErrorCode::OverflowNumeric };
+        pub const ZeroAmount: Self = Self { code: AmmErrorCode::ZeroAmount, context: None };
+        pub const ZeroReserve: Self = Self { code: AmmErrorCode::ZeroReserve, context: None };
+        pub const MinReserveBreached: Self = Self { code: AmmErrorCode::MinReserveBreached, context: None };
+        pub const InputTooSmall: Self = Self { code: AmmErrorCode::ZeroAmount, context: None };
+        pub const Overflow: Self = Self { code: AmmErrorCode::OverflowNumeric, context: None };
+}
+
+
+impl PartialEq for AmmError {
+    fn eq(&self, other: &Self) -> bool {
+        self.code == other.code
+    }
 }
