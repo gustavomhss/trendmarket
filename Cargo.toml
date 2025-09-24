@@ -6,10 +6,10 @@ edition = "2021"
 autobins = false
 [dependencies]
 anyhow = "1"
-num-bigint = "0.4"
-num-integer = "0.1"
-num-rational = "0.4"
-num-traits = "0.2"
+
+
+
+
 once_cell = { version = "1", optional = true }
 opentelemetry = { version = "0.29", features = ["trace", "metrics"] }
 opentelemetry-otlp = { version = "0.29", features = ["http-proto"] }
@@ -28,23 +28,17 @@ proptest = "1"
 criterion = { version = "0.5", default-features = false }
 
 # (removed) golden_runner bin block
-num-bigint = "0.4"
-num-integer = "0.1"
-num-rational = "0.4"
-num-traits = "0.2"
 
 
-["rlib"]
 
 
 [lib]
 name = "credit_engine_core"
 path = "src/lib.rs"
 crate-type = ["rlib"]
-num-bigint = "0.4"
-num-integer = "0.1"
-num-rational = "0.4"
-num-traits = "0.2"
+
+
+
 
 [[bench]]
 name = "bench_swap"
@@ -55,15 +49,12 @@ name = "bench_liquidity"
 harness = false
 [features]
 default = []
-
-    obs = ["dep:once_cell","dep:tiny_http","dep:prometheus","dep:opentelemetry-prometheus"]
-  
-once_cell = ["dep:once_cell"]
-tiny_http = ["dep:tiny_http"]
-prometheus = ["dep:prometheus"]
-opentelemetry-prometheus = ["dep:opentelemetry-prometheus"]
-
-
+obs = [
+ "dep:once_cell",
+ "dep:tiny_http",
+ "dep:prometheus",
+ "dep:opentelemetry-prometheus"
+]
 [[bin]]
 name = "obs_demo"
 path = "src/bin/obs_demo.rs"
