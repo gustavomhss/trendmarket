@@ -56,3 +56,13 @@ obs = []
 name = "obs_demo"
 path = "src/bin/obs_demo.rs"
 required-features = ["obs"]
+
+[[bin]]
+name = "obs_demo"
+path = "src/bin/obs_demo.rs"
+required-features = ["obs"]
+
+[[bin]]
+name = "telemetry_smoke"
+path = "src/bin/telemetry_smoke.rs"
+required-features = ["obs"]
