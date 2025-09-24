@@ -187,10 +187,7 @@ macro_rules! amm_err {
 }
 
 #[macro_export]
-macro_rules! amm_bail {
-  ($($tt:tt)*) => {
-    return Err($crate::amm_err!($($tt)*));
-  };
+macro_rules! amm_bail { ($($tt:tt)*) => {{ return Err($crate::amm_err!($($tt)*)) }}; };
 }
 
 #[cfg(test)]
