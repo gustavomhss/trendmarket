@@ -43,7 +43,7 @@ harness = false
 
 [features]
 default = []
-obs = ["once_cell", "tiny_http", "prometheus", "opentelemetry-prometheus"]
+obs = ["once_cell","tiny_http","prometheus","opentelemetry-prometheus"]
 once_cell = ["dep:once_cell"]
 tiny_http = ["dep:tiny_http"]
 prometheus = ["dep:prometheus"]

@@ -1,3 +1,4 @@
+use prometheus::Encoder;
 #![cfg(feature = "obs")]
 use prometheus::Encoder; // traz o trait p/ TextEncoder::encode
 
