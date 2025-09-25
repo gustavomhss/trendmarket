@@ -2,7 +2,6 @@
 use anyhow::Result;
 use once_cell::sync::OnceCell;
 use opentelemetry::{global, KeyValue};
-use opentelemetry_prometheus::PrometheusExporter;
 use opentelemetry_sdk::{metrics::SdkMeterProvider, Resource};
 use tracing_subscriber::{layer::SubscriberExt, EnvFilter, Registry};
 
