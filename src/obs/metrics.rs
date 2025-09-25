@@ -1,5 +1,5 @@
-use prometheus::Encoder;
 #![cfg(feature = "obs")]
+use prometheus::Encoder;
 use prometheus::Encoder; // traz o trait p/ TextEncoder::encode
 
 pub fn start_metrics_http(addr: &str) {
