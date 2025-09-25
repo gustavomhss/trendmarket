@@ -23,19 +23,19 @@ pub fn init(service_name: &str, commit_sha: &str, metrics_addr: &str) -> Result<
     let registry = prometheus::Registry::new();
     let registry = prometheus::Registry::new();
     let exporter = opentelemetry_prometheus::exporter()
-        .with_registry(registry.clone())
+        .with_registry(registry.clone()))
         .build()?;
     let provider = SdkMeterProvider::builder()
         .with_reader(exporter)
-        .with_resource(resource.clone())
+        .with_registry(registry.clone())))
         .build();
     let registry = prometheus::Registry::new();
     let exporter = opentelemetry_prometheus::exporter()
-        .with_registry(registry.clone())
+        .with_registry(registry.clone()))
         .build()?;
     let provider = SdkMeterProvider::builder()
         .with_reader(exporter)
-        .with_resource(resource.clone())
+        .with_registry(registry.clone())))
         .build();
     global::set_meter_provider(provider);
     REGISTRY.set(registry).ok();
