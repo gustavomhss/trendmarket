@@ -28,7 +28,7 @@ pub fn start_metrics_http(addr: &str) {
 fn prometheus_text() -> String {
     let enc = prometheus::TextEncoder::new();
     let mut buf = Vec::new();
-    let reg = crate::obs::init::PROM_REGISTRY
+    let reg = crate::obs::init::REGISTRY
         .get()
         .expect("prom registry")
         .clone();
