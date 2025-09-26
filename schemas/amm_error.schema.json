@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AMM Error",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string",
+      "pattern": "^AMM-\\d{4}$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "message": {
+      "type": "string",
+      "minLength": 1
+    },
+    "context": {
+      "type": "object",
+      "additionalProperties": {
+        "type": ["string", "number", "boolean"]
+      }
+    }
+  },
+  "required": ["code", "title", "message", "context"],
+  "examples": [
+    {
+      "code": "AMM-0001",
+      "title": "Quantidade zerada",
+      "message": "amount deve ser > 0",
+      "context": {"amount": "0"}
+    },
+    {
+      "code": "AMM-0002",
+      "title": "Reserva zerada",
+      "message": "reserve deve ser > 0",
+      "context": {"reserve": "0"}
+    },
+    {
+      "code": "AMM-0003",
+      "title": "Reserva mínima violada",
+      "message": "reserva ficaria abaixo do mínimo",
+      "context": {"min_reserve": "1"}
+    },
+    {
+      "code": "AMM-0004",
+      "title": "Overflow numérico",
+      "message": "overflow/underflow numérico",
+      "context": {"op": "mul"}
+    },
+    {
+      "code": "AMM-0005",
+      "title": "Input efetivo zerado",
+      "message": "input efetivo após taxa é 0",
+      "context": {"input": "0"}
+    }
+  ]
+}

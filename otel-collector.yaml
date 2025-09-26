@@ -1,0 +1,29 @@
+receivers:
+otlp:
+protocols:
+http:
+
+
+exporters:
+jaeger:
+endpoint: "jaeger:14250"
+tls:
+insecure: true
+prometheus:
+endpoint: ":9464"
+
+
+processors:
+batch: {}
+
+
+service:
+pipelines:
+traces:
+receivers: [otlp]
+processors: [batch]
+exporters: [jaeger]
+metrics:
+receivers: [otlp]
+processors: [batch]
+exporters: [prometheus]

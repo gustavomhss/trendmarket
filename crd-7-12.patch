@@ -1,0 +1,235 @@
+From 64a40d1a70828e3b434555b95a08f9f5cae4ef63 Mon Sep 17 00:00:00 2001
+From: Gustavo Schneiter <gmhschn@gmail.com>
+Date: Mon, 15 Sep 2025 22:46:10 -0300
+Subject: [PATCH] =?UTF-8?q?bench(crd-7-12):=20harness=20Criterion=20swap/l?=
+ =?UTF-8?q?iquidity=20+=20relat=C3=B3rio=20p95=20consolidado=20(<50=C2=B5s?=
+ =?UTF-8?q?)?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ Cargo.toml                 |  8 ++++
+ benches/bench_liquidity.rs | 33 ++++++++++++++++
+ benches/bench_swap.rs      | 43 +++++++++++++++++++++
+ scripts/bench_report.py    | 79 ++++++++++++++++++++++++++++++++++++++
+ scripts/run_bench.sh       | 15 ++++++++
+ 5 files changed, 178 insertions(+)
+ create mode 100644 benches/bench_liquidity.rs
+ create mode 100644 benches/bench_swap.rs
+ create mode 100644 scripts/bench_report.py
+ create mode 100755 scripts/run_bench.sh
+
+diff --git a/Cargo.toml b/Cargo.toml
+index 44875b8..4808c4a 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -32,3 +32,11 @@ num-bigint = "0.4"
+ num-integer = "0.1"
+ num-rational = "0.4"
+ num-traits = "0.2"
++
++[[bench]]
++name = "bench_swap"
++harness = false
++
++[[bench]]
++name = "bench_liquidity"
++harness = false
+diff --git a/benches/bench_liquidity.rs b/benches/bench_liquidity.rs
+new file mode 100644
+index 0000000..10d878d
+--- /dev/null
++++ b/benches/bench_liquidity.rs
+@@ -0,0 +1,33 @@
++use std::time::Duration;
++use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughput};
++use credit_engine_core::amm::liquidity::remove_liquidity;
++use credit_engine_core::amm::types::{Wad, WAD};
++#[inline] fn w(n: u128) -> Wad { n * WAD }
++
++
++fn bench_liquidity(c: &mut Criterion) {
++let mut g = c.benchmark_group("liquidity");
++g.warm_up_time(Duration::from_secs(2));
++g.measurement_time(Duration::from_secs(5));
++g.sample_size(300);
++g.throughput(Throughput::Elements(1));
++
++
++let (x, y) = (w(2_000_000), w(3_000_000));
++let liq_all = w(1_000_000);
++
++
++g.bench_function("remove_liquidity_partial", |b| {
++b.iter(|| {
++let (dx, dy): (Wad, Wad) = remove_liquidity(
++black_box(x), black_box(y), black_box(liq_all/2), black_box(liq_all)
++).expect("remove ok");
++black_box((dx, dy));
++});
++});
++
++
++g.finish();
++}
++criterion_group!(benches, bench_liquidity);
++criterion_main!(benches);
+diff --git a/benches/bench_swap.rs b/benches/bench_swap.rs
+new file mode 100644
+index 0000000..50df34f
+--- /dev/null
++++ b/benches/bench_swap.rs
+@@ -0,0 +1,43 @@
++use std::time::Duration;
++use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughput};
++use credit_engine_core::amm::swap::get_amount_out; // se sua função estiver em cpmm, troque swap->cpmm
++use credit_engine_core::amm::types::{Wad, WAD};
++
++
++#[inline] fn w(n: u128) -> Wad { n * WAD }
++
++
++fn bench_swap(c: &mut Criterion) {
++let mut g = c.benchmark_group("swap");
++g.warm_up_time(Duration::from_secs(2));
++g.measurement_time(Duration::from_secs(5));
++g.sample_size(300);
++g.throughput(Throughput::Elements(1));
++
++
++// Casos com rótulo único + taxa
++let cases: [(&str, Wad, Wad, Wad, u32); 6] = [
++("sym_small", w(1_000_000), w(1_000_000), w(1_000), 0u32),
++("sym_large", w(5_000_000_000), w(5_000_000_000), w(1_000_000), 0u32),
++("asym_xgg", w(1_000_000_000), w(1_000_000), w(1_000), 0u32),
++("asym_ygg", w(1_000_000), w(1_000_000_000), w(1_000), 0u32),
++("sym_small_fee", w(1_000_000), w(1_000_000), w(1_000), 300u32),
++("asym_xgg_fee", w(1_000_000_000), w(1_000_000), w(1_000), 300u32),
++];
++
++
++for (label, x, y, dx, fee) in cases {
++let name = format!("{}_f{}", label, fee);
++g.bench_function(name, |b| {
++b.iter(|| {
++let dy = get_amount_out(black_box(x), black_box(y), black_box(dx), black_box(fee)).unwrap();
++black_box(dy);
++});
++});
++}
++g.finish();
++}
++
++
++criterion_group!(benches, bench_swap);
++criterion_main!(benches);
+diff --git a/scripts/bench_report.py b/scripts/bench_report.py
+new file mode 100644
+index 0000000..a049022
+--- /dev/null
++++ b/scripts/bench_report.py
+@@ -0,0 +1,79 @@
++import csv, json, os, glob, math, sys
++
++THRESHOLD_US = float(os.environ.get('P95_US', '50'))
++rows = []
++
++# 1) Tenta p95 a partir de raw.csv (amostras)
++for raw in glob.glob('target/criterion/**/raw.csv', recursive=True):
++    sub = raw.split('target/criterion/')[-1]
++    parts = [p for p in sub.split('/') if p]
++    group = parts[0] if len(parts) > 0 else 'unknown'
++    func  = parts[1] if len(parts) > 1 else 'all'
++    try:
++        with open(raw, newline='') as f:
++            r = csv.DictReader(f)
++            samples_ns = []
++            for row in r:
++                for key in ('time', 'sample', 'value'):
++                    v = row.get(key)
++                    if v:
++                        try:
++                            ns = float(v)
++                            samples_ns.append(ns)
++                            break
++                        except ValueError:
++                            pass
++            if samples_ns:
++                samples_ns.sort()
++                idx = max(0, min(len(samples_ns) - 1, int(math.ceil(0.95 * len(samples_ns)) - 1)))
++                p95_ns = samples_ns[idx]
++                rows.append((f"{group}/{func}", p95_ns / 1000.0))  # µs
++    except Exception as e:
++        print(f"warn: falha lendo {raw}: {e}", file=sys.stderr)
++
++# 2) Se não houve raw, tenta estimates.json (aproxima p95 via normal)
++if not rows:
++    for est in glob.glob('target/criterion/**/estimates.json', recursive=True):
++        sub = est.split('target/criterion/')[-1]
++        parts = [p for p in sub.split('/') if p]
++        group = parts[0] if len(parts) > 0 else 'unknown'
++        func  = parts[1] if len(parts) > 1 else 'all'
++        try:
++            with open(est) as f:
++                data = json.load(f)
++            mean_ns = None
++            std_ns  = None
++
++            if isinstance(data.get('mean'), dict) and 'point_estimate' in data['mean']:
++                mean_ns = float(data['mean']['point_estimate'])
++            if isinstance(data.get('std_dev'), dict) and 'point_estimate' in data['std_dev']:
++                std_ns = float(data['std_dev']['point_estimate'])
++
++            if mean_ns is None and isinstance(data.get('median'), dict) and 'point_estimate' in data['median']:
++                mean_ns = float(data['median']['point_estimate'])
++            if std_ns is None and isinstance(data.get('median_abs_dev'), dict) and 'point_estimate' in data['median_abs_dev']:
++                mad = float(data['median_abs_dev']['point_estimate'])
++                std_ns = mad / 0.674489750196082  # ~N(0,1): MAD -> σ
++
++            z95 = 1.6448536269514722
++            p95_ns = mean_ns if std_ns is None else (mean_ns + z95 * std_ns)
++            if mean_ns is not None:
++                rows.append((f"{group}/{func}", p95_ns / 1000.0))  # µs
++        except Exception as e:
++            print(f"warn: falha lendo {est}: {e}", file=sys.stderr)
++
++if not rows:
++    print("warn: nenhum benchmark encontrado em target/criterion", file=sys.stderr)
++    sys.exit(0)
++
++rows.sort(key=lambda x: x[0])
++
++print("bench,p95_us,threshold_us,ok")
++any_fail = False
++for name, us in rows:
++    ok = us <= THRESHOLD_US
++    print(f"{name},{us:.3f},{THRESHOLD_US:.3f},{'true' if ok else 'false'}")
++    if not ok:
++        any_fail = True
++
++sys.exit(1 if any_fail else 0)
+diff --git a/scripts/run_bench.sh b/scripts/run_bench.sh
+new file mode 100755
+index 0000000..8b687a6
+--- /dev/null
++++ b/scripts/run_bench.sh
+@@ -0,0 +1,15 @@
++#!/usr/bin/env bash
++set -euo pipefail
++
++
++# Otimizações típicas para stage/local
++export RUSTFLAGS="-C target-cpu=native"
++
++
++# 1) Compila e roda APENAS os benches Criterion deste crate
++cargo bench -p credit-engine-core --bench bench_swap
++cargo bench -p credit-engine-core --bench bench_liquidity
++
++
++# 2) Gera relatório p95 (falha se p95 ≥ limiar; default 50 µs)
++python3 scripts/bench_report.py
+-- 
+2.50.1
+

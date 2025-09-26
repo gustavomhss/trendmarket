@@ -1,13 +1,15 @@
-use proptest::prelude::*;
 use credit_engine_core::amm::swap::get_amount_out; // se sua função morar em cpmm, troque swap->cpmm
-use credit_engine_core::amm::types::{Wad, WAD, U256, Ppm};
-
+use credit_engine_core::amm::types::{Ppm, Wad, U256, WAD};
+use proptest::prelude::*;
 
 #[inline]
-fn to_wad(v: u128) -> Wad { v * WAD }
+fn to_wad(v: u128) -> Wad {
+    v * WAD
+}
 #[inline]
-fn k(x: Wad, y: Wad) -> U256 { U256::from(x) * U256::from(y) }
-
+fn k(x: Wad, y: Wad) -> U256 {
+    U256::from(x) * U256::from(y)
+}
 
 proptest! {
 #![proptest_config(ProptestConfig { cases: 10_000, .. ProptestConfig::default() })]
