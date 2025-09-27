@@ -91,31 +91,49 @@ pub fn get_amount_in(x: Wad, y: Wad, dy: Wad, fee_ppm: Ppm) -> Result<Wad, AmmEr
     if hi == 0 { hi = 1; }
 
     // garante que `hi` satisfaz (expande se necessário)
+    let mut last_safe_hi: Wad = 0;
     loop {
-        let out_hi = get_amount_out(x, y, hi, fee_ppm).unwrap_or(0);
-        if out_hi >= dy { break; }
-        hi = hi.checked_mul(2).ok_or(AmmError::Overflow)?;
+        match get_amount_out(x, y, hi, fee_ppm) {
+            Ok(out_hi) => {
+                if out_hi >= dy {
+                    break;
+                }
+                last_safe_hi = hi;
+                hi = hi.checked_mul(2).ok_or(AmmError::Overflow)?;
+            }
+            Err(AmmError::MinReserveBreached) => {
+                break;
+            }
+            Err(err) => return Err(err),
+        }
     }
 
     // -------- busca binária: menor dx com out ≥ dy --------
-    let mut lo: Wad = 0;
-    while lo < hi {
-        // mid seguro: lo + (hi-lo)/2
+    let mut lo: Wad = last_safe_hi;
+    while lo + 1 < hi {
         let mut mid = lo + ((hi - lo) >> 1);
-        if mid == 0 { mid = 1; } // dx=0 nunca serve
-
-        let out_mid = match get_amount_out(x, y, mid, fee_ppm) {
-            Ok(v) => v,
-            Err(_) => 0, // por robustez: trate erro como insuficiente
-        };
-
-        if out_mid >= dy {
-            // satisfaz → tenta menor
-            hi = mid;
-        } else {
-            // não satisfaz → precisa mais
-            lo = mid + 1;
+        if mid <= lo {
+            mid = lo + 1;
         }
+
+        match get_amount_out(x, y, mid, fee_ppm) {
+            Ok(out_mid) => {
+                if out_mid >= dy {
+                    hi = mid;
+                } else {
+                    lo = mid;
+                }
+            }
+            Err(AmmError::MinReserveBreached) | Err(AmmError::Overflow) => {
+                hi = mid;
+            }
+            Err(err) => return Err(err),
+        }
+    }
+
+    let out_hi = get_amount_out(x, y, hi, fee_ppm)?;
+    if out_hi < dy {
+        return Err(AmmError::InputTooSmall);
     }
 
     Ok(hi)
@@ -128,6 +146,52 @@ pub fn get_amount_in(x: Wad, y: Wad, dy: Wad, fee_ppm: Ppm) -> Result<Wad, AmmEr
 mod tests {
     use super::*;
     use crate::amm::types::{MIN_RESERVE, U256, Ppm, WAD, PPM_SCALE};
+
+    fn legacy_get_amount_in_with_hi(
+        x: Wad,
+        y: Wad,
+        dy: Wad,
+        fee_ppm: Ppm,
+        start_hi: Wad,
+    ) -> Result<Wad, AmmError> {
+        crate::amm::guardrails::ensure_reserves(x, y)?;
+        crate::amm::guardrails::ensure_nonzero(dy)?;
+
+        if dy
+            >= y
+                .checked_sub(MIN_RESERVE)
+                .ok_or(AmmError::Overflow)?
+        {
+            return Err(AmmError::MinReserveBreached);
+        }
+
+        let mut hi = start_hi.max(1);
+
+        loop {
+            let out_hi = super::get_amount_out(x, y, hi, fee_ppm).unwrap_or(0);
+            if out_hi >= dy {
+                break;
+            }
+            hi = hi.checked_mul(2).ok_or(AmmError::Overflow)?;
+        }
+
+        let mut lo: Wad = 0;
+        while lo < hi {
+            let mut mid = lo + ((hi - lo) >> 1);
+            if mid == 0 {
+                mid = 1;
+            }
+
+            let out_mid = super::get_amount_out(x, y, mid, fee_ppm).unwrap_or(0);
+            if out_mid >= dy {
+                hi = mid;
+            } else {
+                lo = mid + 1;
+            }
+        }
+
+        Ok(hi)
+    }
 
     const FEE0: Ppm = 0;
     const FEE3: Ppm = 3000; // 0,30%
@@ -248,5 +312,37 @@ mod tests {
         let fee = PPM_SCALE - 1;
         let err = get_amount_in(x, y, dy, fee).unwrap_err();
         assert_eq!(err, AmmError::Overflow);
+    }
+
+    #[test]
+    fn t_tight_pool_min_reserve_regression() {
+        let x = MIN_RESERVE + 25;
+        let y = MIN_RESERVE + 761;
+        let dy = 479;
+        let fee = FEE3;
+
+        let safe_hi = 480u128;
+        let overshoot_hi = safe_hi * 2;
+
+        let out_safe = get_amount_out(x, y, safe_hi, fee).unwrap();
+        assert!(out_safe < dy);
+
+        let err_overshoot = get_amount_out(x, y, overshoot_hi, fee).unwrap_err();
+        assert_eq!(err_overshoot, AmmError::MinReserveBreached);
+
+        let legacy_err = legacy_get_amount_in_with_hi(x, y, dy, fee, safe_hi).unwrap_err();
+        assert_eq!(legacy_err, AmmError::Overflow);
+
+        let dx = get_amount_in(x, y, dy, fee).unwrap();
+        assert_eq!(dx, 481);
+
+        let out_prev = get_amount_out(x, y, dx - 1, fee).unwrap_or(0);
+        assert!(out_prev < dy);
+
+        let out = get_amount_out(x, y, dx, fee).unwrap();
+        assert!(out >= dy);
+
+        let err_double = get_amount_out(x, y, dx * 2, fee).unwrap_err();
+        assert_eq!(err_double, AmmError::MinReserveBreached);
     }
 }
