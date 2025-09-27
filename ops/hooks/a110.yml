@@ -138,7 +138,7 @@
         "image_vuln_regression_watch"
       ],
       "kpi": "image.critical_vuln_count",
-      "threshold": 0,
+      "threshold": ">0",
       "window": "15m",
       "action": "block_release",
       "owner": "SEC",
@@ -294,7 +294,7 @@
         "dep_vuln_watch"
       ],
       "kpi": "security.deps.critical_vulns",
-      "threshold": 0,
+      "threshold": ">0",
       "window": "15m",
       "action": "block_release",
       "owner": "SEC",

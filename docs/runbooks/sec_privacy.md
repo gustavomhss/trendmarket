@@ -2,7 +2,7 @@
 
 ## dep-vuln — `dep_vuln_watch`
 - **Hook:** `dep-vuln-freeze`
-- **KPI:** `security.deps.critical_vulns` = 0 (janela 15m)
+- **KPI:** `security.deps.critical_vulns` > 0 (janela 15m; meta = 0)
 - **Ação automática:** `block_release`
 - **Owner:** Security Engineering
 - **Rollback:** após mitigação e varredura limpa.
@@ -13,7 +13,7 @@
 3. Rodar `make security.scan` e anexar relatório.
 
 ## image-vuln — `image_vuln_regression_watch`
-Seguir instruções do `docs/runbooks/ml_model_ops.md#image-vuln` com foco em supply chain.
+Seguir instruções do `docs/runbooks/ml_model_ops.md#image-vuln` com foco em supply chain (gatilho quando `image.critical_vuln_count` > 0 na janela de 15m).
 
 ## dp-budget — `dp_budget_breach_watch`
 - **Hook:** `dp-budget-freeze`
