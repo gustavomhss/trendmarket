@@ -1,0 +1,50 @@
+{
+  "domain": "PLAT",
+  "watchers": [
+    {
+      "name": "tracing_sampling_watch",
+      "kpi": "observability.traces.sampling_rate",
+      "threshold": "<0.98",
+      "window": "15m",
+      "action": "restore_sampling_defaults",
+      "owner": "sre@trendmarket",
+      "rollback": "yes"
+    },
+    {
+      "name": "alert_storm_watch",
+      "kpi": "observability.alerts.per_minute",
+      "threshold": ">50",
+      "window": "30m",
+      "action": "throttle_alerts_and_page",
+      "owner": "sre@trendmarket",
+      "rollback": "yes"
+    },
+    {
+      "name": "slo_budget_breach_watch",
+      "kpi": "platform.slo.burn_rate",
+      "threshold": ">1.0",
+      "window": "1h",
+      "action": "block_release",
+      "owner": "sre@trendmarket",
+      "rollback": "yes"
+    },
+    {
+      "name": "policy_violation_watch",
+      "kpi": "platform.policy.violations",
+      "threshold": ">0",
+      "window": "1h",
+      "action": "freeze_pipeline",
+      "owner": "sre@trendmarket",
+      "rollback": "yes"
+    },
+    {
+      "name": "okr_risk_alignment_watch",
+      "kpi": "governance.okr.risk_alignment_score",
+      "threshold": "<0.9",
+      "window": "24h",
+      "action": "trigger_executive_review",
+      "owner": "sre@trendmarket",
+      "rollback": "yes"
+    }
+  ]
+}

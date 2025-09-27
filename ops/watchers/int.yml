@@ -1,0 +1,32 @@
+{
+  "domain": "INT",
+  "watchers": [
+    {
+      "name": "api_breaking_change_watch",
+      "kpi": "integration.contract.breaking_changes",
+      "threshold": ">0",
+      "window": "30m",
+      "action": "block_release",
+      "owner": "integration@trendmarket",
+      "rollback": "yes"
+    },
+    {
+      "name": "cache_ttl_misuse_watch",
+      "kpi": "integration.cache.ttl_violation_rate",
+      "threshold": ">0",
+      "window": "1h",
+      "action": "rollback_cache_config",
+      "owner": "integration@trendmarket",
+      "rollback": "yes"
+    },
+    {
+      "name": "cls_payin_cutoff_watch",
+      "kpi": "integration.cls.payin_cutoff_miss",
+      "threshold": ">0",
+      "window": "1h",
+      "action": "pause_cls_flows",
+      "owner": "integration@trendmarket",
+      "rollback": "yes"
+    }
+  ]
+}

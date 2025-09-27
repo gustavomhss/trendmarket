@@ -1,0 +1,23 @@
+{
+  "domain": "FE",
+  "watchers": [
+    {
+      "name": "web_cwv_regression_watch",
+      "kpi": "web.inp.p75_ms",
+      "threshold": ">200",
+      "window": "24h",
+      "action": "rollback_fe_release",
+      "owner": "fe-core@trendmarket",
+      "rollback": "yes"
+    },
+    {
+      "name": "api_breaking_change_watch",
+      "kpi": "sdk.contract.breaking_changes",
+      "threshold": ">0",
+      "window": "30m",
+      "action": "block_fe_release",
+      "owner": "fe-core@trendmarket",
+      "rollback": "yes"
+    }
+  ]
+}

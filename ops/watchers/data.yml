@@ -1,0 +1,50 @@
+{
+  "domain": "DATA",
+  "watchers": [
+    {
+      "name": "cdc_lag_watch",
+      "kpi": "cdc.lag.p95_seconds",
+      "threshold": ">=120",
+      "window": "15m",
+      "action": "degrade_to_hot_table",
+      "owner": "data-quality@trendmarket",
+      "rollback": "yes"
+    },
+    {
+      "name": "schema_registry_drift_watch",
+      "kpi": "schema.registry.compatibility",
+      "threshold": "!=backward",
+      "window": "15m",
+      "action": "freeze_schema_migration",
+      "owner": "data-quality@trendmarket",
+      "rollback": "yes"
+    },
+    {
+      "name": "dbt_test_failure_watch",
+      "kpi": "dbt.tests.failed",
+      "threshold": ">0",
+      "window": "1h",
+      "action": "rollback_dbt_artifacts",
+      "owner": "data-quality@trendmarket",
+      "rollback": "yes"
+    },
+    {
+      "name": "doc_coverage_watch",
+      "kpi": "data.contracts.documentation_coverage",
+      "threshold": "<0.95",
+      "window": "24h",
+      "action": "block_release",
+      "owner": "data-quality@trendmarket",
+      "rollback": "yes"
+    },
+    {
+      "name": "data_contract_break_watch",
+      "kpi": "data.contracts.status",
+      "threshold": "breach",
+      "window": "15m",
+      "action": "rollback_contract_change",
+      "owner": "data-quality@trendmarket",
+      "rollback": "yes"
+    }
+  ]
+}

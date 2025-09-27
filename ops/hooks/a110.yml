@@ -1,0 +1,137 @@
+[
+  {
+    "hook": "dec-latency-degrade",
+    "domain": "DEC",
+    "watchers": [
+      "metrics_decision_hook_gap_watch",
+      "model_drift_watch",
+      "slo_budget_breach_watch"
+    ],
+    "kpi": "dec.latency.p95",
+    "threshold": "800ms",
+    "window": "5m",
+    "action": "degrade_route",
+    "owner": "dec-duty@trendmarket",
+    "evidence": ["traces:decision.core"],
+    "rollback": "yes"
+  },
+  {
+    "hook": "pm-oracle-staleness",
+    "domain": "PM",
+    "watchers": [
+      "oracle_divergence_watch",
+      "fx_delta_benchmark_watch",
+      "auction_invariant_breach_watch",
+      "slo_budget_breach_watch"
+    ],
+    "kpi": "oracle.staleness_ms",
+    "threshold": "30000",
+    "window": "5m",
+    "action": "switch_to_twap_failover",
+    "owner": "pm-ops@trendmarket",
+    "evidence": ["audit:oracles/weekly"],
+    "rollback": "yes"
+  },
+  {
+    "hook": "ml-model-rollback",
+    "domain": "ML",
+    "watchers": [
+      "model_drift_watch",
+      "ab_srm_watch",
+      "runtime_eol_watch",
+      "image_vuln_regression_watch"
+    ],
+    "kpi": "ml.model.psi",
+    "threshold": "0.2",
+    "window": "24h",
+    "action": "rollback_model",
+    "owner": "ml-ops@trendmarket",
+    "evidence": ["metrics:ml.psi", "experiments:srm"],
+    "rollback": "yes"
+  },
+  {
+    "hook": "data-contract-rollback",
+    "domain": "DATA",
+    "watchers": [
+      "cdc_lag_watch",
+      "schema_registry_drift_watch",
+      "dbt_test_failure_watch",
+      "doc_coverage_watch",
+      "data_contract_break_watch"
+    ],
+    "kpi": "data.contracts.status",
+    "threshold": "breach",
+    "window": "15m",
+    "action": "rollback_and_timebox",
+    "owner": "data-quality@trendmarket",
+    "evidence": ["contracts:a106", "contracts:a87"],
+    "rollback": "yes"
+  },
+  {
+    "hook": "platform-sampling-guard",
+    "domain": "PLAT",
+    "watchers": [
+      "tracing_sampling_watch",
+      "alert_storm_watch",
+      "slo_budget_breach_watch",
+      "policy_violation_watch",
+      "okr_risk_alignment_watch"
+    ],
+    "kpi": "observability.traces.sampling_rate",
+    "threshold": "<0.98",
+    "window": "15m",
+    "action": "block_release",
+    "owner": "sre@trendmarket",
+    "evidence": ["traces:otel", "alerts:platform"],
+    "rollback": "yes"
+  },
+  {
+    "hook": "fe-cwv-regression",
+    "domain": "FE",
+    "watchers": [
+      "web_cwv_regression_watch",
+      "api_breaking_change_watch"
+    ],
+    "kpi": "web.inp.p75",
+    "threshold": "200ms",
+    "window": "24h",
+    "action": "rollback_fe_release",
+    "owner": "fe-core@trendmarket",
+    "evidence": ["lighthouse:cwv", "sdk:contract"],
+    "rollback": "yes"
+  },
+  {
+    "hook": "sec-privacy-freeze",
+    "domain": "SEC/PRIV",
+    "watchers": [
+      "dep_vuln_watch",
+      "image_vuln_regression_watch",
+      "idp_keys_rotation_watch",
+      "dp_budget_breach_watch",
+      "formal_verification_gate_watch"
+    ],
+    "kpi": "privacy.dp_budget_ratio",
+    "threshold": "1.5",
+    "window": "1h",
+    "action": "freeze_release",
+    "owner": "sec-priv@trendmarket",
+    "evidence": ["sbom:latest", "audit:privacy"],
+    "rollback": "yes"
+  },
+  {
+    "hook": "integration-contract-guard",
+    "domain": "INT",
+    "watchers": [
+      "api_breaking_change_watch",
+      "cache_ttl_misuse_watch",
+      "cls_payin_cutoff_watch"
+    ],
+    "kpi": "integration.contracts.fail_pct",
+    "threshold": ">0",
+    "window": "30m",
+    "action": "block_release",
+    "owner": "integration@trendmarket",
+    "evidence": ["tests:contract", "synthetics:cls"],
+    "rollback": "yes"
+  }
+]

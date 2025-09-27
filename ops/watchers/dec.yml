@@ -1,0 +1,32 @@
+{
+  "domain": "DEC",
+  "watchers": [
+    {
+      "name": "metrics_decision_hook_gap_watch",
+      "kpi": "dec.latency.hook_gap.p95",
+      "threshold": ">=200ms",
+      "window": "5m",
+      "action": "degrade_route",
+      "owner": "dec-duty@trendmarket",
+      "rollback": "yes"
+    },
+    {
+      "name": "model_drift_watch",
+      "kpi": "ml.model.psi",
+      "threshold": ">0.2",
+      "window": "24h",
+      "action": "rollback_model",
+      "owner": "dec-duty@trendmarket",
+      "rollback": "yes"
+    },
+    {
+      "name": "slo_budget_breach_watch",
+      "kpi": "dec.latency.burn_rate",
+      "threshold": ">1.0",
+      "window": "1h",
+      "action": "page_oncall",
+      "owner": "dec-duty@trendmarket",
+      "rollback": "yes"
+    }
+  ]
+}

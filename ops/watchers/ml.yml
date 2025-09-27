@@ -1,0 +1,41 @@
+{
+  "domain": "ML",
+  "watchers": [
+    {
+      "name": "model_drift_watch",
+      "kpi": "ml.model.psi",
+      "threshold": ">0.2",
+      "window": "24h",
+      "action": "rollback_model",
+      "owner": "ml-ops@trendmarket",
+      "rollback": "yes"
+    },
+    {
+      "name": "ab_srm_watch",
+      "kpi": "experiments.srm.p_value",
+      "threshold": "<=0.05",
+      "window": "1h",
+      "action": "pause_experiment",
+      "owner": "ml-ops@trendmarket",
+      "rollback": "yes"
+    },
+    {
+      "name": "runtime_eol_watch",
+      "kpi": "serving.runtime.support_days",
+      "threshold": "<30",
+      "window": "24h",
+      "action": "schedule_runtime_upgrade",
+      "owner": "ml-ops@trendmarket",
+      "rollback": "yes"
+    },
+    {
+      "name": "image_vuln_regression_watch",
+      "kpi": "serving.image.cvss_max",
+      "threshold": ">=7.0",
+      "window": "24h",
+      "action": "rollback_model_image",
+      "owner": "ml-ops@trendmarket",
+      "rollback": "yes"
+    }
+  ]
+}
