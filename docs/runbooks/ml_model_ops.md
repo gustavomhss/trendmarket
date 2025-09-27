@@ -39,7 +39,7 @@
 
 ## image-vuln — `image_vuln_regression_watch`
 - **Hook:** `image-vuln-regression-block`
-- **KPI:** `image.critical_vuln_count` = 0 (janela 15m)
+- **KPI:** `image.critical_vuln_count` > 0 (janela 15m; meta = 0)
 - **Ação automática:** `block_release`
 - **Owner:** SEC + ML Ops
 - **Rollback:** após rebuild seguro e varredura limpa (Grype/Trivy).

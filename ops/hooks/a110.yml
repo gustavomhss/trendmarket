@@ -1,137 +1,343 @@
-[
-  {
-    "hook": "dec-latency-degrade",
-    "domain": "DEC",
-    "watchers": [
-      "metrics_decision_hook_gap_watch",
-      "model_drift_watch",
-      "slo_budget_breach_watch"
-    ],
-    "kpi": "dec.latency.p95",
-    "threshold": "800ms",
-    "window": "5m",
-    "action": "degrade_route",
-    "owner": "dec-duty@trendmarket",
-    "evidence": ["traces:decision.core"],
-    "rollback": "yes"
-  },
-  {
-    "hook": "pm-oracle-staleness",
-    "domain": "PM",
-    "watchers": [
-      "oracle_divergence_watch",
-      "fx_delta_benchmark_watch",
-      "auction_invariant_breach_watch",
-      "slo_budget_breach_watch"
-    ],
-    "kpi": "oracle.staleness_ms",
-    "threshold": "30000",
-    "window": "5m",
-    "action": "switch_to_twap_failover",
-    "owner": "pm-ops@trendmarket",
-    "evidence": ["audit:oracles/weekly"],
-    "rollback": "yes"
-  },
-  {
-    "hook": "ml-model-rollback",
-    "domain": "ML",
-    "watchers": [
-      "model_drift_watch",
-      "ab_srm_watch",
-      "runtime_eol_watch",
-      "image_vuln_regression_watch"
-    ],
-    "kpi": "ml.model.psi",
-    "threshold": "0.2",
-    "window": "24h",
-    "action": "rollback_model",
-    "owner": "ml-ops@trendmarket",
-    "evidence": ["metrics:ml.psi", "experiments:srm"],
-    "rollback": "yes"
-  },
-  {
-    "hook": "data-contract-rollback",
-    "domain": "DATA",
-    "watchers": [
-      "cdc_lag_watch",
-      "schema_registry_drift_watch",
-      "dbt_test_failure_watch",
-      "doc_coverage_watch",
-      "data_contract_break_watch"
-    ],
-    "kpi": "data.contracts.status",
-    "threshold": "breach",
-    "window": "15m",
-    "action": "rollback_and_timebox",
-    "owner": "data-quality@trendmarket",
-    "evidence": ["contracts:a106", "contracts:a87"],
-    "rollback": "yes"
-  },
-  {
-    "hook": "platform-sampling-guard",
-    "domain": "PLAT",
-    "watchers": [
-      "tracing_sampling_watch",
-      "alert_storm_watch",
-      "slo_budget_breach_watch",
-      "policy_violation_watch",
-      "okr_risk_alignment_watch"
-    ],
-    "kpi": "observability.traces.sampling_rate",
-    "threshold": "<0.98",
-    "window": "15m",
-    "action": "block_release",
-    "owner": "sre@trendmarket",
-    "evidence": ["traces:otel", "alerts:platform"],
-    "rollback": "yes"
-  },
-  {
-    "hook": "fe-cwv-regression",
-    "domain": "FE",
-    "watchers": [
-      "web_cwv_regression_watch",
-      "api_breaking_change_watch"
-    ],
-    "kpi": "web.inp.p75",
-    "threshold": "200ms",
-    "window": "24h",
-    "action": "rollback_fe_release",
-    "owner": "fe-core@trendmarket",
-    "evidence": ["lighthouse:cwv", "sdk:contract"],
-    "rollback": "yes"
-  },
-  {
-    "hook": "sec-privacy-freeze",
-    "domain": "SEC/PRIV",
-    "watchers": [
-      "dep_vuln_watch",
-      "image_vuln_regression_watch",
-      "idp_keys_rotation_watch",
-      "dp_budget_breach_watch",
-      "formal_verification_gate_watch"
-    ],
-    "kpi": "privacy.dp_budget_ratio",
-    "threshold": "1.5",
-    "window": "1h",
-    "action": "freeze_release",
-    "owner": "sec-priv@trendmarket",
-    "evidence": ["sbom:latest", "audit:privacy"],
-    "rollback": "yes"
-  },
-  {
-    "hook": "integration-contract-guard",
-    "domain": "INT",
-    "watchers": [
-      "api_breaking_change_watch",
-      "cache_ttl_misuse_watch",
-      "cls_payin_cutoff_watch"
-    ],
-    "kpi": "integration.contracts.fail_pct",
-    "threshold": ">0",
-    "window": "30m",
-    "action": "block_release",
-    "owner": "integration@trendmarket",
-    "evidence": ["tests:contract", "synthetics:cls"],
-    "rollback": "yes"
-  }
-]
+{
+  "version": 1,
+  "hooks": [
+    {
+      "hook": "dec-latency-gap",
+      "watchers": [
+        "metrics_decision_hook_gap_watch"
+      ],
+      "kpi": "dec.latency.p95",
+      "threshold": "800ms",
+      "window": "5m",
+      "action": "degrade_route",
+      "owner": "SRE",
+      "rollback": true,
+      "playbook": "docs/runbooks/dec_decision_pricing.md#metric-gap"
+    },
+    {
+      "hook": "model-drift-rollback",
+      "watchers": [
+        "model_drift_watch"
+      ],
+      "kpi": "model.psi",
+      "threshold": 0.2,
+      "window": "24h",
+      "action": "rollback_model",
+      "owner": "ML",
+      "rollback": true,
+      "playbook": "docs/runbooks/ml_model_ops.md#model-drift"
+    },
+    {
+      "hook": "slo-burn-rate-guard",
+      "watchers": [
+        "slo_budget_breach_watch"
+      ],
+      "kpi": "slo.burn_rate",
+      "threshold": 1.0,
+      "window": "60m",
+      "action": "enforce_release_freeze",
+      "owner": "SRE",
+      "rollback": true,
+      "playbook": "docs/runbooks/plat_observability.md#slo-burn"
+    },
+    {
+      "hook": "oracle-staleness-failover",
+      "watchers": [
+        "oracle_divergence_watch"
+      ],
+      "kpi": "oracle.divergence_bps",
+      "threshold": 5,
+      "window": "10m",
+      "action": "switch_to_twap_failover",
+      "owner": "PM",
+      "rollback": true,
+      "playbook": "docs/runbooks/pm_market_health.md#oracle-divergence"
+    },
+    {
+      "hook": "fx-delta-benchmark-guard",
+      "watchers": [
+        "fx_delta_benchmark_watch"
+      ],
+      "kpi": "fx.delta_vs_benchmark_bps",
+      "threshold": 15,
+      "window": "10m",
+      "action": "switch_to_reference_rate",
+      "owner": "PM",
+      "rollback": true,
+      "playbook": "docs/runbooks/pm_market_health.md#fx-delta"
+    },
+    {
+      "hook": "auction-invariant-pause",
+      "watchers": [
+        "auction_invariant_breach_watch"
+      ],
+      "kpi": "auction.kkt_violation_pct",
+      "threshold": 0.0,
+      "window": "5m",
+      "action": "pause_auction_stream",
+      "owner": "PM",
+      "rollback": true,
+      "playbook": "docs/runbooks/pm_market_health.md#auction-invariant"
+    },
+    {
+      "hook": "experiment-srm-guardrail",
+      "watchers": [
+        "ab_srm_watch"
+      ],
+      "kpi": "experiment.srm_pvalue",
+      "threshold": 0.01,
+      "window": "24h",
+      "action": "pause_experiment",
+      "owner": "ML",
+      "rollback": true,
+      "playbook": "docs/runbooks/ml_model_ops.md#srm"
+    },
+    {
+      "hook": "runtime-eol-governance",
+      "watchers": [
+        "runtime_eol_watch"
+      ],
+      "kpi": "runtime.support_gap_days",
+      "threshold": 0,
+      "window": "7d",
+      "action": "schedule_runtime_upgrade",
+      "owner": "PLAT",
+      "rollback": false,
+      "playbook": "docs/runbooks/ml_model_ops.md#runtime-eol"
+    },
+    {
+      "hook": "image-vuln-regression-block",
+      "watchers": [
+        "image_vuln_regression_watch"
+      ],
+      "kpi": "image.critical_vuln_count",
+      "threshold": ">0",
+      "window": "15m",
+      "action": "block_release",
+      "owner": "SEC",
+      "rollback": true,
+      "playbook": "docs/runbooks/sec_privacy.md#image-vuln"
+    },
+    {
+      "hook": "cdc-lag-hot-degrade",
+      "watchers": [
+        "cdc_lag_watch"
+      ],
+      "kpi": "cdc.lag.p95",
+      "threshold": "120s",
+      "window": "15m",
+      "action": "degrade_to_hot_table",
+      "owner": "DATA",
+      "rollback": true,
+      "playbook": "docs/runbooks/data_contracts.md#cdc-lag"
+    },
+    {
+      "hook": "schema-drift-blocker",
+      "watchers": [
+        "schema_registry_drift_watch"
+      ],
+      "kpi": "schema.drift_detected",
+      "threshold": 1,
+      "window": "5m",
+      "action": "block_deploy",
+      "owner": "DATA",
+      "rollback": true,
+      "playbook": "docs/runbooks/data_contracts.md#schema-drift"
+    },
+    {
+      "hook": "dbt-test-rollback",
+      "watchers": [
+        "dbt_test_failure_watch"
+      ],
+      "kpi": "dbt.tests.failure_rate",
+      "threshold": 0,
+      "window": "15m",
+      "action": "rollback_transform",
+      "owner": "DATA",
+      "rollback": true,
+      "playbook": "docs/runbooks/data_contracts.md#dbt-tests"
+    },
+    {
+      "hook": "data-contract-breach-guard",
+      "watchers": [
+        "data_contract_break_watch"
+      ],
+      "kpi": "data.contract.break",
+      "threshold": 1,
+      "window": "5m",
+      "action": "trigger_contract_waiver",
+      "owner": "DATA",
+      "rollback": true,
+      "playbook": "docs/runbooks/data_contracts.md#contract-breach"
+    },
+    {
+      "hook": "doc-coverage-gap",
+      "watchers": [
+        "doc_coverage_watch"
+      ],
+      "kpi": "data.doc.coverage",
+      "threshold": 0.95,
+      "window": "24h",
+      "action": "raise_doc_gap",
+      "owner": "DATA",
+      "rollback": false,
+      "playbook": "docs/runbooks/data_contracts.md#doc-coverage"
+    },
+    {
+      "hook": "web-cwv-rollback",
+      "watchers": [
+        "web_cwv_regression_watch"
+      ],
+      "kpi": "web.cwv.inp_p75",
+      "threshold": "200ms",
+      "window": "24h",
+      "action": "rollback_fe_release",
+      "owner": "FE",
+      "rollback": true,
+      "playbook": "docs/runbooks/fe_experience.md#web-cwv"
+    },
+    {
+      "hook": "api-contract-block",
+      "watchers": [
+        "api_breaking_change_watch"
+      ],
+      "kpi": "api.contract.breaking_changes",
+      "threshold": 0,
+      "window": "5m",
+      "action": "block_release",
+      "owner": "INT",
+      "rollback": true,
+      "playbook": "docs/runbooks/int_integrations.md#api-breaking"
+    },
+    {
+      "hook": "formal-verification-freeze",
+      "watchers": [
+        "formal_verification_gate_watch"
+      ],
+      "kpi": "formal.verification.failure",
+      "threshold": 1,
+      "window": "5m",
+      "action": "freeze_pipeline",
+      "owner": "SEC",
+      "rollback": true,
+      "playbook": "docs/runbooks/sec_privacy.md#formal-verification"
+    },
+    {
+      "hook": "okr-alignment-escalation",
+      "watchers": [
+        "okr_risk_alignment_watch"
+      ],
+      "kpi": "okr.risk_alignment_score",
+      "threshold": 0.8,
+      "window": "7d",
+      "action": "escalate_exec_review",
+      "owner": "StrategyOps",
+      "rollback": false,
+      "playbook": "docs/runbooks/plat_observability.md#okr-alignment"
+    },
+    {
+      "hook": "dp-budget-freeze",
+      "watchers": [
+        "dp_budget_breach_watch"
+      ],
+      "kpi": "privacy.dp_budget_multiplier",
+      "threshold": 1.5,
+      "window": "60m",
+      "action": "freeze_processing",
+      "owner": "SEC",
+      "rollback": true,
+      "playbook": "docs/runbooks/sec_privacy.md#dp-budget"
+    },
+    {
+      "hook": "dep-vuln-freeze",
+      "watchers": [
+        "dep_vuln_watch"
+      ],
+      "kpi": "security.deps.critical_vulns",
+      "threshold": ">0",
+      "window": "15m",
+      "action": "block_release",
+      "owner": "SEC",
+      "rollback": true,
+      "playbook": "docs/runbooks/sec_privacy.md#dep-vuln"
+    },
+    {
+      "hook": "idp-keys-rotation",
+      "watchers": [
+        "idp_keys_rotation_watch"
+      ],
+      "kpi": "security.idp.keys_age_days",
+      "threshold": 90,
+      "window": "1d",
+      "action": "rotate_idp_keys",
+      "owner": "SEC",
+      "rollback": false,
+      "playbook": "docs/runbooks/sec_privacy.md#idp-keys"
+    },
+    {
+      "hook": "cache-ttl-block",
+      "watchers": [
+        "cache_ttl_misuse_watch"
+      ],
+      "kpi": "integration.cache_ttl_violation_pct",
+      "threshold": 0,
+      "window": "10m",
+      "action": "block_release",
+      "owner": "INT",
+      "rollback": true,
+      "playbook": "docs/runbooks/int_integrations.md#cache-ttl"
+    },
+    {
+      "hook": "cls-payin-cutover",
+      "watchers": [
+        "cls_payin_cutoff_watch"
+      ],
+      "kpi": "integration.cls_payin_cutoff_delay_ms",
+      "threshold": 30000,
+      "window": "5m",
+      "action": "switch_to_manual_cutoff",
+      "owner": "INT",
+      "rollback": true,
+      "playbook": "docs/runbooks/int_integrations.md#cls-payin"
+    },
+    {
+      "hook": "tracing-sampling-freeze",
+      "watchers": [
+        "tracing_sampling_watch"
+      ],
+      "kpi": "tracing.sampling_rate",
+      "threshold": 0.01,
+      "window": "15m",
+      "action": "block_release",
+      "owner": "SRE",
+      "rollback": true,
+      "playbook": "docs/runbooks/plat_observability.md#tracing-sampling"
+    },
+    {
+      "hook": "alert-storm-suppressor",
+      "watchers": [
+        "alert_storm_watch"
+      ],
+      "kpi": "alerts.per_minute",
+      "threshold": 50,
+      "window": "10m",
+      "action": "enable_alert_mitigation",
+      "owner": "SRE",
+      "rollback": true,
+      "playbook": "docs/runbooks/plat_observability.md#alert-storm"
+    },
+    {
+      "hook": "policy-violation-freeze",
+      "watchers": [
+        "policy_violation_watch"
+      ],
+      "kpi": "policy.violation_detected",
+      "threshold": 1,
+      "window": "5m",
+      "action": "freeze_release",
+      "owner": "Compliance",
+      "rollback": true,
+      "playbook": "docs/runbooks/plat_observability.md#policy-violation"
+    }
+  ]
+}

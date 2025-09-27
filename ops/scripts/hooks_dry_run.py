@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import hashlib
 import json
 import pathlib
@@ -14,13 +15,33 @@ from typing import Any, Dict, List
 REQUIRED_FIELDS = {"hook", "kpi", "threshold", "window", "action", "owner", "rollback"}
 
 
+def _load_parser():
+    spec = importlib.util.find_spec("yaml")
+    if spec is None:
+        return json.loads
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None  # for mypy/static analyzers
+    spec.loader.exec_module(module)  # type: ignore[assignment]
+    return module.safe_load  # type: ignore[attr-defined]
+
+
+_parse_config = _load_parser()
+
+
 def _load_hooks(path: pathlib.Path) -> List[Dict[str, Any]]:
     if not path.exists():
         raise FileNotFoundError(f"Hook configuration not found: {path}")
-    data = json.loads(path.read_text(encoding="utf-8"))
-    hooks = data.get("hooks") if isinstance(data, dict) else None
+    data = _parse_config(path.read_text(encoding="utf-8"))
+    if isinstance(data, list):
+        hooks = data
+    elif isinstance(data, dict):
+        hooks = data.get("hooks")
+    else:
+        hooks = None
     if not isinstance(hooks, list):
-        raise ValueError("Hook configuration must contain a 'hooks' list")
+        raise ValueError(
+            "Hook configuration must be a list or contain a 'hooks' list"
+        )
     return hooks
 
 
