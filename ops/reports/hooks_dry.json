@@ -346,11 +346,4 @@
       "window": "5m",
       "action": "freeze_release",
       "owner": "compliance@trendmarket",
-      "rollback": true,
-      "evidence": [
-        "playbook:docs/runbooks/plat_observability.md#policy-violation"
-      ],
-      "hash": "e376d4c141c4b8ca4704eed7ba9284474e9ec2d2fe65dd0ff664d8b1b9b17979"
-    }
-  ]
-}
+      "rollback

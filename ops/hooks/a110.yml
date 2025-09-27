@@ -43,6 +43,19 @@
       "playbook": "docs/runbooks/plat_observability.md#slo-burn"
     },
     {
+      "hook": "policy-violation-freeze",
+      "watchers": [
+        "policy_violation_watch"
+      ],
+      "kpi": "policy.violation_detected",
+      "threshold": 1,
+      "window": "5m",
+      "action": "freeze_release",
+      "owner": "SRE+Compliance",
+      "rollback": true,
+      "playbook": "docs/runbooks/plat_observability.md#policy-violation"
+    },
+    {
       "hook": "pm-oracle-staleness",
       "watchers": [
         "oracle_divergence_watch",
@@ -189,8 +202,7 @@
     {
       "hook": "fe-cwv-regression",
       "watchers": [
-        "web_cwv_regression_watch",
-        "api_breaking_change_watch"
+        "web_cwv_regression_watch"
       ],
       "kpi": "web.cwv.inp_p75",
       "threshold": "200ms",
