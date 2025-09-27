@@ -1,7 +1,7 @@
 {
-  "generated_at": "2025-09-27T22:26:51.457983+00:00",
+  "generated_at": "2025-09-27T22:30:00+00:00",
   "source": "ops/hooks/a110.yml",
-  "total_hooks": 26,
+  "total_hooks": 30,
   "hooks": [
     {
       "hook": "dec-latency-gap",
@@ -9,7 +9,7 @@
       "threshold": "800ms",
       "window": "5m",
       "action": "degrade_route",
-      "owner": "SRE",
+      "owner": "sre@trendmarket",
       "rollback": true,
       "evidence": [
         "playbook:docs/runbooks/dec_decision_pricing.md#model-drift-dec"
@@ -48,7 +48,7 @@
       "threshold": 5,
       "window": "10m",
       "action": "switch_to_twap_failover",
-      "owner": "PM",
+      "owner": "pm@trendmarket",
       "rollback": true,
       "evidence": [
         "audit:oracles/weekly",
@@ -62,7 +62,7 @@
       "threshold": 15,
       "window": "10m",
       "action": "switch_to_reference_rate",
-      "owner": "pm-ops@trendmarket",
+      "owner": "pm@trendmarket",
       "rollback": true,
       "evidence": [
         "playbook:docs/runbooks/pm_market_health.md#fx-delta"
@@ -75,7 +75,7 @@
       "threshold": 0.0,
       "window": "5m",
       "action": "pause_auction_stream",
-      "owner": "pm-ops@trendmarket",
+      "owner": "pm@trendmarket",
       "rollback": true,
       "evidence": [
         "playbook:docs/runbooks/pm_market_health.md#auction-invariant"
@@ -127,7 +127,7 @@
       "threshold": "120s",
       "window": "15m",
       "action": "degrade_to_hot_table",
-      "owner": "data-quality@trendmarket",
+      "owner": "data@trendmarket",
       "rollback": true,
       "evidence": [
         "playbook:docs/runbooks/data_contracts.md#cdc-lag"
@@ -140,7 +140,7 @@
       "threshold": 1,
       "window": "5m",
       "action": "block_deploy",
-      "owner": "data-quality@trendmarket",
+      "owner": "data@trendmarket",
       "rollback": true,
       "evidence": [
         "playbook:docs/runbooks/data_contracts.md#schema-drift"
@@ -153,7 +153,7 @@
       "threshold": 0,
       "window": "15m",
       "action": "rollback_transform",
-      "owner": "data-quality@trendmarket",
+      "owner": "data@trendmarket",
       "rollback": true,
       "evidence": [
         "playbook:docs/runbooks/data_contracts.md#dbt-tests"
@@ -166,11 +166,9 @@
       "threshold": 1,
       "window": "5m",
       "action": "trigger_contract_waiver",
-      "owner": "data-quality@trendmarket",
+      "owner": "data@trendmarket",
       "rollback": true,
       "evidence": [
-        "contracts:a106",
-        "contracts:a87",
         "playbook:docs/runbooks/data_contracts.md#contract-breach"
       ],
       "hash": "4761a1608df508688bc88d9aac94958190c1fe6edc7f3b312828a91a6d598453"
@@ -181,7 +179,7 @@
       "threshold": 0.95,
       "window": "24h",
       "action": "raise_doc_gap",
-      "owner": "data-quality@trendmarket",
+      "owner": "data@trendmarket",
       "rollback": false,
       "evidence": [
         "playbook:docs/runbooks/data_contracts.md#doc-coverage"
@@ -194,11 +192,9 @@
       "threshold": "200ms",
       "window": "24h",
       "action": "rollback_fe_release",
-      "owner": "FE",
+      "owner": "fe@trendmarket",
       "rollback": true,
       "evidence": [
-        "lighthouse:cwv",
-        "sdk:contract",
         "playbook:docs/runbooks/fe_experience.md#web-cwv"
       ],
       "hash": "e8346d4b7b9601ecd665a7d3ff5f7ef1c8c4bc30ab5d60042fd4a486fea05d65"
@@ -212,11 +208,35 @@
       "owner": "integration@trendmarket",
       "rollback": true,
       "evidence": [
-        "tests:contract",
-        "synthetics:cls",
         "playbook:docs/runbooks/int_integrations.md#api-breaking"
       ],
       "hash": "b5b5ec2a1daac051b91bb5dc7d20eb553af99189db5cdd3dc7e06f1398f99d82"
+    },
+    {
+      "hook": "cache-ttl-block",
+      "kpi": "integration.cache_ttl_violation_pct",
+      "threshold": 0,
+      "window": "10m",
+      "action": "block_release",
+      "owner": "integration@trendmarket",
+      "rollback": true,
+      "evidence": [
+        "playbook:docs/runbooks/int_integrations.md#cache-ttl"
+      ],
+      "hash": "8521f279244b937777ec446fad96bf035d2779b95091ac0d9d72faf5ca69c799"
+    },
+    {
+      "hook": "cls-payin-cutover",
+      "kpi": "integration.cls_payin_cutoff_delay_ms",
+      "threshold": 30000,
+      "window": "5m",
+      "action": "switch_to_manual_cutoff",
+      "owner": "integration@trendmarket",
+      "rollback": true,
+      "evidence": [
+        "playbook:docs/runbooks/int_integrations.md#cls-payin"
+      ],
+      "hash": "fcea9df066745b672202442d21b72aa2edbe0fcef46c9795005b3c52ea22f6a1"
     },
     {
       "hook": "formal-verification-freeze",
@@ -253,8 +273,6 @@
       "owner": "sec-priv@trendmarket",
       "rollback": true,
       "evidence": [
-        "sbom:latest",
-        "audit:privacy",
         "playbook:docs/runbooks/sec_privacy.md#dp-budget"
       ],
       "hash": "296782ec7acc00c40f98e18fe9d10b906e30bf7f21eb7c28850396423b5afdbe"
@@ -286,32 +304,6 @@
       "hash": "d5362a3c29bfbcf119411b5f1201e2373f77454dc9bf497b25730ec2c051d57b"
     },
     {
-      "hook": "cache-ttl-block",
-      "kpi": "integration.cache_ttl_violation_pct",
-      "threshold": 0,
-      "window": "10m",
-      "action": "block_release",
-      "owner": "integration@trendmarket",
-      "rollback": true,
-      "evidence": [
-        "playbook:docs/runbooks/int_integrations.md#cache-ttl"
-      ],
-      "hash": "8521f279244b937777ec446fad96bf035d2779b95091ac0d9d72faf5ca69c799"
-    },
-    {
-      "hook": "cls-payin-cutover",
-      "kpi": "integration.cls_payin_cutoff_delay_ms",
-      "threshold": 30000,
-      "window": "5m",
-      "action": "switch_to_manual_cutoff",
-      "owner": "integration@trendmarket",
-      "rollback": true,
-      "evidence": [
-        "playbook:docs/runbooks/int_integrations.md#cls-payin"
-      ],
-      "hash": "fcea9df066745b672202442d21b72aa2edbe0fcef46c9795005b3c52ea22f6a1"
-    },
-    {
       "hook": "tracing-sampling-freeze",
       "kpi": "tracing.sampling_rate",
       "threshold": 0.01,
@@ -320,8 +312,6 @@
       "owner": "sre@trendmarket",
       "rollback": true,
       "evidence": [
-        "traces:otel",
-        "alerts:platform",
         "playbook:docs/runbooks/plat_observability.md#tracing-sampling"
       ],
       "hash": "ccfb569ccd76b59dee3e5d7c107bba12d788866ac5f67571cac9f38cf5f4a397"
@@ -346,4 +336,8 @@
       "window": "5m",
       "action": "freeze_release",
       "owner": "compliance@trendmarket",
-      "rollback":
+      "rollback": true,
+      "evidence": [
+        "playbook:docs/runbooks/plat_observability.md#policy-violation"
+      ],
+      "hash": "4e12d4e1a46d5c0d58de7b205b52c0d48ed21a43c0a4ec

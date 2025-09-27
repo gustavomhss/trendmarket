@@ -5,7 +5,7 @@
   "watchers_digest": "80daeb995ec6b42e4f799faf495d75b1e99f0272a72e0f69129e892e5dd45b4d",
   "hooks_digest": "9b0bc50bfb27ea09a145a78430612d9fda2b62dd6f718a4a8637df11e968792a",
   "watchers_count": 31,
-  "hooks_count": 19,
+  "hooks_count": 27,
   "evidence": {
     "watchers": [
       {
@@ -51,11 +51,11 @@
       {
         "id": "cdc_lag_watch",
         "domain": "DATA",
-        "domains": ["DATA"],
-        "hook_id": "cdc-lag-hot-degrade",
-        "kpi": "cdc.lag.p95",
         "owner": "DATA",
+        "kpi": "cdc.lag.p95",
+        "hook": "cdc-lag-hot-degrade",
         "description": "Acompanha lag CDC p95 contra o contrato de dados.",
+        "domains": ["DATA"],
         "hash": "d70619b85b508a0466653d632b02ed3068bec3b3b88b9d70fe65ba7b179da54e"
       },
       {
@@ -68,7 +68,52 @@
         "domains": ["INT"],
         "hash": "a4705fcd4d7ba1416c928c9964afd2c5235670cc0ac82bc0fa42816c21954c4e"
       }
-      /* ... restante dos watchers e hooks mantidos conforme última versão consolidada ... */
+      /* ... demais watchers já consolidados ... */
+    ],
+    "hooks": [
+      {
+        "hook": "dec-latency-gap",
+        "kpi": "dec.latency.p95",
+        "threshold": "800ms",
+        "window": "5m",
+        "action": "degrade_route",
+        "owner": "dec-duty@trendmarket",
+        "rollback": true,
+        "evidence": [
+          "traces:decision.core",
+          "playbook:docs/runbooks/dec_decision_pricing.md#metric-gap"
+        ],
+        "hash": "4f388f4a01aa9b5a1c92808b8bcb0b5cb0fb5bc1a85b7bed18da327c59c56cf8"
+      },
+      {
+        "hook": "idp-keys-rotation",
+        "kpi": "security.idp.keys_age_days",
+        "threshold": 90,
+        "window": "1d",
+        "action": "rotate_idp_keys",
+        "owner": "sec-priv@trendmarket",
+        "rollback": false,
+        "evidence": [
+          "playbook:docs/runbooks/sec_privacy.md#idp-keys"
+        ],
+        "hash": "040388b411f0303f293e5fb8393dcc98175a3275fc0ce6229b02d4fd859ae461"
+      },
+      {
+        "hook": "model-drift-rollback",
+        "kpi": "model.psi",
+        "threshold": 0.2,
+        "window": "24h",
+        "action": "rollback_model",
+        "owner": "ml-ops@trendmarket",
+        "rollback": true,
+        "evidence": [
+          "metrics:ml.psi",
+          "experiments:srm",
+          "playbook:docs/runbooks/ml_model_ops.md#model-drift"
+        ],
+        "hash": "f1c3de8c912ecb1d7f594d3a9e21e6d7a928bfda02f3c3d8a8ed9c9a3f44b181"
+      }
+      /* ... demais hooks já consolidados ... */
     ]
   }
 }
