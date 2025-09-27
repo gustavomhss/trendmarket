@@ -1,0 +1,210 @@
+{
+  "version": 1,
+  "domains": {
+    "DEC": [
+      "metrics_decision_hook_gap_watch",
+      "model_drift_watch",
+      "slo_budget_breach_watch"
+    ],
+    "PM": [
+      "oracle_divergence_watch",
+      "fx_delta_benchmark_watch",
+      "auction_invariant_breach_watch",
+      "slo_budget_breach_watch"
+    ],
+    "DATA": [
+      "cdc_lag_watch",
+      "schema_registry_drift_watch",
+      "dbt_test_failure_watch",
+      "data_contract_break_watch",
+      "doc_coverage_watch"
+    ],
+    "ML": [
+      "model_drift_watch",
+      "ab_srm_watch",
+      "runtime_eol_watch",
+      "image_vuln_regression_watch"
+    ],
+    "FE": [
+      "web_cwv_regression_watch",
+      "api_breaking_change_watch"
+    ],
+    "SEC/PRIV": [
+      "dep_vuln_watch",
+      "image_vuln_regression_watch",
+      "idp_keys_rotation_watch",
+      "dp_budget_breach_watch",
+      "formal_verification_gate_watch"
+    ],
+    "PLAT": [
+      "tracing_sampling_watch",
+      "alert_storm_watch",
+      "slo_budget_breach_watch",
+      "okr_risk_alignment_watch",
+      "policy_violation_watch"
+    ],
+    "INT": [
+      "api_breaking_change_watch",
+      "cache_ttl_misuse_watch",
+      "cls_payin_cutoff_watch"
+    ]
+  },
+  "watchers": {
+    "metrics_decision_hook_gap_watch": {
+      "description": "Garante que a latência DEC permaneça dentro dos limites antes de alterar rotas.",
+      "kpi": "dec.latency.p95",
+      "owner": "SRE",
+      "hook": "dec-latency-gap"
+    },
+    "model_drift_watch": {
+      "description": "Detecta drift estatístico relevante para decisões de crédito.",
+      "kpi": "model.psi",
+      "owner": "ML",
+      "hook": "model-drift-rollback"
+    },
+    "slo_budget_breach_watch": {
+      "description": "Monitora burn rate do SLO cross-domain.",
+      "kpi": "slo.burn_rate",
+      "owner": "SRE",
+      "hook": "slo-burn-rate-guard"
+    },
+    "oracle_divergence_watch": {
+      "description": "Detecta divergência de preço entre oráculos e referência.",
+      "kpi": "oracle.divergence_bps",
+      "owner": "PM",
+      "hook": "oracle-staleness-failover"
+    },
+    "fx_delta_benchmark_watch": {
+      "description": "Compara delta FX com benchmark para evitar arbitragem.",
+      "kpi": "fx.delta_vs_benchmark_bps",
+      "owner": "PM",
+      "hook": "fx-delta-benchmark-guard"
+    },
+    "auction_invariant_breach_watch": {
+      "description": "Fiscaliza invariantes KKT e convexidade nos leilões.",
+      "kpi": "auction.kkt_violation_pct",
+      "owner": "PM",
+      "hook": "auction-invariant-pause"
+    },
+    "ab_srm_watch": {
+      "description": "Detecta falhas de SRM em experimentos e testes AA.",
+      "kpi": "experiment.srm_pvalue",
+      "owner": "ML",
+      "hook": "experiment-srm-guardrail"
+    },
+    "runtime_eol_watch": {
+      "description": "Aponta runtimes em fim de vida para evitar builds inseguras.",
+      "kpi": "runtime.support_gap_days",
+      "owner": "PLAT",
+      "hook": "runtime-eol-governance"
+    },
+    "image_vuln_regression_watch": {
+      "description": "Bloqueia regressão de vulnerabilidades críticas em imagens.",
+      "kpi": "image.critical_vuln_count",
+      "owner": "SEC",
+      "hook": "image-vuln-regression-block"
+    },
+    "cdc_lag_watch": {
+      "description": "Acompanha lag CDC p95 contra o contrato de dados.",
+      "kpi": "cdc.lag.p95",
+      "owner": "DATA",
+      "hook": "cdc-lag-hot-degrade"
+    },
+    "schema_registry_drift_watch": {
+      "description": "Detecta incompatibilidades no schema registry.",
+      "kpi": "schema.drift_detected",
+      "owner": "DATA",
+      "hook": "schema-drift-blocker"
+    },
+    "dbt_test_failure_watch": {
+      "description": "Flag de falhas de testes dbt críticos.",
+      "kpi": "dbt.tests.failure_rate",
+      "owner": "DATA",
+      "hook": "dbt-test-rollback"
+    },
+    "data_contract_break_watch": {
+      "description": "Quebra de contrato de dados A106/A87/A89.",
+      "kpi": "data.contract.break",
+      "owner": "DATA",
+      "hook": "data-contract-breach-guard"
+    },
+    "doc_coverage_watch": {
+      "description": "Garante cobertura de documentação mínima das pipelines.",
+      "kpi": "data.doc.coverage",
+      "owner": "DATA",
+      "hook": "doc-coverage-gap"
+    },
+    "web_cwv_regression_watch": {
+      "description": "Observa regressões de Core Web Vitals (INP p75).",
+      "kpi": "web.cwv.inp_p75",
+      "owner": "FE",
+      "hook": "web-cwv-rollback"
+    },
+    "api_breaking_change_watch": {
+      "description": "Previne quebras de contrato de APIs públicas/internas.",
+      "kpi": "api.contract.breaking_changes",
+      "owner": "INT",
+      "hook": "api-contract-block"
+    },
+    "formal_verification_gate_watch": {
+      "description": "Sinaliza falha em gates formais (A108/segurança).",
+      "kpi": "formal.verification.failure",
+      "owner": "SEC",
+      "hook": "formal-verification-freeze"
+    },
+    "okr_risk_alignment_watch": {
+      "description": "Monitora desalinhamento de riscos com OKRs estratégicos.",
+      "kpi": "okr.risk_alignment_score",
+      "owner": "StrategyOps",
+      "hook": "okr-alignment-escalation"
+    },
+    "dp_budget_breach_watch": {
+      "description": "Garante que o budget de privacidade diferencial não estoure.",
+      "kpi": "privacy.dp_budget_multiplier",
+      "owner": "SEC",
+      "hook": "dp-budget-freeze"
+    },
+    "dep_vuln_watch": {
+      "description": "Bloqueia releases com vulnerabilidades críticas em dependências.",
+      "kpi": "security.deps.critical_vulns",
+      "owner": "SEC",
+      "hook": "dep-vuln-freeze"
+    },
+    "idp_keys_rotation_watch": {
+      "description": "Enforce rotação de chaves/segredos do IdP.",
+      "kpi": "security.idp.keys_age_days",
+      "owner": "SEC",
+      "hook": "idp-keys-rotation"
+    },
+    "cache_ttl_misuse_watch": {
+      "description": "Flag para TTL incorreto em caches compartilhados.",
+      "kpi": "integration.cache_ttl_violation_pct",
+      "owner": "INT",
+      "hook": "cache-ttl-block"
+    },
+    "cls_payin_cutoff_watch": {
+      "description": "Garante que o cutoff CLS payin seja seguido sem atraso.",
+      "kpi": "integration.cls_payin_cutoff_delay_ms",
+      "owner": "INT",
+      "hook": "cls-payin-cutover"
+    },
+    "tracing_sampling_watch": {
+      "description": "Monitora taxa de amostragem do tracing distribuído.",
+      "kpi": "tracing.sampling_rate",
+      "owner": "SRE",
+      "hook": "tracing-sampling-freeze"
+    },
+    "alert_storm_watch": {
+      "description": "Detecta tempestades de alertas indicando ruído ou incidentes generalizados.",
+      "kpi": "alerts.per_minute",
+      "owner": "SRE",
+      "hook": "alert-storm-suppressor"
+    },
+    "policy_violation_watch": {
+      "description": "Garante que políticas operacionais/compliance permaneçam sem violações.",
+      "kpi": "policy.violation_detected",
+      "owner": "Compliance",
+      "hook": "policy-violation-freeze"
+    }
+  }
+}
