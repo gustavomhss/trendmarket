@@ -40,8 +40,9 @@ ensure_dep(){
     printf '%s = "%s"\n' "$crate" "$ver" >> Cargo.toml
   fi
 }
-# limpa entradas erradas em outras seções
-sed -i '' -E '/^[[:space:]]*num-(bigint|integer|rational|traits)[[:space:]]*=.*/d' Cargo.toml || true
+# limpa entradas erradas em outras seções (BSD/GNU compat)
+sed -i.bak -E '/^[[:space:]]*num-(bigint|integer|rational|traits)[[:space:]]*=.*/d' Cargo.toml || true
+rm -f Cargo.toml.bak
 ensure_dep num-bigint 0.4
 ensure_dep num-integer 0.1
 ensure_dep num-rational 0.4
