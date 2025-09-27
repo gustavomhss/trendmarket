@@ -1,0 +1,50 @@
+{
+  "domain": "SEC/PRIV",
+  "watchers": [
+    {
+      "name": "dep_vuln_watch",
+      "kpi": "security.dependencies.cvss_max",
+      "threshold": ">=7.0",
+      "window": "24h",
+      "action": "block_release",
+      "owner": "sec-priv@trendmarket",
+      "rollback": "yes"
+    },
+    {
+      "name": "image_vuln_regression_watch",
+      "kpi": "security.images.cvss_max",
+      "threshold": ">=7.0",
+      "window": "24h",
+      "action": "rollback_image",
+      "owner": "sec-priv@trendmarket",
+      "rollback": "yes"
+    },
+    {
+      "name": "idp_keys_rotation_watch",
+      "kpi": "security.idp.keys_age_days",
+      "threshold": ">=75",
+      "window": "24h",
+      "action": "rotate_idp_keys",
+      "owner": "sec-priv@trendmarket",
+      "rollback": "yes"
+    },
+    {
+      "name": "dp_budget_breach_watch",
+      "kpi": "privacy.dp_budget_ratio",
+      "threshold": ">1.5",
+      "window": "1h",
+      "action": "freeze_release",
+      "owner": "sec-priv@trendmarket",
+      "rollback": "yes"
+    },
+    {
+      "name": "formal_verification_gate_watch",
+      "kpi": "security.formal_verification_status",
+      "threshold": "failed",
+      "window": "24h",
+      "action": "block_release",
+      "owner": "sec-priv@trendmarket",
+      "rollback": "yes"
+    }
+  ]
+}

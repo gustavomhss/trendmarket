@@ -1,0 +1,41 @@
+{
+  "domain": "PM",
+  "watchers": [
+    {
+      "name": "oracle_divergence_watch",
+      "kpi": "oracle.price.delta_bps",
+      "threshold": ">=10",
+      "window": "5m",
+      "action": "switch_to_twap_failover",
+      "owner": "pm-ops@trendmarket",
+      "rollback": "yes"
+    },
+    {
+      "name": "fx_delta_benchmark_watch",
+      "kpi": "fx.delta_vs_benchmark_bps",
+      "threshold": ">=15",
+      "window": "5m",
+      "action": "switch_to_twap_failover",
+      "owner": "pm-ops@trendmarket",
+      "rollback": "yes"
+    },
+    {
+      "name": "auction_invariant_breach_watch",
+      "kpi": "auction.no_arb_score",
+      "threshold": "<0",
+      "window": "15m",
+      "action": "pause_auction_stream",
+      "owner": "pm-ops@trendmarket",
+      "rollback": "yes"
+    },
+    {
+      "name": "slo_budget_breach_watch",
+      "kpi": "pm.routing.latency.burn_rate",
+      "threshold": ">1.0",
+      "window": "1h",
+      "action": "escalate_oncall",
+      "owner": "pm-ops@trendmarket",
+      "rollback": "yes"
+    }
+  ]
+}

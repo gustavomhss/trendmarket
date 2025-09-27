@@ -180,6 +180,28 @@ fi
 
 set_proptest_defaults
 
+log_info 'Running watchers dry-run validation.'
+if ./scripts/watchers_dry.py; then
+  log_info 'watchers.dry completed successfully.'
+else
+  EXIT_NEXTEST=1
+  EXIT_CARGO=1
+  log_error 'watchers.dry failed; aborting Gate A110.'
+  finalize
+  exit 1
+fi
+
+log_info 'Running hooks dry-run validation.'
+if ./scripts/hooks_dry.py; then
+  log_info 'hooks.dry completed successfully.'
+else
+  EXIT_NEXTEST=1
+  EXIT_CARGO=1
+  log_error 'hooks.dry failed; aborting Gate A110.'
+  finalize
+  exit 1
+fi
+
 log_info 'Running cargo nextest invariants.'
 if cargo nextest run --all --all-features --no-fail-fast --junit-output artifacts/junit.xml; then
   EXIT_NEXTEST=0
