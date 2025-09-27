@@ -1,7 +1,7 @@
 # Runbook ML — Model Lifecycle
 
 ## model-drift — `model_drift_watch`
-- **Hook:** `model-drift-rollback`
+- **Hook:** `ml-model-rollback`
 - **KPI:** `model.psi` ≤ 0.2 (janela 24h)
 - **Ação automática:** `rollback_model`
 - **Owner:** ML
@@ -38,7 +38,7 @@
 3. Comunicar stakeholders e publicar ADR/waiver se necessário.
 
 ## image-vuln — `image_vuln_regression_watch`
-- **Hook:** `image-vuln-regression-block`
+- **Hook:** `ml-model-rollback`
 - **KPI:** `image.critical_vuln_count` = 0 (janela 15m)
 - **Ação automática:** `block_release`
 - **Owner:** SEC + ML Ops

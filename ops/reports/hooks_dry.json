@@ -1,7 +1,7 @@
 {
-  "generated_at": "2025-09-27T02:26:10.909257+00:00",
+  "generated_at": "2025-09-27T08:23:25.765316+00:00",
   "source": "/workspace/trendmarket/ops/hooks/a110_hooks.json",
-  "total_hooks": 3,
+  "total_hooks": 8,
   "hooks": [
     {
       "hook": "dec-latency-degrade",
@@ -9,41 +9,109 @@
       "threshold": "800ms",
       "window": "5m",
       "action": "degrade_route",
-      "owner": "sre",
+      "owner": "dec-duty@trendmarket",
       "rollback": true,
-      "evidence": {
-        "traces": "decision.core",
-        "audit": "ops/reports/dryrun.json"
-      },
-      "hash": "561062ca74690c58be408a647b98372890ccb4eb3c9a56ec04ed558cc851829c"
+      "evidence": [
+        "traces:decision.core"
+      ],
+      "hash": "b4392375ed521039337f666f01986408c6e5b59eee0973f07c859a3af8a7ccde"
     },
     {
-      "hook": "oracle-stale-failover",
+      "hook": "pm-oracle-staleness",
       "kpi": "oracle.staleness_ms",
-      "threshold": 30000,
+      "threshold": "30000",
       "window": "5m",
       "action": "switch_to_twap_failover",
-      "owner": "bc",
+      "owner": "pm-ops@trendmarket",
       "rollback": true,
-      "evidence": {
-        "traces": "oracle.fetch",
-        "audit": "ops/evidence/evidence.json"
-      },
-      "hash": "79a1c20e924ade5946c37ff0ce2acdb049c4f6c4683979be890e2c6cc2cec660"
+      "evidence": [
+        "audit:oracles/weekly"
+      ],
+      "hash": "a89571d832c023096d6d617e0854ce68fe8eb0850f16c8f00d121d3df2dc6374"
     },
     {
-      "hook": "model-drift-rollback",
-      "kpi": "model.psi.p95",
-      "threshold": 0.2,
+      "hook": "ml-model-rollback",
+      "kpi": "ml.model.psi",
+      "threshold": "0.2",
       "window": "24h",
       "action": "rollback_model",
-      "owner": "ml-ops",
+      "owner": "ml-ops@trendmarket",
       "rollback": true,
-      "evidence": {
-        "traces": "inference.serving",
-        "audit": "ml/monitoring/psi.json"
-      },
-      "hash": "58011806d0d2f62ba39e7004a245f054fcc3e415f31f73be638485b89fa04440"
+      "evidence": [
+        "metrics:ml.psi",
+        "experiments:srm"
+      ],
+      "hash": "3a229e872d31f776fc8a1e133d98c46c3ca4c8f3b572104f77c6d23e8be71b0e"
+    },
+    {
+      "hook": "data-contract-rollback",
+      "kpi": "data.contracts.status",
+      "threshold": "breach",
+      "window": "15m",
+      "action": "rollback_and_timebox",
+      "owner": "data-quality@trendmarket",
+      "rollback": true,
+      "evidence": [
+        "contracts:a106",
+        "contracts:a87"
+      ],
+      "hash": "657e2a3256628fe8900e3a1745c80947d9b9cdc914d9f2b5e079c6b76e378807"
+    },
+    {
+      "hook": "platform-sampling-guard",
+      "kpi": "observability.traces.sampling_rate",
+      "threshold": "<0.98",
+      "window": "15m",
+      "action": "block_release",
+      "owner": "sre@trendmarket",
+      "rollback": true,
+      "evidence": [
+        "traces:otel",
+        "alerts:platform"
+      ],
+      "hash": "2ccb4159015748acbd35f693e8903b3dee7f3c0a8a16249a0ac900b96b8f2b05"
+    },
+    {
+      "hook": "fe-cwv-regression",
+      "kpi": "web.inp.p75",
+      "threshold": "200ms",
+      "window": "24h",
+      "action": "rollback_fe_release",
+      "owner": "fe-core@trendmarket",
+      "rollback": true,
+      "evidence": [
+        "lighthouse:cwv",
+        "sdk:contract"
+      ],
+      "hash": "4cd76b4c78d0c5dc6c39e5773bc3f6a80a5a20cb80f4e84cc3730ce3199684c5"
+    },
+    {
+      "hook": "sec-privacy-freeze",
+      "kpi": "privacy.dp_budget_ratio",
+      "threshold": "1.5",
+      "window": "1h",
+      "action": "freeze_release",
+      "owner": "sec-priv@trendmarket",
+      "rollback": true,
+      "evidence": [
+        "sbom:latest",
+        "audit:privacy"
+      ],
+      "hash": "be40bae8f2c1a4656490a432d300d34f2e6a94771840e5d2097487f312d3c4fa"
+    },
+    {
+      "hook": "integration-contract-guard",
+      "kpi": "integration.contracts.fail_pct",
+      "threshold": ">0",
+      "window": "30m",
+      "action": "block_release",
+      "owner": "integration@trendmarket",
+      "rollback": true,
+      "evidence": [
+        "tests:contract",
+        "synthetics:cls"
+      ],
+      "hash": "75ae67de7a5f5f4e98dedc128ff14a6490c45c20e0ec7369e83faf4f601a66a6"
     }
   ]
 }
