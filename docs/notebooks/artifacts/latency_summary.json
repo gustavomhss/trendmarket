@@ -1,0 +1,14 @@
+{
+  "notebook": "docs/notebooks/working_backwards_experiments.ipynb",
+  "seed": 20240919,
+  "runs": 500,
+  "latency_ms": {
+    "mean": 319.958,
+    "median": 319.57,
+    "p75": 349.695,
+    "p90": 374.634,
+    "p95": 389.272,
+    "min": 201.79,
+    "max": 467.41
+  }
+}
