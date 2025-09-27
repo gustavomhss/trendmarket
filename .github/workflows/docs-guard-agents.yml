@@ -1,0 +1,53 @@
+name: Docs Guard (Agents)
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+      - labeled
+      - unlabeled
+  workflow_dispatch:
+    inputs:
+      required_label:
+        description: Label required on pull requests touching docs owned by agents
+        required: false
+        default: docs::guard::agents
+
+jobs:
+  enforce-label:
+    name: Ensure docs guard label present
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine required label
+        id: label
+        env:
+          DEFAULT_LABEL: docs::guard::agents
+          DISPATCH_LABEL: ${{ github.event.inputs.required_label || '' }}
+        run: |
+          required_label="$DEFAULT_LABEL"
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ] && [ -n "$DISPATCH_LABEL" ]; then
+            required_label="$DISPATCH_LABEL"
+          fi
+          echo "Required label: $required_label"
+          echo "required_label=$required_label" >> "$GITHUB_OUTPUT"
+
+      - name: Check required label is present on PR
+        if: github.event_name == 'pull_request'
+        env:
+          REQUIRED_LABEL: ${{ steps.label.outputs.required_label }}
+        run: |
+          labels=$(jq -r '.pull_request.labels[]?.name' "$GITHUB_EVENT_PATH")
+          echo "Labels on PR:"
+          printf "%s\n" "$labels"
+          if ! printf '%s\n' "$labels" | grep -Fxq "$REQUIRED_LABEL"; then
+            echo "::error::Missing required label '$REQUIRED_LABEL' on pull request."
+            exit 1
+          fi
+          echo "Required label '$REQUIRED_LABEL' found."
+
+      - name: Skip validation for non-PR events
+        if: github.event_name != 'pull_request'
+        run: echo "No pull request context detected; validation skipped."
