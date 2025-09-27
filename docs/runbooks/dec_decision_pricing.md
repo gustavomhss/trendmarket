@@ -3,7 +3,7 @@
 Este runbook cobre os watchers de DEC definidos em `ops/watchers/core.yaml` e os respectivos hooks A110.
 
 ## metric-gap — `metrics_decision_hook_gap_watch`
-- **Hook:** `dec-latency-gap`
+- **Hook:** `dec-latency-degrade`
 - **KPI:** `dec.latency.p95` ≤ 800 ms (janela 5m)
 - **Ação automática:** `degrade_route`
 - **Owner:** SRE

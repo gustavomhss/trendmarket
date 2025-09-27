@@ -1,7 +1,7 @@
 # Runbook ML — Model Lifecycle
 
 ## model-drift — `model_drift_watch`
-- **Hook:** `model-drift-rollback`
+- **Hook:** `ml-model-rollback`
 - **KPI:** `model.psi` ≤ 0.2 (janela 24h)
 - **Ação automática:** `rollback_model`
 - **Owner:** ML

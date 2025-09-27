@@ -95,6 +95,7 @@ if sorted(domains.keys()) != sorted(expected_domains):
 
 watcher_defs = watchers_data.get("watchers", {})
 all_domain_watchers = []
+domain_hook_bindings = {}
 for domain, watchers in domains.items():
     if not watchers:
         errors.append(f"domain {domain} has no watchers configured")
@@ -102,6 +103,27 @@ for domain, watchers in domains.items():
         all_domain_watchers.append(watcher)
         if watcher not in watcher_defs:
             errors.append(f"watcher {watcher} referenced in domain {domain} but missing definition")
+            continue
+
+        hooks_mapping = watcher_defs[watcher].get("hooks")
+        if not isinstance(hooks_mapping, dict) or not hooks_mapping:
+            errors.append(f"watcher {watcher} lacks per-domain hook mappings")
+            continue
+
+        hook_name = hooks_mapping.get(domain)
+        if hook_name is None:
+            available = ", ".join(sorted(hooks_mapping)) or "<none>"
+            errors.append(
+                f"watcher {watcher} has no hook assignment for domain {domain} (available: {available})"
+            )
+            continue
+
+        hook_value = str(hook_name).strip()
+        if not hook_value:
+            errors.append(f"watcher {watcher} has blank hook assignment for domain {domain}")
+            continue
+
+        domain_hook_bindings.setdefault(domain, {})[watcher] = hook_value
 
 hooks = hooks_data.get("hooks", [])
 if not hooks:
@@ -144,12 +166,28 @@ if watchers_missing_hooks:
     errors.append(f"watchers sem hook mapeado: {watchers_missing_hooks}")
 
 for watcher, meta in watcher_defs.items():
-    hook_name = meta.get("hook")
-    if not hook_name:
-        errors.append(f"watcher {watcher} sem hook configurado")
+    hooks_mapping = meta.get("hooks")
+    if not isinstance(hooks_mapping, dict) or not hooks_mapping:
+        errors.append(f"watcher {watcher} missing hooks mapping")
         continue
-    if hook_name not in hooks_by_name:
-        errors.append(f"watcher {watcher} aponta para hook inexistente {hook_name}")
+
+    for domain_key, hook_name in hooks_mapping.items():
+        domain_name = str(domain_key).strip()
+        if domain_name and domain_name not in expected_domains:
+            errors.append(f"watcher {watcher} references unknown domain {domain_name} in hooks mapping")
+        hook_value = str(hook_name).strip()
+        if not hook_value:
+            errors.append(f"watcher {watcher} has empty hook binding for domain {domain_name or domain_key}")
+            continue
+        if hook_value not in hooks_by_name:
+            errors.append(f"watcher {watcher} aponta para hook inexistente {hook_value}")
+
+for domain, bindings in domain_hook_bindings.items():
+    for watcher, hook_name in bindings.items():
+        if hook_name not in hooks_by_name:
+            errors.append(
+                f"watcher {watcher} in domain {domain} aponta para hook inexistente {hook_name}"
+            )
 
 if errors:
     for err in errors:

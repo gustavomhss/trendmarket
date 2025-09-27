@@ -1,7 +1,7 @@
 # Runbook PM — Mercados & Sinais
 
 ## oracle-divergence — `oracle_divergence_watch`
-- **Hook:** `oracle-staleness-failover`
+- **Hook:** `pm-oracle-staleness`
 - **KPI:** `oracle.divergence_bps` ≤ 5 (janela 10m)
 - **Ação automática:** `switch_to_twap_failover`
 - **Owner:** PM/BC

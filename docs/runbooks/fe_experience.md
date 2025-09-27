@@ -1,7 +1,7 @@
 # Runbook FE — Experiência & SDKs
 
 ## web-cwv — `web_cwv_regression_watch`
-- **Hook:** `web-cwv-rollback`
+- **Hook:** `fe-cwv-regression`
 - **KPI:** `web.cwv.inp_p75` ≤ 200 ms (janela 24h)
 - **Ação automática:** `rollback_fe_release`
 - **Owner:** FE

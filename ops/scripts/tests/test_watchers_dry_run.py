@@ -29,9 +29,27 @@ def _build_watcher(**overrides):
         "threshold": "1",
         "window": "5m",
         "action": "noop",
+        "hook_id": "dec-latency-degrade",
     }
     watcher.update(overrides)
     return watcher
+
+
+def _write_core(path: pathlib.Path, domain: str, watcher_ids: list[str], hook: str = "dec-latency-degrade"):
+    payload = {
+        "version": 2,
+        "domains": {domain: watcher_ids},
+        "watchers": {
+            watcher_id: {
+                "description": "",
+                "kpi": "",
+                "owner": "",
+                "hooks": {domain: hook},
+            }
+            for watcher_id in watcher_ids
+        },
+    }
+    path.write_text(json.dumps(payload), encoding="utf-8")
 
 
 def test_validate_watcher_requires_domain():
@@ -51,6 +69,7 @@ def test_validate_watcher_normalizes_domain(tmp_path):
     config_path = tmp_path / "watchers.json"
     config = {"domain": "  DEC  ", "watchers": [watcher]}
     config_path.write_text(json.dumps(config), encoding="utf-8")
+    _write_core(tmp_path / "core.yaml", "DEC", ["sample"])
 
     report = watchers_dry_run.generate_report(config_path)
 
@@ -76,6 +95,7 @@ def test_generate_report_from_directory(tmp_path):
         ],
     }
     watcher_file.write_text(json.dumps(watcher_config), encoding="utf-8")
+    _write_core(watchers_dir / "core.yaml", "DEC", ["model_drift_watch"])
 
     report = watchers_dry_run.generate_report(watchers_dir)
 
@@ -84,3 +104,4 @@ def test_generate_report_from_directory(tmp_path):
     assert watcher["id"] == "model_drift_watch"
     assert watcher["domain"] == "DEC"
     assert watcher["rollback"] == "yes"
+    assert watcher["hook_id"] == "dec-latency-degrade"

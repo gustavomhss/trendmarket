@@ -2,9 +2,10 @@
   "version": 1,
   "hooks": [
     {
-      "hook": "dec-latency-gap",
+      "hook": "dec-latency-degrade",
       "watchers": [
-        "metrics_decision_hook_gap_watch"
+        "metrics_decision_hook_gap_watch",
+        "model_drift_watch"
       ],
       "kpi": "dec.latency.p95",
       "threshold": "800ms",
@@ -15,7 +16,7 @@
       "playbook": "docs/runbooks/dec_decision_pricing.md#metric-gap"
     },
     {
-      "hook": "model-drift-rollback",
+      "hook": "ml-model-rollback",
       "watchers": [
         "model_drift_watch"
       ],
@@ -41,7 +42,7 @@
       "playbook": "docs/runbooks/plat_observability.md#slo-burn"
     },
     {
-      "hook": "oracle-staleness-failover",
+      "hook": "pm-oracle-staleness",
       "watchers": [
         "oracle_divergence_watch"
       ],
@@ -184,7 +185,7 @@
       "playbook": "docs/runbooks/data_contracts.md#doc-coverage"
     },
     {
-      "hook": "web-cwv-rollback",
+      "hook": "fe-cwv-regression",
       "watchers": [
         "web_cwv_regression_watch"
       ],

@@ -12,7 +12,9 @@ import sys
 from datetime import datetime, timezone
 from typing import Any, Dict, List
 
-REQUIRED_FIELDS = {"id", "domain", "owner", "kpi", "threshold", "window", "action"}
+CORE_FILENAME = "core.yaml"
+
+REQUIRED_FIELDS = {"id", "domain", "owner", "kpi", "threshold", "window", "action", "hook_id"}
 OPTIONAL_FIELDS = ("description", "rollback")
 
 
@@ -99,6 +101,67 @@ def _load_watchers(path: pathlib.Path) -> List[Dict[str, Any]]:
     raise ValueError(f"Unsupported watcher configuration path: {path}")
 
 
+def _resolve_core_path(config: pathlib.Path) -> pathlib.Path:
+    if config.is_dir():
+        return config / CORE_FILENAME
+    if config.name == CORE_FILENAME:
+        return config
+    return config.parent / CORE_FILENAME
+
+
+def _load_core_bindings(core_path: pathlib.Path) -> Dict[tuple[str, str], str]:
+    if not core_path.exists():
+        raise FileNotFoundError(f"Watcher core configuration not found: {core_path}")
+
+    data = _parse_config(core_path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise ValueError(f"Watcher core configuration must be a mapping: {core_path}")
+
+    watchers_section = data.get("watchers")
+    if not isinstance(watchers_section, dict) or not watchers_section:
+        raise ValueError(f"Watcher core configuration missing watcher definitions: {core_path}")
+
+    bindings: Dict[tuple[str, str], str] = {}
+    for watcher_id, meta in watchers_section.items():
+        hooks_map = meta.get("hooks")
+        if not isinstance(hooks_map, dict) or not hooks_map:
+            continue
+        for domain_key, hook_value in hooks_map.items():
+            if not isinstance(domain_key, str) or not isinstance(hook_value, str):
+                continue
+            domain = domain_key.strip().upper()
+            hook = hook_value.strip()
+            if not domain or not hook:
+                continue
+            bindings[(domain, watcher_id)] = hook
+
+    if not bindings:
+        raise ValueError(f"Watcher core configuration missing hook bindings: {core_path}")
+
+    return bindings
+
+
+def _attach_hooks(
+    watchers: List[Dict[str, Any]],
+    bindings: Dict[tuple[str, str], str],
+) -> List[Dict[str, Any]]:
+    enriched: List[Dict[str, Any]] = []
+    for watcher in watchers:
+        domain = str(watcher.get("domain", "")).strip().upper()
+        name = watcher.get("id")
+        if not domain or not name:
+            raise ValueError(f"Watcher entry missing domain or id: {watcher}")
+        hook = bindings.get((domain, name))
+        if hook is None:
+            raise ValueError(
+                f"Watcher '{name}' in domain '{domain}' missing hook assignment in core.yaml"
+            )
+        extended = dict(watcher)
+        extended["hook_id"] = hook
+        enriched.append(extended)
+    return enriched
+
+
 def _normalize_field(value: Any) -> Any:
     if isinstance(value, str):
         return value.strip()
@@ -120,6 +183,7 @@ def _validate_watcher(watcher: Dict[str, Any]) -> Dict[str, Any]:
         "threshold": normalized["threshold"],
         "window": normalized["window"],
         "action": normalized["action"],
+        "hook_id": normalized["hook_id"],
         "hash": digest,
     }
     for field in OPTIONAL_FIELDS:
@@ -131,7 +195,9 @@ def _validate_watcher(watcher: Dict[str, Any]) -> Dict[str, Any]:
 
 def generate_report(config: pathlib.Path) -> Dict[str, Any]:
     watchers = _load_watchers(config)
-    validated = [_validate_watcher(w) for w in watchers]
+    core_bindings = _load_core_bindings(_resolve_core_path(config))
+    enriched = _attach_hooks(watchers, core_bindings)
+    validated = [_validate_watcher(w) for w in enriched]
     validated.sort(key=lambda entry: (entry["domain"], entry["id"]))
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
