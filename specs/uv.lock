@@ -1,0 +1,16 @@
+version = 1
+requires-python = ">=3.11"
+
+[metadata]
+project = "creditengine-specs"
+lock_generated_by = "bootstrap-script"
+
+[[package]]
+name = "pyyaml"
+version = "6.0.1"
+source = "registry+https://pypi.org/simple"
+
+[[package]]
+name = "jsonschema"
+version = "4.22.0"
+source = "registry+https://pypi.org/simple"

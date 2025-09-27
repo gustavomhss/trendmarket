@@ -1,0 +1,16 @@
+version = 1
+requires-python = ">=3.11"
+
+[metadata]
+project = "creditengine-ml"
+lock_generated_by = "bootstrap-script"
+
+[[package]]
+name = "onnxruntime"
+version = "1.17.0"
+source = "registry+https://pypi.org/simple"
+
+[[package]]
+name = "scikit-learn"
+version = "1.4.1"
+source = "registry+https://pypi.org/simple"

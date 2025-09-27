@@ -1,0 +1,23 @@
+version = 1
+requires-python = ">=3.11"
+
+[metadata]
+project = "creditengine-be"
+lock_generated_by = "bootstrap-script"
+
+[[package]]
+name = "fastapi"
+version = "0.110.1"
+source = "registry+https://pypi.org/simple"
+dependencies = [
+  { name = "pydantic", spec = ">=2.7.0,<3.0.0" },
+  { name = "starlette", spec = ">=0.37.2,<0.38.0" },
+]
+
+[[package]]
+name = "uvicorn"
+version = "0.29.0"
+source = "registry+https://pypi.org/simple"
+dependencies = [
+  { name = "h11", spec = ">=0.9.0" }
+]
