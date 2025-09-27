@@ -4,7 +4,6 @@ import pathlib
 
 import pytest
 
-
 MODULE_PATH = pathlib.Path(__file__).resolve().parents[1] / "watchers_dry_run.py"
 
 
@@ -20,67 +19,71 @@ def _load_module():
 watchers_dry_run = _load_module()
 
 
-def _build_watcher(**overrides):
-    watcher = {
-        "id": "sample",
-        "domain": "DEC",
-        "owner": "owner",
-        "kpi": "metric",
-        "threshold": "1",
-        "window": "5m",
-        "action": "noop",
-    }
-    watcher.update(overrides)
-    return watcher
+def _write_core_config(tmp_path, payload):
+    config_path = tmp_path / "core.yaml"
+    config_path.write_text(json.dumps(payload), encoding="utf-8")
+    return config_path
 
 
-def test_validate_watcher_requires_domain():
-    watcher = _build_watcher()
-    watcher.pop("domain")
-
-    with pytest.raises(ValueError) as excinfo:
-        watchers_dry_run._validate_watcher(watcher)
-
-    message = str(excinfo.value)
-    assert "missing fields" in message
-    assert "'domain'" in message
-
-
-def test_validate_watcher_normalizes_domain(tmp_path):
-    watcher = _build_watcher(domain="  DEC  ")
-    config_path = tmp_path / "watchers.json"
-    config = {"domain": "  DEC  ", "watchers": [watcher]}
-    config_path.write_text(json.dumps(config), encoding="utf-8")
+def test_generate_report_from_core_config(tmp_path):
+    config_path = _write_core_config(
+        tmp_path,
+        {
+            "version": 1,
+            "domains": {"  DEC  ": ["  model_drift_watch  "]},
+            "watchers": {
+                "model_drift_watch": {
+                    "owner": "ML",
+                    "description": "Detecta drift",
+                    "kpi": "ml.model.psi",
+                }
+            },
+        },
+    )
 
     report = watchers_dry_run.generate_report(config_path)
-
-    assert report["watchers"][0]["domain"] == "DEC"
-
-
-def test_generate_report_from_directory(tmp_path):
-    watchers_dir = tmp_path / "watchers"
-    watchers_dir.mkdir()
-    watcher_file = watchers_dir / "dec.yml"
-    watcher_config = {
-        "domain": "DEC",
-        "watchers": [
-            {
-                "name": "model_drift_watch",
-                "owner": "ml-ops@trendmarket",
-                "kpi": "ml.model.psi",
-                "threshold": ">0.2",
-                "window": "24h",
-                "action": "rollback_model",
-                "rollback": "yes",
-            }
-        ],
-    }
-    watcher_file.write_text(json.dumps(watcher_config), encoding="utf-8")
-
-    report = watchers_dry_run.generate_report(watchers_dir)
 
     assert report["total_watchers"] == 1
     watcher = report["watchers"][0]
     assert watcher["id"] == "model_drift_watch"
     assert watcher["domain"] == "DEC"
-    assert watcher["rollback"] == "yes"
+    assert watcher["domains"] == ["DEC"]
+    assert watcher["owner"] == "ML"
+    assert watcher["description"] == "Detecta drift"
+    assert watcher["kpi"] == "ml.model.psi"
+    assert "hash" in watcher
+
+
+def test_generate_report_requires_metadata(tmp_path):
+    config_path = _write_core_config(
+        tmp_path,
+        {
+            "version": 1,
+            "domains": {"DEC": ["model_drift_watch"]},
+            "watchers": {"model_drift_watch": {"description": "missing owner"}},
+        },
+    )
+
+    with pytest.raises(ValueError) as excinfo:
+        watchers_dry_run.generate_report(config_path)
+
+    assert "missing required field 'owner'" in str(excinfo.value)
+
+
+def test_generate_report_requires_domain_assignment(tmp_path):
+    config_path = _write_core_config(
+        tmp_path,
+        {
+            "version": 1,
+            "domains": {"DEC": ["model_drift_watch"]},
+            "watchers": {
+                "model_drift_watch": {"owner": "ML", "description": "desc"},
+                "orphan_watch": {"owner": "ML", "description": "desc"},
+            },
+        },
+    )
+
+    with pytest.raises(ValueError) as excinfo:
+        watchers_dry_run.generate_report(config_path)
+
+    assert "watchers missing domain assignment: orphan_watch" in str(excinfo.value)
