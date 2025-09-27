@@ -3,10 +3,11 @@
 
 use super::errors::AmmError;
 use super::guardrails::{
-    div_nearest_even_u256, div_nearest_even_u256_to_u128, ensure_nonzero, ensure_reserves, u256_to_u128_checked,
+    div_nearest_even_u256, div_nearest_even_u256_to_u128, ensure_nonzero, ensure_reserves,
 };
 use super::swap::{get_amount_in, get_amount_out};
 use super::types::{U256, Ppm, Wad, PPM_SCALE, WAD};
+use crate::amm::guardrails::u256_to_u128_checked;
 
 #[inline]
 fn ceil_div_u256(n: U256, d: U256) -> U256 { (n + (d - U256::from(1u8))) / d }
@@ -62,7 +63,7 @@ pub fn min_out_with_tolerance(
     let factor = (PPM_SCALE as u64) - tol; // (1 - tol)
     let n = U256::from(out) * U256::from(factor);
     let q = n / U256::from(PPM_SCALE as u64); // floor
-    Ok(q.as_u128())
+    u256_to_u128_checked(q)
 }
 
 /// Retorna **max_in** aceito pela UI para atingir `dy` com tolerância `slippage_tolerance_ppm` (0..1e6)
@@ -75,7 +76,7 @@ pub fn max_in_with_tolerance(
     let factor = (PPM_SCALE as u64) + tol; // (1 + tol)
     let n = U256::from(dx) * U256::from(factor);
     let q = ceil_div_u256(n, U256::from(PPM_SCALE as u64)); // ceil
-    Ok(q.as_u128())
+    u256_to_u128_checked(q)
 }
 
 // -------------------------
@@ -84,6 +85,7 @@ pub fn max_in_with_tolerance(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::amm::guardrails::u256_to_u128_checked;
     use crate::amm::types::MIN_RESERVE;
 
     const FEE0: Ppm = 0;
@@ -117,7 +119,8 @@ mod tests {
         let out = get_amount_out(x, y, dx, FEE3).unwrap();
         let factor = (PPM_SCALE as u64) - 5_000u64;
         let expected = (U256::from(out) * U256::from(factor)) / U256::from(PPM_SCALE as u64);
-        assert_eq!(min_out, expected.as_u128());
+        let expected = u256_to_u128_checked(expected).unwrap();
+        assert_eq!(min_out, expected);
     }
 
     #[test]
@@ -131,10 +134,19 @@ mod tests {
         let expected = super::ceil_div_u256(
             U256::from(dx_core) * U256::from(factor),
             U256::from(PPM_SCALE as u64),
-        )
-        .as_u128();
+        );
+        let expected = u256_to_u128_checked(expected).unwrap();
 
         assert_eq!(max_in, expected);
+    }
+
+    #[test]
+    fn t_max_in_with_tolerance_overflow() {
+        let x: Wad = 113_229_132_117_011_277_213_194_849_153_838_560_637;
+        let y: Wad = 69_146_007_138_591_361_040_841_291_813_918_140_014;
+        let dy: Wad = 46_553_188_727_118_245_868_803_577_825_302_814_579;
+        let err = max_in_with_tolerance(x, y, dy, FEE0, PPM_SCALE).unwrap_err();
+        assert_eq!(err, AmmError::Overflow);
     }
 
     #[test]
