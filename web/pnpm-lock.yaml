@@ -1,0 +1,30 @@
+lockfileVersion: '9.0'
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+importers:
+  .:
+    specifiers:
+      next: ^14.1.0
+      react: ^18.2.0
+      react-dom: ^18.2.0
+      typescript: ^5.4.0
+    dependencies:
+      next: 14.1.0
+      react: 18.2.0
+      react-dom: 18.2.0
+    devDependencies:
+      typescript: 5.4.3
+packages:
+  /next@14.1.0:
+    resolution:
+      integrity: sha512-Qk24EZY3FpC625UZoGqCeqj1YxI6udE4hslFCdwj4isfdYF/0p0v3f2OeJZBWK1p2PfAAuKeDQHv39vBrtO0pQ==
+  /react@18.2.0:
+    resolution:
+      integrity: sha512-6g8NvYwXu5DYebvRtbiG1ZqtzdpbQ6uYAMn9qJqO9Nn5L9o8bN8yDsJ9Gdn8Nh4tW7x1YgnSUZXoqBYgKqX0Mw==
+  /react-dom@18.2.0:
+    resolution:
+      integrity: sha512-cHWLomEJemGZ8G+j9hZDJW60Agw7O7m9QJGhYxSS37qRltEwfawxR3H0cE9A7Y7nL0ctbM60PRJknhgZkYOPJQ==
+  /typescript@5.4.3:
+    resolution:
+      integrity: sha512-WC5i0f/nJ8nJazpsmQ4R0Pqv6dHXOjGjBPCo7PUzmbmKx4Dm+MzApL6zL0GpHkL6ZAgQ0BJJivPC+P0PuDcs1w==
