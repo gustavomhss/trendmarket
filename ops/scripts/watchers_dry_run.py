@@ -50,13 +50,37 @@ def _load_watchers_from_file(path: pathlib.Path) -> List[Dict[str, Any]]:
     data = _parse_config(path.read_text(encoding="utf-8"))
     if not isinstance(data, dict):
         raise ValueError(f"Watcher configuration must be a mapping: {path}")
+
+    # Allow both per-domain configs (with a single domain) and aggregated JSON
+    # inventories where each watcher already declares its domain.
     domain = data.get("domain")
-    if not isinstance(domain, str) or not domain.strip():
-        raise ValueError(f"Watcher configuration missing 'domain': {path}")
     watchers = data.get("watchers")
-    if not isinstance(watchers, list):
-        raise ValueError(f"Watcher configuration must contain a 'watchers' list: {path}")
-    return [_coerce_watcher(domain.strip(), watcher) for watcher in watchers]
+    if isinstance(domain, str) and domain.strip():
+        if not isinstance(watchers, list):
+            raise ValueError(
+                f"Watcher configuration must contain a 'watchers' list: {path}"
+            )
+        return [_coerce_watcher(domain.strip(), watcher) for watcher in watchers]
+
+    if isinstance(watchers, list):
+        entries: List[Dict[str, Any]] = []
+        for watcher in watchers:
+            if not isinstance(watcher, dict):
+                raise ValueError(
+                    f"Aggregated watcher entries must be objects: {path}"
+                )
+            watcher_domain = watcher.get("domain")
+            if not isinstance(watcher_domain, str) or not watcher_domain.strip():
+                raise ValueError(
+                    f"Aggregated watcher missing domain information: {watcher}"
+                )
+            entries.append(_coerce_watcher(watcher_domain.strip(), watcher))
+        if entries:
+            return entries
+
+    raise ValueError(
+        f"Watcher configuration missing 'domain' or 'watchers' list: {path}"
+    )
 
 
 def _load_watchers(path: pathlib.Path) -> List[Dict[str, Any]]:
