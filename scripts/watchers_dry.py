@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
-from typing import Dict, Iterable, Set, Tuple
+from typing import Dict, Iterable, List, Set, Tuple
 
 EXPECTED_DOMAIN_WATCHERS: Dict[str, Set[str]] = {
     "DEC": {
@@ -92,7 +92,7 @@ class WatcherValidationError(RuntimeError):
     """Represents a validation error during watcher loading."""
 
 
-def _load_watchers_file(path: Path) -> Tuple[str, Set[str]]:
+def _load_watchers_file(path: Path) -> Dict[str, Set[str]]:
     try:
         payload = json.loads(path.read_text())
     except json.JSONDecodeError as exc:  # pragma: no cover - defensive
@@ -100,6 +100,45 @@ def _load_watchers_file(path: Path) -> Tuple[str, Set[str]]:
 
     if not isinstance(payload, dict):
         raise WatcherValidationError(f"{path}: expected a mapping with domain and watchers")
+
+    if "domains" in payload:
+        domains = payload.get("domains")
+        if not isinstance(domains, dict) or not domains:
+            raise WatcherValidationError(f"{path}: domains must be a non-empty mapping")
+
+        results: Dict[str, Set[str]] = {}
+        for domain_raw, watchers in domains.items():
+            domain = str(domain_raw or "").strip().upper()
+            if not domain:
+                raise WatcherValidationError(f"{path}: domain entries must have a valid name")
+            if not isinstance(watchers, list) or not watchers:
+                raise WatcherValidationError(
+                    f"{path}: domain '{domain}' must map to a non-empty watcher list"
+                )
+
+            names: Set[str] = set()
+            for idx, watcher in enumerate(watchers):
+                if not isinstance(watcher, str):
+                    raise WatcherValidationError(
+                        f"{path}: watcher #{idx + 1} for domain '{domain}' must be a string"
+                    )
+
+                name = watcher.strip()
+                if not name:
+                    raise WatcherValidationError(
+                        f"{path}: watcher #{idx + 1} for domain '{domain}' missing a valid name"
+                    )
+
+                if name in names:
+                    raise WatcherValidationError(
+                        f"{path}: duplicated watcher entry '{name}' for domain '{domain}'"
+                    )
+
+                names.add(name)
+
+            results[domain] = names
+
+        return results
 
     domain_raw = payload.get("domain")
     domain = str(domain_raw).upper() if domain_raw else path.stem.upper()
@@ -138,7 +177,7 @@ def _load_watchers_file(path: Path) -> Tuple[str, Set[str]]:
 
         seen.add(name)
 
-    return domain, seen
+    return {domain: seen}
 
 
 def _summarize_domain_counts(domain_watchers: Dict[str, Set[str]]) -> Iterable[str]:
@@ -146,27 +185,63 @@ def _summarize_domain_counts(domain_watchers: Dict[str, Set[str]]) -> Iterable[s
         yield f"  - {domain}: {len(domain_watchers[domain])} watcher(s)"
 
 
-def main() -> int:
+def _load_watchers() -> Tuple[Dict[str, Set[str]], List[str]]:
     watchers_dir = Path("ops/watchers")
     if not watchers_dir.is_dir():
-        print("[watchers.dry] ops/watchers directory not found", file=sys.stderr)
-        return 1
+        return {}, ["ops/watchers directory not found"]
 
-    errors = []
+    errors: List[str] = []
     domain_watchers: Dict[str, Set[str]] = {}
 
-    for path in sorted(watchers_dir.glob("*.yml")):
+    yaml_paths = sorted({path for path in watchers_dir.glob("*.yaml")})
+    aggregated_inventory = False
+
+    for path in yaml_paths:
         try:
-            domain, watchers = _load_watchers_file(path)
+            domain_entries = _load_watchers_file(path)
         except WatcherValidationError as exc:
             errors.append(str(exc))
             continue
 
-        if domain in domain_watchers:
-            errors.append(f"duplicate watcher definition for domain '{domain}' in {path}")
+        if len(domain_entries) > 1:
+            aggregated_inventory = True
+
+        for domain, watchers in domain_entries.items():
+            if domain in domain_watchers:
+                errors.append(f"duplicate watcher definition for domain '{domain}' in {path}")
+                continue
+
+            domain_watchers[domain] = watchers
+
+    yml_paths = sorted({path for path in watchers_dir.glob("*.yml")})
+
+    for path in yml_paths:
+        try:
+            domain_entries = _load_watchers_file(path)
+        except WatcherValidationError as exc:
+            errors.append(str(exc))
             continue
 
-        domain_watchers[domain] = watchers
+        for domain, watchers in domain_entries.items():
+            if aggregated_inventory and domain in domain_watchers:
+                continue
+
+            if domain in domain_watchers:
+                errors.append(f"duplicate watcher definition for domain '{domain}' in {path}")
+                continue
+
+            domain_watchers[domain] = watchers
+
+    return domain_watchers, errors
+
+
+def main() -> int:
+    domain_watchers, errors = _load_watchers()
+    if errors:
+        print("[watchers.dry] validation failed:", file=sys.stderr)
+        for message in errors:
+            print(f"  - {message}", file=sys.stderr)
+        return 1
 
     expected_domains = set(EXPECTED_DOMAIN_WATCHERS)
 
