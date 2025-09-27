@@ -12,10 +12,10 @@
     },
     {
       "name": "image_vuln_regression_watch",
-      "kpi": "security.images.cvss_max",
-      "threshold": ">=7.0",
-      "window": "24h",
-      "action": "rollback_image",
+      "kpi": "image.critical_vuln_count",
+      "threshold": ">0",
+      "window": "15m",
+      "action": "block_release",
       "owner": "sec-priv@trendmarket",
       "rollback": "yes"
     },
