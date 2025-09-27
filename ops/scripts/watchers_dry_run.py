@@ -10,10 +10,13 @@ import json
 import pathlib
 import sys
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Mapping, MutableMapping
 
-REQUIRED_FIELDS = {"id", "domain", "owner", "kpi", "threshold", "window", "action"}
-OPTIONAL_FIELDS = ("description", "rollback")
+REQUIRED_FIELDS = {"id", "domain", "domains", "owner", "description"}
+OPTIONAL_FIELDS = ("kpi", "hook")
+
+# cache interno para hooks
+_HOOK_METADATA_CACHE: dict[str, dict[str, Any]] | None = None
 
 
 def _load_parser():
@@ -21,17 +24,16 @@ def _load_parser():
     if spec is None:
         return json.loads
     module = importlib.util.module_from_spec(spec)
-    assert spec.loader is not None  # for mypy/static analyzers
-    spec.loader.exec_module(module)  # type: ignore[assignment]
-    return module.safe_load  # type: ignore[attr-defined]
+    assert spec.loader is not None
+    spec.loader.exec_module(module)  # type: ignore
+    return module.safe_load  # type: ignore
 
 
 _parse_config = _load_parser()
 
-_HOOK_METADATA_CACHE: Optional[Dict[str, Dict[str, Any]]] = None
-
 
 def _load_hook_metadata() -> Dict[str, Dict[str, Any]]:
+    """Carrega metadados de hooks para complementar watchers."""
     global _HOOK_METADATA_CACHE
     if _HOOK_METADATA_CACHE is not None:
         return _HOOK_METADATA_CACHE
@@ -43,7 +45,7 @@ def _load_hook_metadata() -> Dict[str, Dict[str, Any]]:
 
     try:
         payload = _parse_config(hooks_path.read_text(encoding="utf-8"))
-    except Exception:  # pragma: no cover - defensive guard for malformed hooks files
+    except Exception:
         _HOOK_METADATA_CACHE = {}
         return _HOOK_METADATA_CACHE
 
@@ -79,252 +81,126 @@ def _load_hook_metadata() -> Dict[str, Dict[str, Any]]:
     return metadata
 
 
-def _coerce_aggregated_watcher(
-    path: pathlib.Path,
-    domain: str,
-    watcher_name: str,
-    watcher_details: Dict[str, Any],
-    *,
-    alias: Optional[str] = None,
-) -> Dict[str, Any]:
-    record_id = alias or watcher_name
-    record: Dict[str, Any] = {"id": record_id, "domain": domain}
-
-    hook_metadata = _load_hook_metadata().get(watcher_name, {})
-
-    def _resolve(*candidates: Any) -> Any:
-        for value in candidates:
-            if value is None:
-                continue
-            if isinstance(value, str):
-                trimmed = value.strip()
-                if trimmed:
-                    return trimmed
-                continue
-            return value
-        return None
-
-    owner = _resolve(watcher_details.get("owner"), hook_metadata.get("owner"))
-    kpi = _resolve(watcher_details.get("kpi"), hook_metadata.get("kpi"))
-    threshold = _resolve(watcher_details.get("threshold"), hook_metadata.get("threshold"))
-    window = _resolve(watcher_details.get("window"), hook_metadata.get("window"))
-    action = _resolve(
-        watcher_details.get("action"),
-        hook_metadata.get("action"),
-        watcher_details.get("hook"),
-    )
-
-    missing = [
-        field
-        for field, value in (
-            ("owner", owner),
-            ("kpi", kpi),
-            ("threshold", threshold),
-            ("window", window),
-            ("action", action),
-        )
-        if value is None or (isinstance(value, str) and not value)
-    ]
-    if missing:
-        reference = watcher_name
-        if alias and alias != watcher_name:
-            reference = f"{alias} (ref {watcher_name})"
-        raise ValueError(
-            "Watcher '%s' for domain '%s' missing required fields %s in %s"
-            % (reference, domain, missing, path)
-        )
-
-    record.update(
-        {
-            "owner": owner,
-            "kpi": kpi,
-            "threshold": threshold,
-            "window": window,
-            "action": action,
-        }
-    )
-
-    if "rollback" in watcher_details:
-        record["rollback"] = watcher_details["rollback"]
-    elif "rollback" in hook_metadata:
-        record["rollback"] = hook_metadata["rollback"]
-
-    if "description" in watcher_details:
-        record["description"] = watcher_details["description"]
-
-    return record
+def _normalize_string(
+    value: Any, *, field: str, source: pathlib.Path, allow_empty: bool = False
+) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"{source}: {field} must be a string")
+    text = value.strip()
+    if not text and not allow_empty:
+        raise ValueError(f"{source}: {field} must not be empty")
+    return text
 
 
-def _load_watchers_from_aggregated(
-    path: pathlib.Path, payload: Dict[str, Any]
-) -> List[Dict[str, Any]]:
+def _extract_domains(payload: Mapping[str, Any], source: pathlib.Path) -> Dict[str, List[str]]:
     domains = payload.get("domains")
-    if not isinstance(domains, dict) or not domains:
-        raise ValueError(f"Aggregated watcher config missing 'domains': {path}")
+    if not isinstance(domains, Mapping) or not domains:
+        raise ValueError(f"{source}: 'domains' must be a non-empty mapping")
 
-    watchers_map = payload.get("watchers")
-    if not isinstance(watchers_map, dict) or not watchers_map:
-        raise ValueError(f"Aggregated watcher config missing 'watchers': {path}")
-
-    entries: List[Dict[str, Any]] = []
-    for domain_key, watchers in domains.items():
-        domain = str(domain_key or "").strip()
-        if not domain:
-            raise ValueError(f"Invalid domain entry in aggregated config: {path}")
+    watcher_domains: Dict[str, List[str]] = {}
+    for domain_raw, watchers in domains.items():
+        domain = _normalize_string(domain_raw, field="domain name", source=source)
         if not isinstance(watchers, list) or not watchers:
-            raise ValueError(
-                f"Domain '{domain}' must map to a non-empty list of watchers in {path}"
+            raise ValueError(f"{source}: domain '{domain}' must declare at least one watcher")
+
+        seen: set[str] = set()
+        for index, watcher_raw in enumerate(watchers, start=1):
+            watcher_id = _normalize_string(
+                watcher_raw,
+                field=f"watcher #{index} in domain '{domain}'",
+                source=source,
             )
-        for idx, watcher_entry in enumerate(watchers, start=1):
-            alias: Optional[str] = None
-            overrides: Dict[str, Any] = {}
-            if isinstance(watcher_entry, str):
-                watcher_name = watcher_entry.strip()
-                if not watcher_name:
-                    raise ValueError(
-                        f"Watcher #{idx} for domain '{domain}' missing name in {path}"
-                    )
-            elif isinstance(watcher_entry, dict):
-                ref: Optional[str] = None
-                if isinstance(watcher_entry.get("watcher"), str):
-                    ref = watcher_entry["watcher"].strip()
-                elif isinstance(watcher_entry.get("ref"), str):
-                    ref = watcher_entry["ref"].strip()
-                if ref:
-                    for key in ("id", "name", "alias"):
-                        value = watcher_entry.get(key)
-                        if isinstance(value, str):
-                            candidate = value.strip()
-                            if candidate and candidate != ref:
-                                alias = candidate
-                                break
-                    watcher_name = ref
-                else:
-                    watcher_name = None
-                    for key in ("id", "name"):
-                        value = watcher_entry.get(key)
-                        if isinstance(value, str):
-                            candidate = value.strip()
-                            if candidate:
-                                watcher_name = candidate
-                                break
-                    if watcher_name is None:
-                        raise ValueError(
-                            f"Watcher #{idx} for domain '{domain}' missing identifier in {path}"
-                        )
-                overrides = {
-                    key: value
-                    for key, value in watcher_entry.items()
-                    if key
-                    not in {"watcher", "ref", "id", "name", "alias"}
-                }
-                if not watcher_name:
-                    raise ValueError(
-                        f"Watcher #{idx} for domain '{domain}' missing name in {path}"
-                    )
-            else:
+            if watcher_id in seen:
                 raise ValueError(
-                    f"Watcher #{idx} for domain '{domain}' must be a string or mapping in {path}"
+                    f"{source}: duplicated watcher '{watcher_id}' declared for domain '{domain}'"
+                )
+            seen.add(watcher_id)
+            mapping = watcher_domains.setdefault(watcher_id, [])
+            if domain not in mapping:
+                mapping.append(domain)
+
+    return watcher_domains
+
+
+def _extract_watcher_metadata(payload: Mapping[str, Any], source: pathlib.Path) -> Dict[str, Dict[str, Any]]:
+    watchers = payload.get("watchers")
+    if not isinstance(watchers, Mapping) or not watchers:
+        raise ValueError(f"{source}: 'watchers' must be a non-empty mapping")
+
+    metadata: Dict[str, Dict[str, Any]] = {}
+    for watcher_id_raw, watcher_payload in watchers.items():
+        watcher_id = _normalize_string(watcher_id_raw, field="watcher id", source=source)
+        if not isinstance(watcher_payload, MutableMapping):
+            raise ValueError(f"{source}: watcher '{watcher_id}' must be defined as a mapping")
+
+        owner_raw = watcher_payload.get("owner")
+        if owner_raw is None:
+            raise ValueError(f"{source}: watcher '{watcher_id}' missing required field 'owner'")
+        owner = _normalize_string(owner_raw, field=f"watcher '{watcher_id}' owner", source=source)
+
+        description_raw = watcher_payload.get("description", "")
+        description = _normalize_string(
+            description_raw if description_raw is not None else "",
+            field=f"watcher '{watcher_id}' description",
+            source=source,
+            allow_empty=True,
+        )
+
+        entry: Dict[str, Any] = {"owner": owner, "description": description}
+        for optional in OPTIONAL_FIELDS:
+            if optional in watcher_payload and watcher_payload[optional] is not None:
+                entry[optional] = _normalize_string(
+                    watcher_payload[optional],
+                    field=f"watcher '{watcher_id}' {optional}",
+                    source=source,
                 )
 
-            details = watchers_map.get(watcher_name)
-            if not isinstance(details, dict):
-                raise ValueError(
-                    f"Watcher '{watcher_name}' referenced by domain '{domain}' missing definition in {path}"
-                )
-            combined = dict(details)
-            if overrides:
-                combined.update(overrides)
-            entries.append(
-                _coerce_aggregated_watcher(
-                    path,
-                    domain,
-                    watcher_name,
-                    combined,
-                    alias=alias,
-                )
-            )
+        metadata[watcher_id] = entry
 
-    return entries
-
-
-def _coerce_watcher(domain: str, watcher: Dict[str, Any]) -> Dict[str, Any]:
-    if not isinstance(watcher, dict):
-        raise ValueError("Watcher entries must be objects")
-    name = watcher.get("name") or watcher.get("id")
-    if not name:
-        raise ValueError(f"Watcher entry missing identifier: {watcher}")
-    record: Dict[str, Any] = {"id": name, "domain": domain}
-    for key in ("owner", "kpi", "threshold", "window", "action"):
-        if key not in watcher:
-            raise ValueError(f"Watcher '{name}' missing required field '{key}'")
-        record[key] = watcher[key]
-    for field in OPTIONAL_FIELDS:
-        if field in watcher:
-            record[field] = watcher[field]
-    return record
-
-
-def _load_watchers_from_file(path: pathlib.Path) -> List[Dict[str, Any]]:
-    data = _parse_config(path.read_text(encoding="utf-8"))
-    if not isinstance(data, dict):
-        raise ValueError(f"Watcher configuration must be a mapping: {path}")
-
-    # Allow both per-domain configs (with a single domain) and aggregated JSON
-    # inventories where each watcher already declares its domain.
-    if "domains" in data and "watchers" in data:
-        return _load_watchers_from_aggregated(path, data)
-
-    domain = data.get("domain")
-    watchers = data.get("watchers")
-    if isinstance(domain, str) and domain.strip():
-        if not isinstance(watchers, list):
-            raise ValueError(
-                f"Watcher configuration must contain a 'watchers' list: {path}"
-            )
-        return [_coerce_watcher(domain.strip(), watcher) for watcher in watchers]
-
-
-    if isinstance(watchers, list):
-        entries: List[Dict[str, Any]] = []
-        for watcher in watchers:
-            if not isinstance(watcher, dict):
-                raise ValueError(
-                    f"Aggregated watcher entries must be objects: {path}"
-                )
-            watcher_domain = watcher.get("domain")
-            if not isinstance(watcher_domain, str) or not watcher_domain.strip():
-                raise ValueError(
-                    f"Aggregated watcher missing domain information: {watcher}"
-                )
-            entries.append(_coerce_watcher(watcher_domain.strip(), watcher))
-        if entries:
-            return entries
-
-    raise ValueError(
-        f"Watcher configuration missing 'domain' or 'watchers' list: {path}"
-    )
+    return metadata
 
 
 def _load_watchers(path: pathlib.Path) -> List[Dict[str, Any]]:
     if not path.exists():
         raise FileNotFoundError(f"Watcher configuration not found: {path}")
     if path.is_dir():
-        entries: List[Dict[str, Any]] = []
-        for candidate in sorted(path.iterdir()):
-            if candidate.is_file() and candidate.suffix.lower() == ".yml":
-                entries.extend(_load_watchers_from_file(candidate))
-        if not entries:
-            raise ValueError(f"No watcher definitions found in directory: {path}")
-        return entries
-    if path.suffix in {".yml", ".yaml", ".json"}:
-        return _load_watchers_from_file(path)
-    raise ValueError(f"Unsupported watcher configuration path: {path}")
+        raise ValueError(f"{path}: expected a consolidated watcher configuration file")
+    data = _parse_config(path.read_text(encoding="utf-8"))
+    if not isinstance(data, Mapping):
+        raise ValueError(f"{path}: watcher configuration must be a mapping")
+
+    watcher_domains = _extract_domains(data, path)
+    watcher_metadata = _extract_watcher_metadata(data, path)
+
+    undefined = sorted(set(watcher_domains) - set(watcher_metadata))
+    if undefined:
+        names = ", ".join(undefined)
+        raise ValueError(f"{path}: undefined watcher metadata for: {names}")
+
+    unassigned = sorted(set(watcher_metadata) - set(watcher_domains))
+    if unassigned:
+        names = ", ".join(unassigned)
+        raise ValueError(f"{path}: watchers missing domain assignment: {names}")
+
+    records: List[Dict[str, Any]] = []
+    for watcher_id in sorted(watcher_metadata):
+        domains = watcher_domains[watcher_id]
+        record = {
+            "id": watcher_id,
+            "domains": domains,
+            "domain": domains[0],
+            **watcher_metadata[watcher_id],
+        }
+        records.append(record)
+
+    return records
 
 
 def _normalize_field(value: Any) -> Any:
     if isinstance(value, str):
         return value.strip()
+    if isinstance(value, list):
+        return [_normalize_field(item) for item in value]
     return value
 
 
@@ -333,23 +209,31 @@ def _validate_watcher(watcher: Dict[str, Any]) -> Dict[str, Any]:
     if missing:
         raise ValueError(f"Watcher '{watcher.get('id')}' missing fields: {sorted(missing)}")
     normalized = {key: _normalize_field(watcher[key]) for key in sorted(REQUIRED_FIELDS)}
-    encoded = json.dumps(normalized, sort_keys=True, ensure_ascii=False).encode("utf-8")
-    digest = hashlib.sha256(encoded).hexdigest()
-    result = {
-        "id": normalized["id"],
-        "domain": normalized["domain"],
-        "owner": normalized["owner"],
-        "kpi": normalized["kpi"],
-        "threshold": normalized["threshold"],
-        "window": normalized["window"],
-        "action": normalized["action"],
-        "hash": digest,
-    }
     for field in OPTIONAL_FIELDS:
         if field in watcher and watcher[field] is not None:
-            result[field] = _normalize_field(watcher[field])
-    result["description"] = watcher.get("description", "")
-    return result
+            normalized[field] = _normalize_field(watcher[field])
+    normalized_domains = normalized.get("domains")
+    if not isinstance(normalized_domains, list) or not normalized_domains:
+        raise ValueError(
+            f"Watcher '{watcher.get('id')}' must declare at least one domain assignment"
+        )
+    if normalized.get("domain") != normalized_domains[0]:
+        raise ValueError(
+            f"Watcher '{watcher.get('id')}' primary domain must match the first entry in 'domains'"
+        )
+
+    digest_payload = {
+        key: normalized[key]
+        for key in ("id", "owner", "domains", "description")
+    }
+    for field in OPTIONAL_FIELDS:
+        if field in normalized:
+            digest_payload[field] = normalized[field]
+
+    encoded = json.dumps(digest_payload, sort_keys=True, ensure_ascii=False).encode("utf-8")
+    digest = hashlib.sha256(encoded).hexdigest()
+    normalized["hash"] = digest
+    return normalized
 
 
 def generate_report(config: pathlib.Path) -> Dict[str, Any]:
