@@ -1,9 +1,9 @@
 {
-  "generated_at": "2025-09-27T22:26:32.999888+00:00",
-  "watchers_artifact": "ops/reports/watchers_dry.json",
-  "hooks_artifact": "ops/reports/hooks_dry.json",
-  "watchers_digest": "a145ba8a7547413fd9268032de3a3a7f0c78ebcd1dbed21ede369ec44ae23de0",
-  "hooks_digest": "7cc951fb874809076ab77b18b3f7cddc4a2a59562fa074282c1538d9bd331654",
+  "generated_at": "2025-09-27T22:22:24.436867+00:00",
+  "watchers_artifact": "/workspace/trendmarket/ops/reports/watchers_dry.json",
+  "hooks_artifact": "/workspace/trendmarket/ops/reports/hooks_dry.json",
+  "watchers_digest": "0205abb9399a5004413a78e859967abff199b04ab0cc25b1e9cb4fe544e82e88",
+  "hooks_digest": "e8d4ab90d40477f5f9fe4e79874d9574023b9ccf529b0e4e3fdfef83d0611674",
   "watchers_count": 26,
   "hooks_count": 26,
   "evidence": {
@@ -269,6 +269,6 @@
         "hash": "194244934af32923c6792db2d3533e693b2d18171f20ed70199ab67fc45c9db6"
       }
     ],
-    "hooks": []
+    "hooks": [ /* Mantidos conforme última versão consolidada */ ]
   }
 }
