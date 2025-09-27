@@ -1,12 +1,17 @@
 {
-  "artifacts": {
-    "latency_summary": {
+  "artifacts": [
+    {
+      "metrics": {
+        "psi": 0.001708,
+        "psi_threshold": 0.2,
+        "status": "within_threshold"
+      },
+      "name": "latency_summary",
       "path": "docs/notebooks/artifacts/latency_summary.json",
-      "psi": 0.0017076859105591795,
-      "psi_threshold": 0.2,
-      "status": "within_threshold"
+      "sha256": "567e672b2fb8d07d293ac492823ec4296f04f231608c895115c6504d4aa24e54"
     }
-  },
-  "generated_at": "2025-09-27T03:23:07Z",
-  "report": "repo_audit"
+  ],
+  "generated_at": "2025-09-27T03:56:34Z",
+  "report": "repo_audit",
+  "version": 1
 }
