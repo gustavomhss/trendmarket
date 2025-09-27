@@ -1,0 +1,49 @@
+{
+  "generated_at": "2025-09-27T02:26:10.909257+00:00",
+  "source": "/workspace/trendmarket/ops/hooks/a110_hooks.json",
+  "total_hooks": 3,
+  "hooks": [
+    {
+      "hook": "dec-latency-degrade",
+      "kpi": "dec.latency.p95",
+      "threshold": "800ms",
+      "window": "5m",
+      "action": "degrade_route",
+      "owner": "sre",
+      "rollback": true,
+      "evidence": {
+        "traces": "decision.core",
+        "audit": "ops/reports/dryrun.json"
+      },
+      "hash": "561062ca74690c58be408a647b98372890ccb4eb3c9a56ec04ed558cc851829c"
+    },
+    {
+      "hook": "oracle-stale-failover",
+      "kpi": "oracle.staleness_ms",
+      "threshold": 30000,
+      "window": "5m",
+      "action": "switch_to_twap_failover",
+      "owner": "bc",
+      "rollback": true,
+      "evidence": {
+        "traces": "oracle.fetch",
+        "audit": "ops/evidence/evidence.json"
+      },
+      "hash": "79a1c20e924ade5946c37ff0ce2acdb049c4f6c4683979be890e2c6cc2cec660"
+    },
+    {
+      "hook": "model-drift-rollback",
+      "kpi": "model.psi.p95",
+      "threshold": 0.2,
+      "window": "24h",
+      "action": "rollback_model",
+      "owner": "ml-ops",
+      "rollback": true,
+      "evidence": {
+        "traces": "inference.serving",
+        "audit": "ml/monitoring/psi.json"
+      },
+      "hash": "58011806d0d2f62ba39e7004a245f054fcc3e415f31f73be638485b89fa04440"
+    }
+  ]
+}

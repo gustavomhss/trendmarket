@@ -1,0 +1,27 @@
+{
+  "executed_at": "2025-09-27T02:26:22.210784+00:00",
+  "worktree": "ephemeral",
+  "commands": [
+    {
+      "command": "make -f ops/scripts/Makefile watchers.dry",
+      "status": "success",
+      "artifacts": [
+        "ops/reports/watchers_dry.json"
+      ]
+    },
+    {
+      "command": "make -f ops/scripts/Makefile hooks.dry",
+      "status": "success",
+      "artifacts": [
+        "ops/reports/hooks_dry.json"
+      ]
+    },
+    {
+      "command": "make -f ops/scripts/Makefile evidence.publish",
+      "status": "success",
+      "artifacts": [
+        "ops/evidence/evidence.json"
+      ]
+    }
+  ]
+}

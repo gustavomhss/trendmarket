@@ -1,0 +1,164 @@
+{
+  "watchers": [
+    {
+      "id": "api_breaking_change_watch",
+      "domain": "FE",
+      "owner": "platform-sre",
+      "description": "Detecta alterações incompatíveis de contrato nas APIs públicas",
+      "kpi": "api.contract.compatibility",
+      "threshold": 0,
+      "window": "5m",
+      "action": "block_release"
+    },
+    {
+      "id": "schema_registry_drift_watch",
+      "domain": "DATA",
+      "owner": "data-governance",
+      "description": "Monitora divergências de esquema registradas e validadas",
+      "kpi": "data.schema.drift",
+      "threshold": 0,
+      "window": "5m",
+      "action": "rollback_contract"
+    },
+    {
+      "id": "data_contract_break_watch",
+      "domain": "DATA",
+      "owner": "data-governance",
+      "description": "Alerta para violações de contratos A106/A87/A89",
+      "kpi": "data.contract.breach",
+      "threshold": 0,
+      "window": "5m",
+      "action": "rollback_contract"
+    },
+    {
+      "id": "dbt_test_failure_watch",
+      "domain": "DATA",
+      "owner": "analytics-engineering",
+      "description": "Gatilha quando testes dbt críticos falham",
+      "kpi": "data.dbt.tests_failed",
+      "threshold": 0,
+      "window": "5m",
+      "action": "block_release"
+    },
+    {
+      "id": "cdc_lag_watch",
+      "domain": "DATA",
+      "owner": "data-platform",
+      "description": "Monitora lag de CDC p95 com orçamento de 120s",
+      "kpi": "data.cdc.lag.p95",
+      "threshold": "120s",
+      "window": "5m",
+      "action": "degrade_to_hot_table"
+    },
+    {
+      "id": "slo_budget_breach_watch",
+      "domain": "DEC",
+      "owner": "sre",
+      "description": "Observa burn rate do orçamento de erro das decisões",
+      "kpi": "decision.slo.error_budget",
+      "threshold": 1.0,
+      "window": "30m",
+      "action": "trigger_degrade_route"
+    },
+    {
+      "id": "model_drift_watch",
+      "domain": "ML",
+      "owner": "ml-ops",
+      "description": "Aciona rollback se PSI/KS ultrapassar limites",
+      "kpi": "model.drift.psi",
+      "threshold": 0.2,
+      "window": "24h",
+      "action": "rollback_model"
+    },
+    {
+      "id": "metrics_decision_hook_gap_watch",
+      "domain": "DEC",
+      "owner": "sre",
+      "description": "Monitora lacunas entre métricas e hooks acionados",
+      "kpi": "decision.hook.gap",
+      "threshold": 0,
+      "window": "15m",
+      "action": "escalate_to_owner"
+    },
+    {
+      "id": "formal_verification_gate_watch",
+      "domain": "SEC",
+      "owner": "security-architecture",
+      "description": "Garante que verificações formais foram executadas",
+      "kpi": "security.formal_verification.status",
+      "threshold": 1,
+      "window": "24h",
+      "action": "freeze_release"
+    },
+    {
+      "id": "web_cwv_regression_watch",
+      "domain": "FE",
+      "owner": "frontend-platform",
+      "description": "Sinaliza regressões em INP/LCP das experiências web",
+      "kpi": "web.cwv.inp.p75",
+      "threshold": "200ms",
+      "window": "24h",
+      "action": "rollback_frontend"
+    },
+    {
+      "id": "okr_risk_alignment_watch",
+      "domain": "SEC",
+      "owner": "finance-ops",
+      "description": "Escuta desalinhamentos de risco e objetivos chave",
+      "kpi": "org.okr.risk_alignment",
+      "threshold": 0.95,
+      "window": "24h",
+      "action": "trigger_risk_review"
+    },
+    {
+      "id": "dp_budget_breach_watch",
+      "domain": "PRIV",
+      "owner": "privacy-office",
+      "description": "Sinaliza excedentes no orçamento de privacidade",
+      "kpi": "privacy.dp.budget",
+      "threshold": 1.5,
+      "window": "1h",
+      "action": "freeze_processing"
+    },
+    {
+      "id": "runtime_eol_watch",
+      "domain": "ML",
+      "owner": "platform-ml",
+      "description": "Monitora runtimes em fim de vida com risco de suporte",
+      "kpi": "ml.runtime.support.status",
+      "threshold": "30d",
+      "window": "24h",
+      "action": "plan_migration"
+    },
+    {
+      "id": "dep_vuln_watch",
+      "domain": "SEC",
+      "owner": "appsec",
+      "description": "Analisa SBOM por vulnerabilidades ativas",
+      "kpi": "security.dependency.vuln",
+      "threshold": 0,
+      "window": "1h",
+      "action": "block_release"
+    },
+    {
+      "id": "oracle_divergence_watch",
+      "domain": "PM",
+      "owner": "treasury",
+      "description": "Monitora divergência de preço dos oráculos",
+      "kpi": "market.oracle.delta_bps",
+      "threshold": 10,
+      "window": "5m",
+      "action": "switch_to_twap_failover"
+    },
+    {
+      "id": "fx_delta_benchmark_watch",
+      "domain": "PM",
+      "owner": "treasury",
+      "description": "Garante paridade com benchmarks de FX",
+      "kpi": "market.fx.delta_bps",
+      "threshold": 5,
+      "window": "5m",
+      "action": "switch_to_twap_failover"
+    }
+  ]
+}
