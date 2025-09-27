@@ -71,7 +71,7 @@ pub fn get_amount_in(x: Wad, y: Wad, dy: Wad, fee_ppm: Ppm) -> Result<Wad, AmmEr
     ensure_nonzero(dy)?;
 
     // Não pode esvaziar o pool além do mínimo
-    if dy >= y.checked_sub(MIN_RESERVE).ok_or(AmmError::Overflow)? {
+    if dy > y.checked_sub(MIN_RESERVE).ok_or(AmmError::Overflow)? {
         return Err(AmmError::MinReserveBreached);
     }
 
@@ -267,9 +267,24 @@ mod tests {
     fn t_dy_too_large_rejected() {
         // pedir dy>=y-MIN_RESERVE viola guarda
         let (x, y) = (MIN_RESERVE + 2_000, MIN_RESERVE + 1_000);
-        let dy = y - MIN_RESERVE;
+        let dy = (y - MIN_RESERVE) + 1;
         let err = get_amount_in(x, y, dy, FEE0).unwrap_err();
         assert_eq!(err, AmmError::MinReserveBreached);
+    }
+
+    #[test]
+    fn t_dy_equal_min_reserve_allowed() {
+        // retirar exatamente y-MIN_RESERVE mantém y' = MIN_RESERVE
+        let x = 2 * WAD;
+        let y = 3 * WAD;
+        let dy = y - MIN_RESERVE;
+
+        let dx = get_amount_in(x, y, dy, FEE0).expect("dy igual ao limite deve ser aceito");
+        let out = get_amount_out(x, y, dx, FEE0).unwrap();
+        assert!(out >= dy);
+
+        let y_final = y - out;
+        assert_eq!(y_final, MIN_RESERVE);
     }
 
     #[test]
