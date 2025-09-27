@@ -1,6 +1,6 @@
 {
-  "generated_at": "2025-09-27T20:08:29.468324+00:00",
-  "source": "/workspace/trendmarket/ops/hooks/a110_hooks.json",
+  "generated_at": "2025-09-27T20:10:22.882091+00:00",
+  "source": "ops/hooks/a110.yml",
   "total_hooks": 29,
   "hooks": [
     {

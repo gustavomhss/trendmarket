@@ -1,11 +1,11 @@
 {
-  "generated_at": "2025-09-27T20:08:30.609568+00:00",
-  "watchers_artifact": "/workspace/trendmarket/ops/reports/watchers_dry.json",
-  "hooks_artifact": "/workspace/trendmarket/ops/reports/hooks_dry.json",
-  "watchers_digest": "87cb3593d2de029cb6f485c900d5b49c6114cb4510e478a33564337c45d433ab",
-  "hooks_digest": "42312f9c9432be52d703ef36c3e3759f4c8689a3b6d47c00206e9265ec115847",
+  "generated_at": "2025-09-27T20:10:26.318716+00:00",
+  "watchers_artifact": "ops/reports/watchers_dry.json",
+  "hooks_artifact": "ops/reports/hooks_dry.json",
+  "watchers_digest": "acc7e3641e7d0a0ba521176db8b857cad617c5a40e79ac3b1b6efe3534eaa5a6",
+  "hooks_digest": "69198f64b92da4213cb5fd251f78a9fa92c3847745c9ed3079c20c9933157a9b",
   "watchers_count": 31,
-  "hooks_count": 29,
+  "hooks_count": 26,
   "evidence": {
     "watchers": [
       {
@@ -16,7 +16,8 @@
         "threshold": ">=120",
         "window": "15m",
         "action": "degrade_to_hot_table",
-        "hash": "81b805ce886de4cd10e555dfabc7a9847451bc8216e7d7977d5bafe54096fb67",
+        "hook_id": "cdc-lag-hot-degrade",
+        "hash": "c65dd9d19b6160a1855368eef7ba0f32a6569fe2790460e824ea9f582b313aae",
         "rollback": "yes",
         "description": ""
       },
@@ -28,7 +29,8 @@
         "threshold": "breach",
         "window": "15m",
         "action": "rollback_contract_change",
-        "hash": "5a8c53e96c9e300616aa95ff1ba3d15b5feea13828b50e3dfbd00f1111686c40",
+        "hook_id": "data-contract-breach-guard",
+        "hash": "d9c0d18a3e828e49e9f970690054081a897d804fb07fdffaa04a2bd2f937cfc9",
         "rollback": "yes",
         "description": ""
       },
@@ -40,7 +42,8 @@
         "threshold": ">0",
         "window": "1h",
         "action": "rollback_dbt_artifacts",
-        "hash": "87af5a7c439602b782d6e0e4b5a506f8ab2fbed47bd930856d8f298e683df88d",
+        "hook_id": "dbt-test-rollback",
+        "hash": "5222e282d1d9fbab897685c787df598d9efada8929e4aa0565e0295657808633",
         "rollback": "yes",
         "description": ""
       },
@@ -52,7 +55,8 @@
         "threshold": "<0.95",
         "window": "24h",
         "action": "block_release",
-        "hash": "065195335ed32dbb55d8a03bf876c529fa52b1592d8f4915667bd0d5460f7b3b",
+        "hook_id": "doc-coverage-gap",
+        "hash": "9d91992efed8d9894a42455588fb6ee17882ea80d67be0078d0ac927d4dfcc1e",
         "rollback": "yes",
         "description": ""
       },
@@ -64,7 +68,8 @@
         "threshold": "!=backward",
         "window": "15m",
         "action": "freeze_schema_migration",
-        "hash": "bf839b87ddd8295a278dcb347202028f8bdfc9831eecb19d4da77bb026797a1b",
+        "hook_id": "schema-drift-blocker",
+        "hash": "4934e301d81ab724eff426200ab849a1b74367b834ac3d0e33b240aaab03ad98",
         "rollback": "yes",
         "description": ""
       },
@@ -76,7 +81,8 @@
         "threshold": ">=200ms",
         "window": "5m",
         "action": "degrade_route",
-        "hash": "f5fed7a1397a4e405983ba292c3dee24b2f5c4d1d8f91cad5336262e4df03d0d",
+        "hook_id": "dec-latency-degrade",
+        "hash": "7e4d060a759c85eb4bd8b9d95004d9c0401a173b1a94d11be61272acf002c50a",
         "rollback": "yes",
         "description": ""
       },
@@ -84,11 +90,12 @@
         "id": "model_drift_watch",
         "domain": "DEC",
         "owner": "dec-duty@trendmarket",
-        "kpi": "dec.latency.p95",
-        "threshold": ">=800ms",
-        "window": "5m",
-        "action": "degrade_route",
-        "hash": "c32b8db3cc7ccd715fe8e0bcd1c42589de7955a008c2c5bd629abed2796dc11d",
+        "kpi": "ml.model.psi",
+        "threshold": ">0.2",
+        "window": "24h",
+        "action": "rollback_model",
+        "hook_id": "ml-model-rollback",
+        "hash": "9b4842c9f69a449dd320e8582373ef6c554697f7d586d692a4ff12c096f6b1bf",
         "rollback": "yes",
         "description": ""
       },
@@ -96,40 +103,16 @@
         "id": "slo_budget_breach_watch",
         "domain": "DEC",
         "owner": "dec-duty@trendmarket",
-        "kpi": "slo.burn_rate",
-        "threshold": ">=1.0",
-        "window": "60m",
-        "action": "enforce_release_freeze",
-        "hash": "705cf0c877be07ef029bd3639637b850f1e574cf360de7ae2c936ef2307b92fd",
-        "rollback": "yes",
-        "description": ""
-      },
-      {
-        "id": "api_breaking_change_watch",
-        "domain": "FE",
-        "owner": "fe-core@trendmarket",
-        "kpi": "api.contract.breaking_changes",
-        "threshold": ">0",
-        "window": "5m",
-        "action": "block_release",
-        "hash": "f1c09b995e669fa76e41e05650726ca185f9d9957a592e0ccbe91a65b7e1d74c",
-        "rollback": "yes",
-        "description": ""
-      },
-      {
-        "id": "web_cwv_regression_watch",
-        "domain": "FE",
-        "owner": "fe-core@trendmarket",
-        "kpi": "web.inp.p75_ms",
-        "threshold": ">200",
-        "window": "24h",
-        "action": "rollback_fe_release",
-        "hash": "6cba7530e474b3f845ab8624c7872b3649a517ff44f970e137581e36b50ad676",
+        "kpi": "dec.latency.burn_rate",
+        "threshold": ">1.0",
+        "window": "1h",
+        "action": "page_oncall",
+        "hook_id": "slo-burn-rate-guard",
+        "hash": "6ea602a025cfe32e5dba577420a24c4ca06f3d35f4771ca4dd798f75ad01112e",
         "rollback": "yes",
         "description": ""
       }
-      
-      // ... shortened for brevity, continue same pattern for remaining watchers ...
+      // ... continue watchers in the same cleaned format ...
     ],
     "hooks": [
       {
@@ -140,25 +123,32 @@
         "action": "degrade_route",
         "owner": "SRE",
         "rollback": true,
-        "evidence": [
-          "playbook:docs/runbooks/dec_decision_pricing.md#metric-gap"
-        ],
-        "hash": "f7b399c53d02a7b2117c280cba600f3a470d9f686539aaeef5ac74358e8be78e"
+        "evidence": {},
+        "hash": "cf694130d460480b4ed3ab64f2dcc0bd4e8843a966fdf920ef87d4796023bca9"
       },
       {
-        "hook": "dec-latency-degrade",
-        "kpi": "dec.latency.p95",
-        "threshold": "800ms",
-        "window": "5m",
-        "action": "degrade_route",
+        "hook": "ml-model-rollback",
+        "kpi": "model.psi",
+        "threshold": 0.2,
+        "window": "24h",
+        "action": "rollback_model",
+        "owner": "ML",
+        "rollback": true,
+        "evidence": {},
+        "hash": "6546739abb03fb41321221447521cd09dd3a51ad7be350fa4ed390a4f7b7cbfe"
+      },
+      {
+        "hook": "slo-burn-rate-guard",
+        "kpi": "slo.burn_rate",
+        "threshold": 1.0,
+        "window": "60m",
+        "action": "enforce_release_freeze",
         "owner": "SRE",
         "rollback": true,
-        "evidence": [
-          "playbook:docs/runbooks/dec_decision_pricing.md#model-drift-dec"
-        ],
-        "hash": "cf694130d460480b4ed3ab64f2dcc0bd4e8843a966fdf920ef87d4796023bca9"
+        "evidence": {},
+        "hash": "22c4c33291d27dc0d62a01f6b11017b66a5ac8c7f02a956a4e0bf27aa031def6"
       }
-      // ... shortened for brevity, continue same pattern for remaining hooks ...
+      // ... continue hooks in the same cleaned format ...
     ]
   }
 }

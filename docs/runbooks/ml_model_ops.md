@@ -15,6 +15,8 @@
 3. Caso rollback ocorra, confirmar disponibilidade do baseline e recalcular métricas.
 4. Documentar comparação de distribuições e anexar no ACE.
 
+---
+
 ## srm — `ab_srm_watch`
 
 * **Hook:** `experiment-srm-guardrail`
@@ -29,6 +31,8 @@
 2. Validar randomização e event tracking com FE/INT.
 3. Emitir relatório de impacto e plano de correção.
 
+---
+
 ## runtime-eol — `runtime_eol_watch`
 
 * **Hook:** `runtime-eol-governance`
@@ -42,6 +46,8 @@
 1. Atualizar roadmap de upgrade e alinhar janela de manutenção.
 2. Garantir testes regressivos e SBOM atualizados.
 3. Comunicar stakeholders e publicar ADR/waiver se necessário.
+
+---
 
 ## image-vuln — `image_vuln_regression_watch`
 

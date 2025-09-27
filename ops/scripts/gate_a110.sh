@@ -97,6 +97,7 @@ if sorted(domains.keys()) != sorted(expected_domains):
 watcher_defs = watchers_data.get("watchers", {})
 watcher_domains = defaultdict(set)
 all_domain_watchers = []
+domain_hook_bindings = {}
 for domain, watchers in domains.items():
     if not watchers:
         errors.append(f"domain {domain} has no watchers configured")
@@ -105,6 +106,27 @@ for domain, watchers in domains.items():
         watcher_domains[watcher].add(domain)
         if watcher not in watcher_defs:
             errors.append(f"watcher {watcher} referenced in domain {domain} but missing definition")
+            continue
+
+        hooks_mapping = watcher_defs[watcher].get("hooks")
+        if not isinstance(hooks_mapping, dict) or not hooks_mapping:
+            errors.append(f"watcher {watcher} lacks per-domain hook mappings")
+            continue
+
+        hook_name = hooks_mapping.get(domain)
+        if hook_name is None:
+            available = ", ".join(sorted(hooks_mapping)) or "<none>"
+            errors.append(
+                f"watcher {watcher} has no hook assignment for domain {domain} (available: {available})"
+            )
+            continue
+
+        hook_value = str(hook_name).strip()
+        if not hook_value:
+            errors.append(f"watcher {watcher} has blank hook assignment for domain {domain}")
+            continue
+
+        domain_hook_bindings.setdefault(domain, {})[watcher] = hook_value
 
 hooks = hooks_data.get("hooks", [])
 if not hooks:
@@ -202,10 +224,10 @@ for watcher, meta in watcher_defs.items():
     if hook_name not in hooks_by_name:
         errors.append(f"watcher {watcher} aponta para hook inexistente {hook_name}")
 
-    expected_domains = watcher_domains.get(watcher, set())
-    if len(expected_domains) > 1:
+    expected = watcher_domains.get(watcher, set())
+    if len(expected) > 1:
         errors.append(
-            f"watcher {watcher} atende domínios {sorted(expected_domains)} mas não possui mapeamento 'hooks'"
+            f"watcher {watcher} atende domínios {sorted(expected)} mas não possui mapeamento 'hooks'"
         )
 
 if errors:

@@ -193,3 +193,4 @@ def test_aggregated_schema_allows_domain_overrides(tmp_path, monkeypatch):
     assert watcher["kpi"] == "dec.latency.p95"
     assert watcher["description"] == "DEC override"
     assert watcher["rollback"] == "yes"
+    assert watcher["hook_id"] == "dec-latency-degrade"

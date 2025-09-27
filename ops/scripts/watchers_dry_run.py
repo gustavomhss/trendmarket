@@ -12,8 +12,10 @@ import sys
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Mapping, MutableMapping
 
-REQUIRED_FIELDS = {"id", "domain", "domains", "owner", "description"}
-OPTIONAL_FIELDS = ("kpi", "hook")
+CORE_FILENAME = "core.yaml"
+
+REQUIRED_FIELDS = {"id", "domain", "domains", "owner", "description", "hook_id"}
+OPTIONAL_FIELDS = ("kpi", "threshold", "window", "action", "rollback")
 
 # cache interno para hooks
 _HOOK_METADATA_CACHE: dict[str, dict[str, Any]] | None = None
@@ -196,6 +198,67 @@ def _load_watchers(path: pathlib.Path) -> List[Dict[str, Any]]:
     return records
 
 
+def _resolve_core_path(config: pathlib.Path) -> pathlib.Path:
+    if config.is_dir():
+        return config / CORE_FILENAME
+    if config.name == CORE_FILENAME:
+        return config
+    return config.parent / CORE_FILENAME
+
+
+def _load_core_bindings(core_path: pathlib.Path) -> Dict[tuple[str, str], str]:
+    if not core_path.exists():
+        raise FileNotFoundError(f"Watcher core configuration not found: {core_path}")
+
+    data = _parse_config(core_path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise ValueError(f"Watcher core configuration must be a mapping: {core_path}")
+
+    watchers_section = data.get("watchers")
+    if not isinstance(watchers_section, dict) or not watchers_section:
+        raise ValueError(f"Watcher core configuration missing watcher definitions: {core_path}")
+
+    bindings: Dict[tuple[str, str], str] = {}
+    for watcher_id, meta in watchers_section.items():
+        hooks_map = meta.get("hooks")
+        if not isinstance(hooks_map, dict) or not hooks_map:
+            continue
+        for domain_key, hook_value in hooks_map.items():
+            if not isinstance(domain_key, str) or not isinstance(hook_value, str):
+                continue
+            domain = domain_key.strip().upper()
+            hook = hook_value.strip()
+            if not domain or not hook:
+                continue
+            bindings[(domain, watcher_id)] = hook
+
+    if not bindings:
+        raise ValueError(f"Watcher core configuration missing hook bindings: {core_path}")
+
+    return bindings
+
+
+def _attach_hooks(
+    watchers: List[Dict[str, Any]],
+    bindings: Dict[tuple[str, str], str],
+) -> List[Dict[str, Any]]:
+    enriched: List[Dict[str, Any]] = []
+    for watcher in watchers:
+        domain = str(watcher.get("domain", "")).strip().upper()
+        name = watcher.get("id")
+        if not domain or not name:
+            raise ValueError(f"Watcher entry missing domain or id: {watcher}")
+        hook = bindings.get((domain, name))
+        if hook is None:
+            raise ValueError(
+                f"Watcher '{name}' in domain '{domain}' missing hook assignment in core.yaml"
+            )
+        extended = dict(watcher)
+        extended["hook_id"] = hook
+        enriched.append(extended)
+    return enriched
+
+
 def _normalize_field(value: Any) -> Any:
     if isinstance(value, str):
         return value.strip()
@@ -208,16 +271,11 @@ def _validate_watcher(watcher: Dict[str, Any]) -> Dict[str, Any]:
     missing = REQUIRED_FIELDS - watcher.keys()
     if missing:
         raise ValueError(f"Watcher '{watcher.get('id')}' missing fields: {sorted(missing)}")
-    normalized = {key: _normalize_field(watcher[key]) for key in sorted(REQUIRED_FIELDS)}
-    for field in OPTIONAL_FIELDS:
-        if field in watcher and watcher[field] is not None:
-            normalized[field] = _normalize_field(watcher[field])
-    normalized_domains = normalized.get("domains")
-    if not isinstance(normalized_domains, list) or not normalized_domains:
-        raise ValueError(
-            f"Watcher '{watcher.get('id')}' must declare at least one domain assignment"
-        )
-    if normalized.get("domain") != normalized_domains[0]:
+    normalized = {key: _normalize_field(watcher[key]) for key in sorted(watcher.keys())}
+
+    if not isinstance(normalized.get("domains"), list) or not normalized["domains"]:
+        raise ValueError(f"Watcher '{watcher.get('id')}' must declare at least one domain assignment")
+    if normalized.get("domain") != normalized["domains"][0]:
         raise ValueError(
             f"Watcher '{watcher.get('id')}' primary domain must match the first entry in 'domains'"
         )
@@ -238,7 +296,9 @@ def _validate_watcher(watcher: Dict[str, Any]) -> Dict[str, Any]:
 
 def generate_report(config: pathlib.Path) -> Dict[str, Any]:
     watchers = _load_watchers(config)
-    validated = [_validate_watcher(w) for w in watchers]
+    core_bindings = _load_core_bindings(_resolve_core_path(config))
+    enriched = _attach_hooks(watchers, core_bindings)
+    validated = [_validate_watcher(w) for w in enriched]
     validated.sort(key=lambda entry: (entry["domain"], entry["id"]))
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
