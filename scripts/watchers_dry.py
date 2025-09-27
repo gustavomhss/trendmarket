@@ -76,7 +76,15 @@ MANDATORY_GLOBAL_WATCHERS: Set[str] = {
     "fx_delta_benchmark_watch",
 }
 
-REQUIRED_FIELDS = {"name", "kpi", "window", "action", "owner", "rollback"}
+REQUIRED_FIELDS = {
+    "name",
+    "kpi",
+    "threshold",
+    "window",
+    "action",
+    "owner",
+    "rollback",
+}
 VALID_ROLLBACK = {"yes", "no"}
 
 
