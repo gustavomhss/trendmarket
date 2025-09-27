@@ -64,7 +64,7 @@ import sys
 
 errors = []
 watchers_path = Path('ops/watchers/core.yaml')
-hooks_path = Path('ops/hooks/a110.yaml')
+hooks_path = Path('ops/hooks/a110.yml')
 
 if not watchers_path.exists():
     errors.append(f"missing watchers file: {watchers_path}")
@@ -72,13 +72,21 @@ if not hooks_path.exists():
     errors.append(f"missing hooks file: {hooks_path}")
 
 if errors:
-    print("\n".join(errors))
+    for err in errors:
+        print(f"[A110][ERROR] {err}", file=sys.stderr)
     sys.exit(1)
 
-with watchers_path.open() as fh:
-    watchers_data = json.load(fh)
-with hooks_path.open() as fh:
-    hooks_data = json.load(fh)
+def load_json(path: Path) -> dict:
+    try:
+        with path.open() as fh:
+            return json.load(fh)
+    except json.JSONDecodeError as exc:
+        print(f"[A110][ERROR] failed to parse {path}: {exc}", file=sys.stderr)
+        sys.exit(1)
+
+
+watchers_data = load_json(watchers_path)
+hooks_data = load_json(hooks_path)
 
 expected_domains = ["DEC", "PM", "DATA", "ML", "FE", "SEC/PRIV", "PLAT", "INT"]
 domains = watchers_data.get("domains", {})
@@ -97,7 +105,7 @@ for domain, watchers in domains.items():
 
 hooks = hooks_data.get("hooks", [])
 if not hooks:
-    errors.append("no hooks defined in ops/hooks/a110.yaml")
+    errors.append("no hooks defined in ops/hooks/a110.yml")
 
 hooks_by_name = {}
 watchers_with_hooks = set()
@@ -145,7 +153,7 @@ for watcher, meta in watcher_defs.items():
 
 if errors:
     for err in errors:
-        print(f"[A110][ERROR] {err}")
+        print(f"[A110][ERROR] {err}", file=sys.stderr)
     sys.exit(1)
 
 print("[A110] Gate check passed: watchers, hooks e runbooks consistentes.")
