@@ -102,9 +102,16 @@ def _load_watchers() -> Tuple[Dict[str, Set[str]], List[str]]:
 
     errors: List[str] = []
     domain_watchers: Dict[str, Set[str]] = {}
+    provenance: Dict[str, Dict[str, Set[str]]] = {}
+    yaml_sources: Dict[str, str] = {}
+    yml_sources: Dict[str, str] = {}
+
+    def _record(domain: str, watchers: Set[str], source: Path) -> None:
+        source_key = str(source)
+        domain_watchers.setdefault(domain, set()).update(watchers)
+        provenance.setdefault(domain, {})[source_key] = set(watchers)
 
     yaml_paths = sorted({path for path in watchers_dir.glob("*.yaml")})
-    aggregated_inventory = False
 
     for path in yaml_paths:
         try:
@@ -113,17 +120,15 @@ def _load_watchers() -> Tuple[Dict[str, Set[str]], List[str]]:
             errors.append(str(exc))
             continue
 
-        if len(domain_entries) > 1:
-            aggregated_inventory = True
-
         for domain, watchers in domain_entries.items():
-            if domain in domain_watchers:
+            if domain in yaml_sources:
                 errors.append(
                     f"duplicate watcher definition for domain '{domain}' in {path}"
                 )
                 continue
 
-            domain_watchers[domain] = watchers
+            yaml_sources[domain] = str(path)
+            _record(domain, watchers, path)
 
     yml_paths = sorted({path for path in watchers_dir.glob("*.yml")})
 
@@ -135,19 +140,48 @@ def _load_watchers() -> Tuple[Dict[str, Set[str]], List[str]]:
             continue
 
         for domain, watchers in domain_entries.items():
-            if aggregated_inventory and domain in domain_watchers:
-                # Aggregated inventory already defines this domain; keep the
-                # duplicate-domain guard behaviour for other cases while
-                # avoiding redundant definitions here.
-                continue
-
-            if domain in domain_watchers:
+            if domain in yml_sources:
                 errors.append(
                     f"duplicate watcher definition for domain '{domain}' in {path}"
                 )
                 continue
 
-            domain_watchers[domain] = watchers
+            yml_sources[domain] = str(path)
+            _record(domain, watchers, path)
+
+    for domain, sources in provenance.items():
+        if len(sources) <= 1:
+            continue
+
+        # Prefer the aggregated inventory ("*.yaml") as the baseline when present.
+        sorted_sources = sorted(
+            sources.items(),
+            key=lambda item: (0 if item[0].endswith(".yaml") else 1, item[0]),
+        )
+
+        baseline_source, baseline_watchers = sorted_sources[0]
+        for source, watchers in sorted_sources[1:]:
+            missing_in_source = baseline_watchers - watchers
+            missing_in_baseline = watchers - baseline_watchers
+            if not missing_in_source and not missing_in_baseline:
+                continue
+
+            diff_parts: List[str] = []
+            if missing_in_source:
+                formatted = ", ".join(sorted(missing_in_source))
+                diff_parts.append(
+                    f"{source} missing [{formatted}] compared to {baseline_source}"
+                )
+            if missing_in_baseline:
+                formatted = ", ".join(sorted(missing_in_baseline))
+                diff_parts.append(
+                    f"{baseline_source} missing [{formatted}] compared to {source}"
+                )
+
+            message = "; ".join(diff_parts)
+            errors.append(
+                f"watcher mismatch for domain '{domain}': {message}"
+            )
 
     return domain_watchers, errors
 
