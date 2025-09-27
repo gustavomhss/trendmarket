@@ -2,17 +2,62 @@
 set -euo pipefail
 
 usage() {
-  echo "Usage: $0 --check" >&2
+  cat <<'EOF' >&2
+Usage: ./ops/scripts/gate_a110.sh [--require-green|--check] [--timeout <seconds>]
+
+Options:
+  --require-green    Execute the A110 gate validations (current default behavior).
+  --check            Legacy alias for --require-green (maintained for backward compatibility).
+  --timeout <secs>   Abort the validations if they exceed the provided timeout in seconds.
+  -h, --help         Show this message and exit.
+EOF
 }
 
-if [[ $# -ne 1 ]]; then
+require_green=false
+timeout_secs=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --require-green|--check)
+      require_green=true
+      shift
+      ;;
+    --timeout)
+      if [[ $# -lt 2 ]]; then
+        echo "[A110][ERROR] --timeout requires an argument" >&2
+        usage
+        exit 1
+      fi
+      timeout_secs="$2"
+      if ! [[ $timeout_secs =~ ^[0-9]+$ ]] || (( timeout_secs <= 0 )); then
+        echo "[A110][ERROR] --timeout expects a positive integer (seconds)" >&2
+        usage
+        exit 1
+      fi
+      shift 2
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "[A110][ERROR] Unsupported argument: $1" >&2
+      usage
+      exit 1
+      ;;
+  esac
+done
+
+if [[ $require_green != true ]]; then
+  echo "[A110][ERROR] Missing required flag: --require-green (or legacy --check)." >&2
   usage
   exit 1
 fi
 
-case "$1" in
-  --check)
-    python - <<'PY'
+script_path="$(mktemp)"
+trap 'rm -f "$script_path"' EXIT
+
+cat <<'PY' >"$script_path"
 import json
 from pathlib import Path
 import sys
@@ -105,9 +150,13 @@ if errors:
 
 print("[A110] Gate check passed: watchers, hooks e runbooks consistentes.")
 PY
-    ;;
-  *)
-    usage
+
+if [[ -n $timeout_secs ]]; then
+  if ! command -v timeout >/dev/null 2>&1; then
+    echo "[A110][ERROR] --timeout requested but 'timeout' command is not available" >&2
     exit 1
-    ;;
-esac
+  fi
+  timeout "$timeout_secs" python "$script_path"
+else
+  python "$script_path"
+fi
