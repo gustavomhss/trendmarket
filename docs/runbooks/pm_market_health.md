@@ -16,7 +16,7 @@
 ## fx-delta — `fx_delta_benchmark_watch`
 - **Hook:** `pm-oracle-staleness`
 - **KPI:** `fx.delta_vs_benchmark_bps` ≤ 15 (janela 10m)
-- **Ação automática:** `switch_to_reference_rate`
+- **Ação automática:** `switch_to_twap_failover`
 - **Owner:** PM FX
 - **Rollback:** após delta ≤ 8 bps por 4 janelas.
 
@@ -29,7 +29,7 @@
 ## auction-invariant — `auction_invariant_breach_watch`
 - **Hook:** `pm-oracle-staleness`
 - **KPI:** `auction.kkt_violation_pct` = 0 (janela 5m)
-- **Ação automática:** `pause_auction_stream`
+- **Ação automática:** `switch_to_twap_failover`
 - **Owner:** PM Leilões
 - **Rollback:** após auditoria matemática e validação de curvas.
 

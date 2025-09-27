@@ -18,7 +18,7 @@ Este runbook cobre os watchers de DEC definidos em `ops/watchers/core.yaml` e os
 ## slo-burn — `slo_budget_breach_watch`
 - **Hook:** `platform-sampling-guard`
 - **KPI:** `slo.burn_rate` ≤ 1.0 (janela 60m)
-- **Ação automática:** `enforce_release_freeze`
+- **Ação automática:** `block_release`
 - **Owner:** SRE
 - **Rollback:** após burn rate < 0.8 por 3 janelas.
 

@@ -3,7 +3,7 @@
 ## dep-vuln — `dep_vuln_watch`
 - **Hook:** `sec-privacy-freeze`
 - **KPI:** `security.deps.critical_vulns` = 0 (janela 15m)
-- **Ação automática:** `block_release`
+- **Ação automática:** `freeze_release`
 - **Owner:** Security Engineering
 - **Rollback:** após mitigação e varredura limpa.
 
@@ -18,7 +18,7 @@ Seguir instruções do `docs/runbooks/ml_model_ops.md#image-vuln` com foco em su
 ## dp-budget — `dp_budget_breach_watch`
 - **Hook:** `sec-privacy-freeze`
 - **KPI:** `privacy.dp_budget_multiplier` ≤ 1.5 (janela 60m)
-- **Ação automática:** `freeze_processing`
+- **Ação automática:** `freeze_release`
 - **Owner:** Privacy Engineering
 - **Rollback:** após budget ≤ 1.2 por 2 janelas e revisão de auditoria.
 
@@ -30,7 +30,7 @@ Seguir instruções do `docs/runbooks/ml_model_ops.md#image-vuln` com foco em su
 ## idp-keys — `idp_keys_rotation_watch`
 - **Hook:** `sec-privacy-freeze`
 - **KPI:** `security.idp.keys_age_days` ≤ 90 (janela 1d)
-- **Ação:** `rotate_idp_keys`
+- **Ação automática:** `freeze_release`
 - **Owner:** Security Engineering
 - **Rollback:** não aplicável.
 
@@ -42,7 +42,7 @@ Seguir instruções do `docs/runbooks/ml_model_ops.md#image-vuln` com foco em su
 ## formal-verification — `formal_verification_gate_watch`
 - **Hook:** `sec-privacy-freeze`
 - **KPI:** `formal.verification.failure` = 0 (janela 5m)
-- **Ação automática:** `freeze_pipeline`
+- **Ação automática:** `freeze_release`
 - **Owner:** Security Assurance
 - **Rollback:** após verificação rerun aprovada.
 

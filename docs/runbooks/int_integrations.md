@@ -27,7 +27,7 @@
 ## cls-payin — `cls_payin_cutoff_watch`
 - **Hook:** `integration-contract-guard`
 - **KPI:** `integration.cls_payin_cutoff_delay_ms` ≤ 30000 (janela 5m)
-- **Ação automática:** `switch_to_manual_cutoff`
+- **Ação automática:** `block_release`
 - **Owner:** INT/Payments
 - **Rollback:** após automação normalizada (< 10.000 ms por 3 janelas).
 

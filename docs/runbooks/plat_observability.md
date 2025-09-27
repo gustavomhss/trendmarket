@@ -15,7 +15,7 @@
 ## alert-storm — `alert_storm_watch`
 - **Hook:** `platform-sampling-guard`
 - **KPI:** `alerts.per_minute` ≤ 50 (janela 10m)
-- **Ação automática:** `enable_alert_mitigation`
+- **Ação automática:** `block_release`
 - **Owner:** SRE
 - **Rollback:** quando taxa ≤ 30 por 3 janelas.
 
@@ -27,7 +27,7 @@
 ## policy-violation — `policy_violation_watch`
 - **Hook:** `platform-sampling-guard`
 - **KPI:** `policy.violation_detected` = 0 (janela 5m)
-- **Ação automática:** `freeze_release`
+- **Ação automática:** `block_release`
 - **Owner:** SRE + Compliance
 - **Rollback:** após waiver aprovado e remediação aplicada.
 
@@ -39,7 +39,7 @@
 ## okr-alignment — `okr_risk_alignment_watch`
 - **Hook:** `platform-sampling-guard`
 - **KPI:** `okr.risk_alignment_score` ≥ 0.8 (janela 7d)
-- **Ação:** `escalate_exec_review`
+- **Ação automática:** `block_release`
 - **Owner:** StrategyOps
 - **Rollback:** após score ≥ 0.9 confirmado em review.
 

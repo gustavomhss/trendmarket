@@ -3,7 +3,7 @@
 ## cdc-lag — `cdc_lag_watch`
 - **Hook:** `data-contract-rollback`
 - **KPI:** `cdc.lag.p95` ≤ 120 s (janela 15m)
-- **Ação automática:** `degrade_to_hot_table`
+- **Ação automática:** `rollback_and_timebox`
 - **Owner:** DATA
 - **Rollback:** quando lag ≤ 90 s por 3 janelas.
 
@@ -16,7 +16,7 @@
 ## schema-drift — `schema_registry_drift_watch`
 - **Hook:** `data-contract-rollback`
 - **KPI:** ausência de `schema.drift_detected` (janela 5m)
-- **Ação automática:** `block_deploy`
+- **Ação automática:** `rollback_and_timebox`
 - **Owner:** DATA
 - **Rollback:** após publicação de schema compatível e testes de contrato.
 
@@ -28,7 +28,7 @@
 ## dbt-tests — `dbt_test_failure_watch`
 - **Hook:** `data-contract-rollback`
 - **KPI:** `dbt.tests.failure_rate` = 0 (janela 15m)
-- **Ação automática:** `rollback_transform`
+- **Ação automática:** `rollback_and_timebox`
 - **Owner:** DATA
 - **Rollback:** após rerun `dbt test` com sucesso.
 
@@ -40,7 +40,7 @@
 ## contract-breach — `data_contract_break_watch`
 - **Hook:** `data-contract-rollback`
 - **KPI:** `data.contract.break` = 0 (janela 5m)
-- **Ação automática:** `trigger_contract_waiver`
+- **Ação automática:** `rollback_and_timebox`
 - **Owner:** DATA
 - **Rollback:** após waiver aprovado e contrato restaurado.
 
@@ -52,7 +52,7 @@
 ## doc-coverage — `doc_coverage_watch`
 - **Hook:** `data-contract-rollback`
 - **KPI:** `data.doc.coverage` ≥ 95% (janela 24h)
-- **Ação:** `raise_doc_gap`
+- **Ação automática:** `rollback_and_timebox`
 - **Owner:** DATA
 - **Rollback:** não aplicável (processo contínuo).
 

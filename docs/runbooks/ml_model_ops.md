@@ -16,7 +16,7 @@
 ## srm — `ab_srm_watch`
 - **Hook:** `ml-model-rollback`
 - **KPI:** `experiment.srm_pvalue` ≥ 0.01 (janela 24h)
-- **Ação automática:** `pause_experiment`
+- **Ação automática:** `rollback_model`
 - **Owner:** ML Experimentos
 - **Rollback:** retomar somente após SRM > 0.05 e auditoria estatística.
 
@@ -28,7 +28,7 @@
 ## runtime-eol — `runtime_eol_watch`
 - **Hook:** `ml-model-rollback`
 - **KPI:** `runtime.support_gap_days` = 0 (janela 7d)
-- **Ação:** `schedule_runtime_upgrade`
+- **Ação automática:** `rollback_model`
 - **Owner:** PLAT + ML
 - **Rollback:** não aplicável (migração planejada).
 
@@ -40,7 +40,7 @@
 ## image-vuln — `image_vuln_regression_watch`
 - **Hook:** `sec-privacy-freeze`
 - **KPI:** `image.critical_vuln_count` = 0 (janela 15m)
-- **Ação automática:** `block_release`
+- **Ação automática:** `freeze_release`
 - **Owner:** SEC + ML Ops
 - **Rollback:** após rebuild seguro e varredura limpa (Grype/Trivy).
 
