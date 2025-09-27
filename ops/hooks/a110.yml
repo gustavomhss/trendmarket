@@ -249,3 +249,20 @@
       "action": "escalate_exec_review",
       "owner": "StrategyOps",
       "rollback": false,
+      "playbook": "docs/runbooks/plat_observability.md#okr-alignment"
+    },
+    {
+      "hook": "alert-storm-suppressor",
+      "watchers": [
+        "alert_storm_watch"
+      ],
+      "kpi": "alerts.per_minute",
+      "threshold": 50,
+      "window": "10m",
+      "action": "enable_alert_mitigation",
+      "owner": "SRE",
+      "rollback": true,
+      "playbook": "docs/runbooks/plat_observability.md#alert-storm"
+    }
+  ]
+}

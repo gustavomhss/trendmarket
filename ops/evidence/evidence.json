@@ -1,9 +1,9 @@
 {
-  "generated_at": "2025-09-27T22:21:12.599764+00:00",
-  "watchers_artifact": "/workspace/trendmarket/ops/reports/watchers_dry.json",
-  "hooks_artifact": "/workspace/trendmarket/ops/reports/hooks_dry.json",
-  "watchers_digest": "1cf3d6f18c8f3478da46701bc6e91e51803f79e216f17e2cfb1531b92fdf478e",
-  "hooks_digest": "8ddb4f13a357fef10515a7af058cb019878e570e75f9e0f63c7331109beb6f8a",
+  "generated_at": "2025-09-27T22:26:32.999888+00:00",
+  "watchers_artifact": "ops/reports/watchers_dry.json",
+  "hooks_artifact": "ops/reports/hooks_dry.json",
+  "watchers_digest": "a145ba8a7547413fd9268032de3a3a7f0c78ebcd1dbed21ede369ec44ae23de0",
+  "hooks_digest": "7cc951fb874809076ab77b18b3f7cddc4a2a59562fa074282c1538d9bd331654",
   "watchers_count": 26,
   "hooks_count": 26,
   "evidence": {
@@ -196,3 +196,79 @@
         "id": "tracing_sampling_watch",
         "kpi": "tracing.sampling_rate",
         "owner": "SRE",
+        "hash": "290852a0d647d1724f286caec2aa7c3d2fa5d3310e8fb750fb1f838f1bd3baa2"
+      },
+      {
+        "description": "Fiscaliza invariantes KKT e convexidade nos leilões.",
+        "domain": "PM",
+        "domains": ["PM"],
+        "hook_id": "auction-invariant-pause",
+        "id": "auction_invariant_breach_watch",
+        "kpi": "auction.kkt_violation_pct",
+        "owner": "PM",
+        "hash": "aa6e89c0bd50288e013457b46b8a0847729eb96b581fa1b9b0ba184b13704a32"
+      },
+      {
+        "description": "Compara delta FX com benchmark para evitar arbitragem.",
+        "domain": "PM",
+        "domains": ["PM"],
+        "hook_id": "fx-delta-benchmark-guard",
+        "id": "fx_delta_benchmark_watch",
+        "kpi": "fx.delta_vs_benchmark_bps",
+        "owner": "PM",
+        "hash": "1fa7cf27227865e006043d0ce78692767d3b948503fcf74d84daa7ecc93cc498"
+      },
+      {
+        "description": "Detecta divergência de preço entre oráculos e referência.",
+        "domain": "PM",
+        "domains": ["PM"],
+        "hook_id": "pm-oracle-staleness",
+        "id": "oracle_divergence_watch",
+        "kpi": "oracle.divergence_bps",
+        "owner": "PM",
+        "hash": "3e81a13ec7634e94d0eb0906813d7488137c9d702c1719d7a0c1d9570ada7b79"
+      },
+      {
+        "description": "Bloqueia releases com vulnerabilidades críticas em dependências.",
+        "domain": "SEC/PRIV",
+        "domains": ["SEC/PRIV"],
+        "hook_id": "dep-vuln-freeze",
+        "id": "dep_vuln_watch",
+        "kpi": "security.deps.critical_vulns",
+        "owner": "SEC",
+        "hash": "7d6d684abafee8dc8b2bbf0a40df91dd849fe898433fe237595df4777bfc69ec"
+      },
+      {
+        "description": "Garante que o budget de privacidade diferencial não estoure.",
+        "domain": "SEC/PRIV",
+        "domains": ["SEC/PRIV"],
+        "hook_id": "dp-budget-freeze",
+        "id": "dp_budget_breach_watch",
+        "kpi": "privacy.dp_budget_multiplier",
+        "owner": "SEC",
+        "hash": "d79b6636d58ce2790bd3a74f3370c4a386ba6cf6edee725139137046fdfe3b7f"
+      },
+      {
+        "description": "Sinaliza falha em gates formais (A108/segurança).",
+        "domain": "SEC/PRIV",
+        "domains": ["SEC/PRIV"],
+        "hook_id": "formal-verification-freeze",
+        "id": "formal_verification_gate_watch",
+        "kpi": "formal.verification.failure",
+        "owner": "SEC",
+        "hash": "d91a2613e2b71cf0b5d11ef4cc2d0506a600e38bb2f0ee8ac6314b1a5dde7b61"
+      },
+      {
+        "description": "Enforce rotação de chaves/segredos do IdP.",
+        "domain": "SEC/PRIV",
+        "domains": ["SEC/PRIV"],
+        "hook_id": "idp-keys-rotation",
+        "id": "idp_keys_rotation_watch",
+        "kpi": "security.idp.keys_age_days",
+        "owner": "SEC",
+        "hash": "194244934af32923c6792db2d3533e693b2d18171f20ed70199ab67fc45c9db6"
+      }
+    ],
+    "hooks": []
+  }
+}
