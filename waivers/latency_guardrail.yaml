@@ -1,0 +1,40 @@
+waiver_id: WAIVER-20240415-latency-guardrail
+created_at: 2025-04-15
+expires_at: 2025-04-22
+owner:
+  team: SRE
+  primary: Lucas Almeida
+  slack: "#sre-creditengine"
+justification: |
+  Aceitar latência p95 de até 0,9 s durante a migração do orquestrador de preços para a versão 5.4.
+  A mudança é necessária para habilitar o fallback TWAP automático documentado no PRFAQ.
+ci_gates:
+  - name: watchers.dry
+    requirement: pass
+    status: conditional
+    condition: "Allow metrics_decision_hook_gap_watch escalation"
+  - name: hooks.dry
+    requirement: pass
+    status: pass
+  - name: evidence.publish
+    requirement: pass
+    status: pass
+watchers_impacted:
+  - metrics_decision_hook_gap_watch
+  - slo_budget_breach_watch
+mitigations:
+  - action: Monitorar painel `DEC Latency` (Grafana) com alerta a cada 5 min
+    owner: Lucas Almeida
+  - action: Reverter feature flag `pricing_orchestrator_v54` caso p95 ultrapasse 0,95 s
+    owner: DEC Tech Lead
+rollback_plan: |
+  Desabilitar a nova versão do orquestrador, ativar rota de degrade e remover o waiver após três janelas verdes.
+approvals:
+  - role: Head of SRE
+    name: Renata Souza
+  - role: Product Manager DEC
+    name: Felipe Martins
+links:
+  prfaq: docs/PRFAQ.md#what-does-success-look-like
+  narrative: docs/6P.md#6-performance
+  environment: docs/environment.md
