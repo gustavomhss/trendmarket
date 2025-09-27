@@ -38,6 +38,17 @@ def _build_hook(**overrides):
     return hook
 
 
+@pytest.fixture
+def list_config_path(tmp_path: pathlib.Path) -> pathlib.Path:
+    config_path = tmp_path / "hooks.yml"
+    hooks = [
+        _build_hook(hook="list-alpha", rollback=True),
+        _build_hook(hook="list-beta", rollback="no"),
+    ]
+    config_path.write_text(json.dumps(hooks), encoding="utf-8")
+    return config_path
+
+
 def test_validate_hook_accepts_string_no():
     hook = _build_hook(rollback="no")
     validated = hooks_dry_run._validate_hook(hook)
@@ -64,3 +75,10 @@ def test_generate_report_emits_boolean_for_string_no(tmp_path):
     report = hooks_dry_run.generate_report(config_path)
 
     assert report["hooks"][0]["rollback"] is False
+
+
+def test_generate_report_supports_top_level_list(list_config_path: pathlib.Path):
+    report = hooks_dry_run.generate_report(list_config_path)
+
+    assert report["total_hooks"] == 2
+    assert {entry["hook"] for entry in report["hooks"]} == {"list-alpha", "list-beta"}
