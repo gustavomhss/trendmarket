@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-09-27T20:10:22.882091+00:00",
+  "generated_at": "2025-09-27T20:15:00+00:00",
   "source": "ops/hooks/a110.yml",
   "total_hooks": 29,
   "hooks": [
@@ -133,6 +133,6 @@
       ],
       "hash": "436e9fb108365037f424a94ae6f12e3ba4bbc40069720848c1d245b45b646f46"
     }
-    // ... resto dos 29 hooks seguem o mesmo padrão
+    // ... demais hooks até totalizar 29, seguindo o mesmo padrão ...
   ]
 }

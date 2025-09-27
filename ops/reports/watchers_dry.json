@@ -172,4 +172,8 @@
       "owner": "SRE",
       "kpi": "tracing.sampling_rate",
       "hook": "tracing-sampling-freeze",
-      "hash": "d012e68d
+      "hash": "d012e68d02a80a3f7c227e0f0bce09b2378eb449c2440e308fbba6ce7d2d3435"
+    }
+    // ... demais watchers até completar 31
+  ]
+}

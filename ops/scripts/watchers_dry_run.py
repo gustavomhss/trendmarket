@@ -34,55 +34,6 @@ def _load_parser():
 _parse_config = _load_parser()
 
 
-def _load_hook_metadata() -> Dict[str, Dict[str, Any]]:
-    """Carrega metadados de hooks para complementar watchers."""
-    global _HOOK_METADATA_CACHE
-    if _HOOK_METADATA_CACHE is not None:
-        return _HOOK_METADATA_CACHE
-
-    hooks_path = pathlib.Path("ops/hooks/a110.yml")
-    if not hooks_path.exists():
-        _HOOK_METADATA_CACHE = {}
-        return _HOOK_METADATA_CACHE
-
-    try:
-        payload = _parse_config(hooks_path.read_text(encoding="utf-8"))
-    except Exception:
-        _HOOK_METADATA_CACHE = {}
-        return _HOOK_METADATA_CACHE
-
-    hooks = payload.get("hooks")
-    if not isinstance(hooks, list):
-        _HOOK_METADATA_CACHE = {}
-        return _HOOK_METADATA_CACHE
-
-    metadata: Dict[str, Dict[str, Any]] = {}
-    for entry in hooks:
-        if not isinstance(entry, dict):
-            continue
-        watchers = entry.get("watchers")
-        if not isinstance(watchers, list):
-            continue
-        for watcher in watchers:
-            if not isinstance(watcher, str):
-                continue
-            name = watcher.strip()
-            if not name:
-                continue
-            metadata[name] = {
-                "hook": entry.get("hook"),
-                "owner": entry.get("owner"),
-                "kpi": entry.get("kpi"),
-                "threshold": entry.get("threshold"),
-                "window": entry.get("window"),
-                "action": entry.get("action"),
-                "rollback": entry.get("rollback"),
-            }
-
-    _HOOK_METADATA_CACHE = metadata
-    return metadata
-
-
 def _normalize_string(
     value: Any, *, field: str, source: pathlib.Path, allow_empty: bool = False
 ) -> str:
@@ -151,11 +102,7 @@ def _extract_watcher_metadata(payload: Mapping[str, Any], source: pathlib.Path) 
         entry: Dict[str, Any] = {"owner": owner, "description": description}
         for optional in OPTIONAL_FIELDS:
             if optional in watcher_payload and watcher_payload[optional] is not None:
-                entry[optional] = _normalize_string(
-                    watcher_payload[optional],
-                    field=f"watcher '{watcher_id}' {optional}",
-                    source=source,
-                )
+                entry[optional] = watcher_payload[optional]
 
         metadata[watcher_id] = entry
 
@@ -167,6 +114,7 @@ def _load_watchers(path: pathlib.Path) -> List[Dict[str, Any]]:
         raise FileNotFoundError(f"Watcher configuration not found: {path}")
     if path.is_dir():
         raise ValueError(f"{path}: expected a consolidated watcher configuration file")
+
     data = _parse_config(path.read_text(encoding="utf-8"))
     if not isinstance(data, Mapping):
         raise ValueError(f"{path}: watcher configuration must be a mapping")
@@ -271,6 +219,7 @@ def _validate_watcher(watcher: Dict[str, Any]) -> Dict[str, Any]:
     missing = REQUIRED_FIELDS - watcher.keys()
     if missing:
         raise ValueError(f"Watcher '{watcher.get('id')}' missing fields: {sorted(missing)}")
+
     normalized = {key: _normalize_field(watcher[key]) for key in sorted(watcher.keys())}
 
     if not isinstance(normalized.get("domains"), list) or not normalized["domains"]:
@@ -294,6 +243,15 @@ def _validate_watcher(watcher: Dict[str, Any]) -> Dict[str, Any]:
     return normalized
 
 
+def _resolve_source_path(config: pathlib.Path) -> str:
+    resolved = config.resolve()
+    repo_root = pathlib.Path(__file__).resolve().parents[1]
+    try:
+        return str(resolved.relative_to(repo_root))
+    except ValueError:
+        return str(resolved)
+
+
 def generate_report(config: pathlib.Path) -> Dict[str, Any]:
     watchers = _load_watchers(config)
     core_bindings = _load_core_bindings(_resolve_core_path(config))
@@ -302,7 +260,7 @@ def generate_report(config: pathlib.Path) -> Dict[str, Any]:
     validated.sort(key=lambda entry: (entry["domain"], entry["id"]))
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
-        "source": str(config),
+        "source": _resolve_source_path(config),
         "total_watchers": len(validated),
         "watchers": validated,
     }
