@@ -84,3 +84,48 @@ def test_generate_report_from_directory(tmp_path):
     assert watcher["id"] == "model_drift_watch"
     assert watcher["domain"] == "DEC"
     assert watcher["rollback"] == "yes"
+
+
+def test_generate_report_from_aggregated_schema(tmp_path):
+    config_path = tmp_path / "core.yaml"
+    aggregated = {
+        "version": 1,
+        "domains": {
+            "DEC": [
+                "metrics_decision_hook_gap_watch",
+                "slo_budget_breach_watch",
+            ]
+        },
+        "watchers": {
+            "metrics_decision_hook_gap_watch": {
+                "description": "Latency guard",
+                "kpi": "dec.latency.p95",
+                "owner": "SRE",
+                "hook": "dec-latency-gap",
+            },
+            "slo_budget_breach_watch": {
+                "description": "Burn rate monitor",
+                "kpi": "slo.burn_rate",
+                "owner": "SRE",
+                "hook": "slo-burn-rate-guard",
+            },
+        },
+    }
+    config_path.write_text(json.dumps(aggregated), encoding="utf-8")
+
+    report = watchers_dry_run.generate_report(config_path)
+
+    assert report["total_watchers"] == 2
+    ids = {watcher["id"] for watcher in report["watchers"]}
+    assert ids == {
+        "metrics_decision_hook_gap_watch",
+        "slo_budget_breach_watch",
+    }
+
+    by_id = {watcher["id"]: watcher for watcher in report["watchers"]}
+    metric_gap = by_id["metrics_decision_hook_gap_watch"]
+    assert metric_gap["domain"] == "DEC"
+    assert metric_gap["action"] == "degrade_route"
+    assert metric_gap["threshold"] == "800ms"
+    assert metric_gap["window"] == "5m"
+    assert metric_gap["description"] == "Latency guard"
