@@ -1,0 +1,145 @@
+plans:
+  - theme: security
+    risk: Cadeia de suprimentos com dependências novas sem SBOM pode introduzir CVEs críticas.
+    blast_radius: Global — pipelines de build e runtime em produção/staging.
+    proof: >-
+      Invariantes apoiadas pelos watchers A110 `dep_vuln_watch` e `image_vuln_regression_watch`;
+      hook `privacy_budget>1.5x•1h->freeze` garante travamento automático caso o orçamento de privacidade seja violado e
+      exige evidências de `./infra/security/sbom_scan.sh` anexadas ao gate A110 (`./ops/scripts/gate_a110.sh --require-green`).
+    validate_cmds:
+      - ./infra/security/sbom_scan.sh
+      - make watchers.dry
+      - make hooks.dry
+    rollback: >-
+      Acionar o hook A110 `privacy_budget>1.5x•1h->freeze` via `./ops/scripts/gate_a110.sh --rollback` e voltar ao último artefato
+      assinado armazenado no registry com SBOM verificada pelos watchers `dep_vuln_watch` e `image_vuln_regression_watch`.
+    owner: SEC
+    due: 2024-09-30
+
+  - theme: be
+    risk: Regressão de contrato de API ou degradação de p95 > 800 ms afetando decisões síncronas.
+    blast_radius: Consumidores do DEC e FE internos (sync APIs, webhooks) — impacto direto em pricing.
+    proof: >-
+      Watchers `api_breaking_change_watch`, `metrics_decision_hook_gap_watch` e `slo_budget_breach_watch` fiscalizam backward compatibility
+      e SLO; hook `dec-latency-degrade (latency.p95>800•5m->degrade_route)` garante mitigação automática validada pelo Gate A110 com owners SRE/BE.
+    validate_cmds:
+      - make be.lint
+      - make be.test
+      - make hooks.dry
+    rollback: >-
+      Disparar o hook `dec-latency-degrade` via Gate A110 e efetuar rollback para a última release aprovada (tags auditadas)
+      sob supervisão dos watchers `api_breaking_change_watch` e `slo_budget_breach_watch`.
+    owner: BE
+    due: 2024-09-30
+
+  - theme: data
+    risk: Drift de contratos CDC/dbt quebrando SLAs de freshness e compatibilidade.
+    blast_radius: Lakehouse (Iceberg) e consumidores analíticos/on-line dependentes dos contratos A106/A87/A89.
+    proof: >-
+      Watchers `data_contract_break_watch`, `schema_registry_drift_watch`, `dbt_test_failure_watch` e `cdc_lag_watch` asseguram invariantes;
+      hook A110 `contract_break->rollback+waiver_timebox` pausa propagação até correção com evidências dbt publicadas.
+    validate_cmds:
+      - make data.dbt
+      - make watchers.dry
+      - make hooks.dry
+    rollback: >-
+      Executar o hook `contract_break->rollback+waiver_timebox` pelo Gate A110, revertendo para o último snapshot compatível
+      e notificando DATA owners via watchers `data_contract_break_watch` e `cdc_lag_watch`.
+    owner: DATA
+    due: 2024-09-30
+
+  - theme: ml
+    risk: Drift de modelo (PSI>0.2) ou falha de SRM provocando decisões inválidas.
+    blast_radius: Serviço de inferência, experimentos on-line e downstream DEC.
+    proof: >-
+      Watchers `model_drift_watch`, `ab_srm_watch` e `runtime_eol_watch` monitoram drift e validade de experimento;
+      hook `psi>0.2•24h->rollback_model` (A110) liga rollback automático e exige evidências de monitoramento anexadas.
+    validate_cmds:
+      - make ml.test
+      - make watchers.dry
+      - make hooks.dry
+    rollback: >-
+      Invocar o hook A110 `psi>0.2•24h->rollback_model` para reinstalar o baseline registrado, com confirmação dos watchers
+      `model_drift_watch` e `ab_srm_watch` antes de retomar o tráfego.
+    owner: ML
+    due: 2024-09-30
+
+  - theme: fe
+    risk: Regressão de Core Web Vitals (INP p75 > 200 ms) ou quebra de contrato com APIs internas.
+    blast_radius: Portais internos e SDKs consumidores, afetando jornada de pricing.
+    proof: >-
+      Watchers `web_cwv_regression_watch` e `api_breaking_change_watch` guardam acessibilidade/compatibilidade;
+      hook `inp.p75>200ms•24h->rollback_FE` (A110) implementa rollback automático com evidências de lighthouse/CWV.
+    validate_cmds:
+      - make fe.lint
+      - make fe.test
+      - make hooks.dry
+    rollback: >-
+      Rodar Gate A110 acionando `inp.p75>200ms•24h->rollback_FE` e restaurar a build anterior verificada pelos watchers
+      `web_cwv_regression_watch` e `api_breaking_change_watch`.
+    owner: FE
+    due: 2024-09-30
+
+  - theme: infra
+    risk: Misconfiguração de observabilidade/IaC reduzindo sampling < 1% ou gerando storm de alertas.
+    blast_radius: Stack de SRE (OTel, Prometheus, Grafana) impactando todos os domínios.
+    proof: >-
+      Watchers `tracing_sampling_watch`, `alert_storm_watch` e `policy_violation_watch` asseguram governança;
+      hook `sample_rate<1%•15m->block_release` bloqueia mudanças até restauração validada pelo Gate A110.
+    validate_cmds:
+      - make infra.validate
+      - make watchers.dry
+      - make hooks.dry
+    rollback: >-
+      Usar Gate A110 para manter `sample_rate<1%•15m->block_release` ativo e aplicar terraform/helm rollback para o último estado
+      aprovado com watchers `tracing_sampling_watch` e `alert_storm_watch` em green.
+    owner: SRE
+    due: 2024-09-30
+
+  - theme: perf
+    risk: Desvio no orçamento de latência (Time-to-Preço-Válido) excedendo NSM.
+    blast_radius: Funis críticos DEC/PM/ML com impacto direto no NSM p75 ≤ 0,5 s.
+    proof: >-
+      Watchers `slo_budget_breach_watch`, `metrics_decision_hook_gap_watch` e `oracle_divergence_watch` monitoram latência/consistência;
+      hook `dec-latency-degrade (latency.p95>800•5m->degrade_route)` fornece ação automática e evidências em traces.
+    validate_cmds:
+      - cargo bench
+      - make watchers.dry
+      - make hooks.dry
+    rollback: >-
+      Deixar o hook `dec-latency-degrade` ativo via Gate A110 e promover rollback para a configuração/perfil anterior com suporte
+      dos watchers `slo_budget_breach_watch` e `metrics_decision_hook_gap_watch`.
+    owner: SRE
+    due: 2024-09-30
+
+  - theme: docs
+    risk: Documentação desatualizada minando auditorias e aderência a contratos.
+    blast_radius: Governança cross-domain (auditoria, compliance, onboarding).
+    proof: >-
+      Watchers `doc_coverage_watch` e `okr_risk_alignment_watch` garantem cobertura mínima; hook Gate A110 exige
+      publicação de evidências antes de merge (`./ops/scripts/gate_a110.sh --require-green`).
+    validate_cmds:
+      - make docs.verify
+      - make watchers.dry
+      - make hooks.dry
+    rollback: >-
+      Reter merges até atualização via Gate A110, mantendo `doc_coverage_watch` e `okr_risk_alignment_watch` em conformidade
+      e restaurando última revisão aprovada do repositório.
+    owner: DOCS
+    due: 2024-09-30
+
+  - theme: observabilidade
+    risk: Telemetria incompleta quebrando correlação trace↔métrica↔hook, atrasando mitigação.
+    blast_radius: Stack DEC/ML/FE dependente de sinais para A110.
+    proof: >-
+      Watchers `metrics_decision_hook_gap_watch`, `tracing_sampling_watch` e `slo_budget_breach_watch` monitoram saúde end-to-end;
+      hook `sample_rate<1%•15m->block_release` mais `dec-latency-degrade` ficam programados no Gate A110 com evidências OTel.
+    validate_cmds:
+      - make watchers.dry
+      - make hooks.dry
+      - docker compose -f docker-compose.observability.yml config
+    rollback: >-
+      Bloquear deploys mantendo hooks `sample_rate<1%•15m->block_release` e `dec-latency-degrade` ativos até restabelecer
+      cobertura dos watchers `metrics_decision_hook_gap_watch` e `tracing_sampling_watch`, revertendo dashboards/configs via git tag anterior.
+    owner: SRE
+    due: 2024-09-30
