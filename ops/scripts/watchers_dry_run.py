@@ -11,7 +11,7 @@ import sys
 from datetime import datetime, timezone
 from typing import Any, Dict, List
 
-REQUIRED_FIELDS = {"id", "owner", "kpi", "threshold", "window", "action"}
+REQUIRED_FIELDS = {"id", "domain", "owner", "kpi", "threshold", "window", "action"}
 
 
 def _load_watchers(path: pathlib.Path) -> List[Dict[str, Any]]:
@@ -39,6 +39,7 @@ def _validate_watcher(watcher: Dict[str, Any]) -> Dict[str, Any]:
     digest = hashlib.sha256(encoded).hexdigest()
     return {
         "id": normalized["id"],
+        "domain": normalized["domain"],
         "owner": normalized["owner"],
         "kpi": normalized["kpi"],
         "threshold": normalized["threshold"],

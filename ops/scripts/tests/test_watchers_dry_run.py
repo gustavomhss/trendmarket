@@ -1,0 +1,57 @@
+import importlib.util
+import json
+import pathlib
+
+import pytest
+
+
+MODULE_PATH = pathlib.Path(__file__).resolve().parents[1] / "watchers_dry_run.py"
+
+
+def _load_module():
+    spec = importlib.util.spec_from_file_location("watchers_dry_run", MODULE_PATH)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("Unable to load watchers_dry_run module")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+watchers_dry_run = _load_module()
+
+
+def _build_watcher(**overrides):
+    watcher = {
+        "id": "sample",
+        "domain": "DEC",
+        "owner": "owner",
+        "kpi": "metric",
+        "threshold": "1",
+        "window": "5m",
+        "action": "noop",
+    }
+    watcher.update(overrides)
+    return watcher
+
+
+def test_validate_watcher_requires_domain():
+    watcher = _build_watcher()
+    watcher.pop("domain")
+
+    with pytest.raises(ValueError) as excinfo:
+        watchers_dry_run._validate_watcher(watcher)
+
+    message = str(excinfo.value)
+    assert "missing fields" in message
+    assert "'domain'" in message
+
+
+def test_validate_watcher_normalizes_domain(tmp_path):
+    watcher = _build_watcher(domain="  DEC  ")
+    config_path = tmp_path / "watchers.json"
+    config = {"watchers": [watcher]}
+    config_path.write_text(json.dumps(config), encoding="utf-8")
+
+    report = watchers_dry_run.generate_report(config_path)
+
+    assert report["watchers"][0]["domain"] == "DEC"
