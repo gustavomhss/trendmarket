@@ -1,10 +1,13 @@
 //! Testes de direção de arredondamento (política única ADR-0001/0002)
 
-use ce_core::amm::liquidity::{initial_mint, remove_liquidity};
-use ce_core::amm::swap::{get_amount_in, get_amount_out};
-use ce_core::amm::guardrails::{div_nearest_even_u256, div_nearest_even_u256_to_u128};
-use ce_core::amm::types::{U256, Ppm, WAD, MIN_RESERVE};
-use ce_core::amm::errors::AmmError;
+use credit_engine_core::amm::errors::AmmError;
+use credit_engine_core::amm::guardrails::{
+    div_nearest_even_u256,
+    div_nearest_even_u256_to_u128,
+};
+use credit_engine_core::amm::liquidity::{initial_mint, remove_liquidity};
+use credit_engine_core::amm::swap::{get_amount_in, get_amount_out};
+use credit_engine_core::amm::types::{U256, Ppm, WAD, MIN_RESERVE};
 
 const FEE0: Ppm = 0;
 const FEE3: Ppm = 3000; // 0,30%
