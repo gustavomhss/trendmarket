@@ -64,7 +64,7 @@ import sys
 
 errors = []
 watchers_path = Path('ops/watchers/core.yaml')
-hooks_path = Path('ops/hooks/a110.yaml')
+hooks_path = Path('ops/hooks/a110.yml')
 
 if not watchers_path.exists():
     errors.append(f"missing watchers file: {watchers_path}")
@@ -78,7 +78,14 @@ if errors:
 with watchers_path.open() as fh:
     watchers_data = json.load(fh)
 with hooks_path.open() as fh:
-    hooks_data = json.load(fh)
+    hooks_payload = json.load(fh)
+
+if isinstance(hooks_payload, dict):
+    hooks = hooks_payload.get("hooks", [])
+elif isinstance(hooks_payload, list):
+    hooks = hooks_payload
+else:
+    hooks = []
 
 expected_domains = ["DEC", "PM", "DATA", "ML", "FE", "SEC/PRIV", "PLAT", "INT"]
 domains = watchers_data.get("domains", {})
@@ -95,9 +102,8 @@ for domain, watchers in domains.items():
         if watcher not in watcher_defs:
             errors.append(f"watcher {watcher} referenced in domain {domain} but missing definition")
 
-hooks = hooks_data.get("hooks", [])
 if not hooks:
-    errors.append("no hooks defined in ops/hooks/a110.yaml")
+    errors.append("no hooks defined in ops/hooks/a110.yml")
 
 hooks_by_name = {}
 watchers_with_hooks = set()
@@ -110,7 +116,7 @@ for hook in hooks:
         errors.append(f"duplicate hook name detected: {name}")
     hooks_by_name[name] = hook
 
-    for field in ("kpi", "threshold", "window", "owner", "rollback", "playbook"):
+    for field in ("domain", "kpi", "threshold", "window", "action", "owner", "rollback"):
         if field not in hook or hook[field] in (None, ""):
             errors.append(f"hook {name} missing required field: {field}")
     watcher_list = hook.get("watchers", [])
@@ -121,15 +127,6 @@ for hook in hooks:
         watchers_with_hooks.add(watcher)
         if watcher not in watcher_defs:
             errors.append(f"hook {name} references unknown watcher {watcher}")
-
-    playbook = hook.get("playbook", "")
-    playbook_path = playbook.split('#', 1)[0]
-    if playbook_path:
-        pb_file = Path(playbook_path)
-        if not pb_file.exists():
-            errors.append(f"playbook path not found for hook {name}: {playbook_path}")
-    else:
-        errors.append(f"hook {name} missing playbook path")
 
 watchers_missing_hooks = sorted(set(all_domain_watchers) - watchers_with_hooks)
 if watchers_missing_hooks:

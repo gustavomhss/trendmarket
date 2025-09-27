@@ -27,6 +27,8 @@ hooks_dry_run = _load_module()
 def _build_hook(**overrides):
     hook = {
         "hook": "sample",
+        "domain": "DEC",
+        "watchers": ["metrics_decision_hook_gap_watch"],
         "kpi": "metric",
         "threshold": "1",
         "window": "5m",
@@ -63,4 +65,7 @@ def test_generate_report_emits_boolean_for_string_no(tmp_path):
 
     report = hooks_dry_run.generate_report(config_path)
 
-    assert report["hooks"][0]["rollback"] is False
+    hook_entry = report["hooks"][0]
+    assert hook_entry["rollback"] is False
+    assert hook_entry["domain"] == "DEC"
+    assert hook_entry["watchers"] == ["metrics_decision_hook_gap_watch"]
