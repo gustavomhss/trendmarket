@@ -43,6 +43,19 @@
       "playbook": "docs/runbooks/plat_observability.md#slo-burn"
     },
     {
+      "hook": "policy-violation-freeze",
+      "watchers": [
+        "policy_violation_watch"
+      ],
+      "kpi": "policy.violation_detected",
+      "threshold": 1,
+      "window": "5m",
+      "action": "freeze_release",
+      "owner": "SRE+Compliance",
+      "rollback": true,
+      "playbook": "docs/runbooks/plat_observability.md#policy-violation"
+    },
+    {
       "hook": "pm-oracle-staleness",
       "watchers": [
         "oracle_divergence_watch",
@@ -189,8 +202,7 @@
     {
       "hook": "fe-cwv-regression",
       "watchers": [
-        "web_cwv_regression_watch",
-        "api_breaking_change_watch"
+        "web_cwv_regression_watch"
       ],
       "kpi": "web.cwv.inp_p75",
       "threshold": "200ms",
@@ -212,6 +224,32 @@
       "owner": "INT",
       "rollback": true,
       "playbook": "docs/runbooks/int_integrations.md#api-breaking"
+    },
+    {
+      "hook": "cache-ttl-block",
+      "watchers": [
+        "cache_ttl_misuse_watch"
+      ],
+      "kpi": "integration.cache_ttl_violation_pct",
+      "threshold": 0,
+      "window": "10m",
+      "action": "block_release",
+      "owner": "INT/Platform",
+      "rollback": true,
+      "playbook": "docs/runbooks/int_integrations.md#cache-ttl"
+    },
+    {
+      "hook": "cls-payin-cutover",
+      "watchers": [
+        "cls_payin_cutoff_watch"
+      ],
+      "kpi": "integration.cls_payin_cutoff_delay_ms",
+      "threshold": 30000,
+      "window": "5m",
+      "action": "switch_to_manual_cutoff",
+      "owner": "INT/Payments",
+      "rollback": true,
+      "playbook": "docs/runbooks/int_integrations.md#cls-payin"
     },
     {
       "hook": "formal-verification-freeze",
@@ -251,6 +289,19 @@
       "owner": "SEC/PRIV",
       "rollback": false,
       "playbook": "docs/runbooks/sec_privacy.md#idp-keys"
+    },
+    {
+      "hook": "alert-storm-suppressor",
+      "watchers": [
+        "alert_storm_watch"
+      ],
+      "kpi": "alerts.per_minute",
+      "threshold": 50,
+      "window": "10m",
+      "action": "enable_alert_mitigation",
+      "owner": "SRE",
+      "rollback": true,
+      "playbook": "docs/runbooks/plat_observability.md#alert-storm"
     }
   ]
 }
