@@ -46,5 +46,45 @@
       "/workspace/trendmarket/ops/reports/watchers_dry.json"
     ],
     "recorded_at": "2025-09-27T07:46:41.284764+00:00"
+  },
+  {
+    "command": "make watchers.dry",
+    "status": "success",
+    "artifacts": [
+      "/workspace/trendmarket/ops/reports/watchers_dry.json"
+    ],
+    "recorded_at": "2025-09-27T20:01:45.774521+00:00"
+  },
+  {
+    "command": "make watchers.dry",
+    "status": "success",
+    "artifacts": [
+      "/workspace/trendmarket/ops/reports/watchers_dry.json"
+    ],
+    "recorded_at": "2025-09-27T20:02:52.941354+00:00"
+  },
+  {
+    "command": "make watchers.dry",
+    "status": "success",
+    "artifacts": [
+      "/workspace/trendmarket/ops/reports/watchers_dry.json"
+    ],
+    "recorded_at": "2025-09-27T20:02:59.392881+00:00"
+  },
+  {
+    "command": "make hooks.dry",
+    "status": "success",
+    "artifacts": [
+      "/workspace/trendmarket/ops/reports/hooks_dry.json"
+    ],
+    "recorded_at": "2025-09-27T20:03:01.250044+00:00"
+  },
+  {
+    "command": "make evidence.publish",
+    "status": "success",
+    "artifacts": [
+      "/workspace/trendmarket/ops/evidence/evidence.json"
+    ],
+    "recorded_at": "2025-09-27T20:03:02.955173+00:00"
   }
 ]
