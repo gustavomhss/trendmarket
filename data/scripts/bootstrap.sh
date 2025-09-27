@@ -4,6 +4,7 @@ set -euo pipefail
 COMMAND="${1:-}"
 DOMAIN_SLUG="data"
 OWNER="DATA"
+PYTHON_BIN="${PYTHON_BIN:-python3}"
 WATCHERS_JSON='["data_contract_break_watch","schema_registry_drift_watch","cdc_lag_watch","dbt_test_failure_watch"]'
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/.. && pwd)"
 REPO_ROOT="$(git -C "$ROOT_DIR" rev-parse --show-toplevel)"
@@ -19,7 +20,7 @@ USAGE
 }
 
 ensure_inventory() {
-  python - <<PY
+  "$PYTHON_BIN" - <<PY
 import json
 from pathlib import Path
 slug = "${DOMAIN_SLUG}"
@@ -43,7 +44,7 @@ PY
 
 write_manifest() {
   mkdir -p "$BUILD_DIR"
-  python - <<PY
+  "$PYTHON_BIN" - <<PY
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -64,7 +65,7 @@ PY
 
 publish_evidence() {
   mkdir -p "$EVIDENCE_DIR"
-  python - <<PY
+  "$PYTHON_BIN" - <<PY
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -94,7 +95,7 @@ case "$COMMAND" in
   lint)
     ensure_inventory
     check_lock
-    python - <<'PY'
+    "$PYTHON_BIN" - <<'PY'
 from pathlib import Path
 text = Path("data/README.md").read_text()
 if "CDC" not in text or "dbt" not in text:
@@ -104,7 +105,7 @@ PY
     ;;
   test)
     ensure_inventory
-    python - <<'PY'
+    "$PYTHON_BIN" - <<'PY'
 from pathlib import Path
 makefile = Path("data/Makefile").read_text()
 required = ["lint", "test", "build", "evidence"]
@@ -125,13 +126,13 @@ PY
     ;;
   hooks.dry|watchers.dry)
     ensure_inventory
-    python - <<'PY'
+    "$PYTHON_BIN" - <<'PY'
 print("[hooks/watchers] simulação concluída para DATA")
 PY
     ;;
   run)
     ensure_inventory
-    python - <<'PY'
+    "$PYTHON_BIN" - <<'PY'
 print("[run] utilize \"make data.dbt\" quando os modelos estiverem disponíveis")
 PY
     ;;
