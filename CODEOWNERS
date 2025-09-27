@@ -1,0 +1,6 @@
+# Managed by Fix-Pack governance. Coordinate updates with SecOps before editing.
+* @creditengine/secops @creditengine/platform-sre
+
+/.github/workflows/ @creditengine/secops @creditengine/devx
+/scripts/a110_run_invariants.sh @creditengine/platform-sre
+/docs/adr/ @creditengine/product @creditengine/legal

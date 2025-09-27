@@ -1,0 +1,27 @@
+name: docs-guard-agents
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  guard:
+    name: Enforce AGENTS governance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: tj-actions/changed-files@v44
+        id: changes
+        with:
+          files: |
+            **/AGENTS.md
+            **/agents.md
+      - name: Require AGENTS-APPROVED label
+        if: steps.changes.outputs.any_changed == 'true' && !contains(github.event.pull_request.labels.*.name, 'AGENTS-APPROVED')
+        run: |
+          echo "::error::AGENTS.md updates require the 'AGENTS-APPROVED' label from governance." >&2
+          exit 1

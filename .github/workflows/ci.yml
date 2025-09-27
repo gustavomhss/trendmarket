@@ -1,0 +1,74 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  security-events: write
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: cargo fmt
+        run: cargo fmt --all -- --check
+      - name: cargo clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: cargo test
+        run: cargo test --all --all-features
+
+  sbom:
+    name: SBOM
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: anchore/sbom-action@v0
+        with:
+          path: .
+          output-file: trendmarket.sbom.cdx.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sbom-cyclonedx
+          path: trendmarket.sbom.cdx.json
+
+  gate_a110:
+    name: Gate A110
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Install cargo-nextest
+        run: cargo install cargo-nextest --locked
+      - name: Run gate invariants
+        run: ./scripts/a110_run_invariants.sh
+      - name: Publish gate artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate-a110-artifacts
+          path: artifacts/
+          if-no-files-found: warn

@@ -1,0 +1,21 @@
+# Managed by Fix-Pack: keep Docker build contexts small and reproducible.
+.git
+.gitignore
+.github
+CHANGELOG.md
+CODEOWNERS
+SECURITY.md
+Cargo.lock
+target
+**/*.log
+**/*.tmp
+**/__pycache__
+*.swp
+*.swo
+.DS_Store
+out
+ops
+otelcol-contrib
+otelcol-contrib.tgz
+_backup
+_jira_out
