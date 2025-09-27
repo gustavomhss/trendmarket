@@ -1,7 +1,7 @@
 # Runbook FE — Experiência & SDKs
 
 ## web-cwv — `web_cwv_regression_watch`
-- **Hook:** `web-cwv-rollback`
+- **Hook:** `fe-cwv-regression`
 - **KPI:** `web.cwv.inp_p75` ≤ 200 ms (janela 24h)
 - **Ação automática:** `rollback_fe_release`
 - **Owner:** FE
@@ -13,7 +13,7 @@
 3. Aplique rollback via pipeline FE e comunique squads consumidores.
 
 ## api-breaking — `api_breaking_change_watch`
-- **Hook:** `api-contract-block`
+- **Hook:** `integration-contract-guard`
 - **KPI:** `api.contract.breaking_changes` = 0 (janela 5m)
 - **Ação automática:** `block_release`
 - **Owner:** INT + FE

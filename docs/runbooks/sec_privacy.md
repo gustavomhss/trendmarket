@@ -1,7 +1,7 @@
 # Runbook SEC/PRIV — Segurança & Privacidade
 
 ## dep-vuln — `dep_vuln_watch`
-- **Hook:** `dep-vuln-freeze`
+- **Hook:** `sec-privacy-freeze`
 - **KPI:** `security.deps.critical_vulns` = 0 (janela 15m)
 - **Ação automática:** `block_release`
 - **Owner:** Security Engineering
@@ -16,7 +16,7 @@
 Seguir instruções do `docs/runbooks/ml_model_ops.md#image-vuln` com foco em supply chain.
 
 ## dp-budget — `dp_budget_breach_watch`
-- **Hook:** `dp-budget-freeze`
+- **Hook:** `sec-privacy-freeze`
 - **KPI:** `privacy.dp_budget_multiplier` ≤ 1.5 (janela 60m)
 - **Ação automática:** `freeze_processing`
 - **Owner:** Privacy Engineering
@@ -28,7 +28,7 @@ Seguir instruções do `docs/runbooks/ml_model_ops.md#image-vuln` com foco em su
 3. Documentar ajuste e liberar somente após aprovação do DPO.
 
 ## idp-keys — `idp_keys_rotation_watch`
-- **Hook:** `idp-keys-rotation`
+- **Hook:** `sec-privacy-freeze`
 - **KPI:** `security.idp.keys_age_days` ≤ 90 (janela 1d)
 - **Ação:** `rotate_idp_keys`
 - **Owner:** Security Engineering
@@ -40,7 +40,7 @@ Seguir instruções do `docs/runbooks/ml_model_ops.md#image-vuln` com foco em su
 3. Monitorar autenticação por 24h para garantir ausência de erros.
 
 ## formal-verification — `formal_verification_gate_watch`
-- **Hook:** `formal-verification-freeze`
+- **Hook:** `sec-privacy-freeze`
 - **KPI:** `formal.verification.failure` = 0 (janela 5m)
 - **Ação automática:** `freeze_pipeline`
 - **Owner:** Security Assurance

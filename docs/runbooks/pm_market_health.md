@@ -1,7 +1,7 @@
 # Runbook PM — Mercados & Sinais
 
 ## oracle-divergence — `oracle_divergence_watch`
-- **Hook:** `oracle-staleness-failover`
+- **Hook:** `pm-oracle-staleness`
 - **KPI:** `oracle.divergence_bps` ≤ 5 (janela 10m)
 - **Ação automática:** `switch_to_twap_failover`
 - **Owner:** PM/BC
@@ -14,7 +14,7 @@
 4. Abrir ticket `PM-MKT` com análise de causa e anexar comparação de preços.
 
 ## fx-delta — `fx_delta_benchmark_watch`
-- **Hook:** `fx-delta-benchmark-guard`
+- **Hook:** `pm-oracle-staleness`
 - **KPI:** `fx.delta_vs_benchmark_bps` ≤ 15 (janela 10m)
 - **Ação automática:** `switch_to_reference_rate`
 - **Owner:** PM FX
@@ -27,7 +27,7 @@
 4. Atualizar canal #pm-markets com status.
 
 ## auction-invariant — `auction_invariant_breach_watch`
-- **Hook:** `auction-invariant-pause`
+- **Hook:** `pm-oracle-staleness`
 - **KPI:** `auction.kkt_violation_pct` = 0 (janela 5m)
 - **Ação automática:** `pause_auction_stream`
 - **Owner:** PM Leilões

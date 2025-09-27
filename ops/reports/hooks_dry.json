@@ -18,7 +18,7 @@
       "hash": "561062ca74690c58be408a647b98372890ccb4eb3c9a56ec04ed558cc851829c"
     },
     {
-      "hook": "oracle-stale-failover",
+      "hook": "pm-oracle-staleness",
       "kpi": "oracle.staleness_ms",
       "threshold": 30000,
       "window": "5m",
@@ -32,7 +32,7 @@
       "hash": "79a1c20e924ade5946c37ff0ce2acdb049c4f6c4683979be890e2c6cc2cec660"
     },
     {
-      "hook": "model-drift-rollback",
+      "hook": "ml-model-rollback",
       "kpi": "model.psi.p95",
       "threshold": 0.2,
       "window": "24h",

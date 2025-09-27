@@ -14,7 +14,7 @@
       "rollback": true
     },
     {
-      "hook": "oracle-stale-failover",
+      "hook": "pm-oracle-staleness",
       "kpi": "oracle.staleness_ms",
       "threshold": 30000,
       "window": "5m",
@@ -27,7 +27,7 @@
       "rollback": true
     },
     {
-      "hook": "model-drift-rollback",
+      "hook": "ml-model-rollback",
       "kpi": "model.psi.p95",
       "threshold": 0.2,
       "window": "24h",

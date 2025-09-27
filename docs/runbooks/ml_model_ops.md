@@ -1,7 +1,7 @@
 # Runbook ML — Model Lifecycle
 
 ## model-drift — `model_drift_watch`
-- **Hook:** `model-drift-rollback`
+- **Hook:** `ml-model-rollback`
 - **KPI:** `model.psi` ≤ 0.2 (janela 24h)
 - **Ação automática:** `rollback_model`
 - **Owner:** ML
@@ -14,7 +14,7 @@
 4. Documentar comparação de distribuições e anexar no ACE.
 
 ## srm — `ab_srm_watch`
-- **Hook:** `experiment-srm-guardrail`
+- **Hook:** `ml-model-rollback`
 - **KPI:** `experiment.srm_pvalue` ≥ 0.01 (janela 24h)
 - **Ação automática:** `pause_experiment`
 - **Owner:** ML Experimentos
@@ -26,7 +26,7 @@
 3. Emitir relatório de impacto e plano de correção.
 
 ## runtime-eol — `runtime_eol_watch`
-- **Hook:** `runtime-eol-governance`
+- **Hook:** `ml-model-rollback`
 - **KPI:** `runtime.support_gap_days` = 0 (janela 7d)
 - **Ação:** `schedule_runtime_upgrade`
 - **Owner:** PLAT + ML
@@ -38,7 +38,7 @@
 3. Comunicar stakeholders e publicar ADR/waiver se necessário.
 
 ## image-vuln — `image_vuln_regression_watch`
-- **Hook:** `image-vuln-regression-block`
+- **Hook:** `sec-privacy-freeze`
 - **KPI:** `image.critical_vuln_count` = 0 (janela 15m)
 - **Ação automática:** `block_release`
 - **Owner:** SEC + ML Ops

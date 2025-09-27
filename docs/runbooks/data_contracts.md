@@ -1,7 +1,7 @@
 # Runbook DATA — Contratos & Pipelines
 
 ## cdc-lag — `cdc_lag_watch`
-- **Hook:** `cdc-lag-hot-degrade`
+- **Hook:** `data-contract-rollback`
 - **KPI:** `cdc.lag.p95` ≤ 120 s (janela 15m)
 - **Ação automática:** `degrade_to_hot_table`
 - **Owner:** DATA
@@ -14,7 +14,7 @@
 4. Registrar incident no `data-contracts` board com evidências.
 
 ## schema-drift — `schema_registry_drift_watch`
-- **Hook:** `schema-drift-blocker`
+- **Hook:** `data-contract-rollback`
 - **KPI:** ausência de `schema.drift_detected` (janela 5m)
 - **Ação automática:** `block_deploy`
 - **Owner:** DATA
@@ -26,7 +26,7 @@
 3. Atualizar consumidores afetados e obter aprovação A87/A89.
 
 ## dbt-tests — `dbt_test_failure_watch`
-- **Hook:** `dbt-test-rollback`
+- **Hook:** `data-contract-rollback`
 - **KPI:** `dbt.tests.failure_rate` = 0 (janela 15m)
 - **Ação automática:** `rollback_transform`
 - **Owner:** DATA
@@ -38,7 +38,7 @@
 3. Aplicar hotfix ou rollback da run e comunicar release train.
 
 ## contract-breach — `data_contract_break_watch`
-- **Hook:** `data-contract-breach-guard`
+- **Hook:** `data-contract-rollback`
 - **KPI:** `data.contract.break` = 0 (janela 5m)
 - **Ação automática:** `trigger_contract_waiver`
 - **Owner:** DATA
@@ -50,7 +50,7 @@
 3. Atualizar contrato com versão corrigida e auditar no ACE.
 
 ## doc-coverage — `doc_coverage_watch`
-- **Hook:** `doc-coverage-gap`
+- **Hook:** `data-contract-rollback`
 - **KPI:** `data.doc.coverage` ≥ 95% (janela 24h)
 - **Ação:** `raise_doc_gap`
 - **Owner:** DATA

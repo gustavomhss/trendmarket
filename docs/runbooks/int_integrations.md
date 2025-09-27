@@ -1,7 +1,7 @@
 # Runbook INT — Integrações & APIs
 
 ## api-breaking — `api_breaking_change_watch`
-- **Hook:** `api-contract-block`
+- **Hook:** `integration-contract-guard`
 - **KPI:** `api.contract.breaking_changes` = 0 (janela 5m)
 - **Ação automática:** `block_release`
 - **Owner:** INT
@@ -13,7 +13,7 @@
 3. Ajustar payloads ou versionamento; publicar changelog.
 
 ## cache-ttl — `cache_ttl_misuse_watch`
-- **Hook:** `cache-ttl-block`
+- **Hook:** `integration-contract-guard`
 - **KPI:** `integration.cache_ttl_violation_pct` = 0 (janela 10m)
 - **Ação automática:** `block_release`
 - **Owner:** INT/Platform
@@ -25,7 +25,7 @@
 3. Confirmar via logs que novos TTLs estão em vigor.
 
 ## cls-payin — `cls_payin_cutoff_watch`
-- **Hook:** `cls-payin-cutover`
+- **Hook:** `integration-contract-guard`
 - **KPI:** `integration.cls_payin_cutoff_delay_ms` ≤ 30000 (janela 5m)
 - **Ação automática:** `switch_to_manual_cutoff`
 - **Owner:** INT/Payments

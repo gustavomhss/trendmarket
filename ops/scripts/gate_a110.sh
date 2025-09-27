@@ -64,12 +64,13 @@ import sys
 
 errors = []
 watchers_path = Path('ops/watchers/core.yaml')
-hooks_path = Path('ops/hooks/a110.yaml')
+hooks_candidates = [Path('ops/hooks/a110.yml'), Path('ops/hooks/a110.yaml')]
+hooks_path = next((candidate for candidate in hooks_candidates if candidate.exists()), None)
 
 if not watchers_path.exists():
     errors.append(f"missing watchers file: {watchers_path}")
-if not hooks_path.exists():
-    errors.append(f"missing hooks file: {hooks_path}")
+if hooks_path is None:
+    errors.append("missing hooks file: ops/hooks/a110.yml (or fallback ops/hooks/a110.yaml)")
 
 if errors:
     print("\n".join(errors))
@@ -78,7 +79,21 @@ if errors:
 with watchers_path.open() as fh:
     watchers_data = json.load(fh)
 with hooks_path.open() as fh:
-    hooks_data = json.load(fh)
+    hooks_raw = json.load(fh)
+
+if isinstance(hooks_raw, dict):
+    hooks = hooks_raw.get("hooks", [])
+    hooks_required_fields = ["kpi", "threshold", "window", "owner", "rollback", "action"]
+    optional_fields = ["playbook", "evidence", "domain"]
+elif isinstance(hooks_raw, list):
+    hooks = hooks_raw
+    hooks_required_fields = ["domain", "kpi", "threshold", "window", "owner", "rollback", "action"]
+    optional_fields = ["evidence"]
+else:
+    errors.append(f"unsupported hooks schema in {hooks_path}")
+    hooks = []
+    hooks_required_fields = []
+    optional_fields = []
 
 expected_domains = ["DEC", "PM", "DATA", "ML", "FE", "SEC/PRIV", "PLAT", "INT"]
 domains = watchers_data.get("domains", {})
@@ -95,9 +110,8 @@ for domain, watchers in domains.items():
         if watcher not in watcher_defs:
             errors.append(f"watcher {watcher} referenced in domain {domain} but missing definition")
 
-hooks = hooks_data.get("hooks", [])
 if not hooks:
-    errors.append("no hooks defined in ops/hooks/a110.yaml")
+    errors.append(f"no hooks defined in {hooks_path}")
 
 hooks_by_name = {}
 watchers_with_hooks = set()
@@ -110,7 +124,7 @@ for hook in hooks:
         errors.append(f"duplicate hook name detected: {name}")
     hooks_by_name[name] = hook
 
-    for field in ("kpi", "threshold", "window", "owner", "rollback", "playbook"):
+    for field in hooks_required_fields:
         if field not in hook or hook[field] in (None, ""):
             errors.append(f"hook {name} missing required field: {field}")
     watcher_list = hook.get("watchers", [])
@@ -122,14 +136,17 @@ for hook in hooks:
         if watcher not in watcher_defs:
             errors.append(f"hook {name} references unknown watcher {watcher}")
 
-    playbook = hook.get("playbook", "")
-    playbook_path = playbook.split('#', 1)[0]
-    if playbook_path:
-        pb_file = Path(playbook_path)
-        if not pb_file.exists():
-            errors.append(f"playbook path not found for hook {name}: {playbook_path}")
-    else:
-        errors.append(f"hook {name} missing playbook path")
+    for field in optional_fields:
+        if field in hook and hook[field] in (None, ""):
+            errors.append(f"hook {name} has empty optional field: {field}")
+
+    playbook = hook.get("playbook")
+    if playbook:
+        playbook_path = playbook.split('#', 1)[0]
+        if playbook_path:
+            pb_file = Path(playbook_path)
+            if not pb_file.exists():
+                errors.append(f"playbook path not found for hook {name}: {playbook_path}")
 
 watchers_missing_hooks = sorted(set(all_domain_watchers) - watchers_with_hooks)
 if watchers_missing_hooks:

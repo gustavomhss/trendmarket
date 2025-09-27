@@ -1,7 +1,7 @@
 # Runbook PLAT — Observabilidade & Confiabilidade
 
 ## tracing-sampling — `tracing_sampling_watch`
-- **Hook:** `tracing-sampling-freeze`
+- **Hook:** `platform-sampling-guard`
 - **KPI:** `tracing.sampling_rate` ≥ 1% (janela 15m)
 - **Ação automática:** `block_release`
 - **Owner:** SRE
@@ -13,7 +13,7 @@
 3. Reabrir deploy apenas após verificação cruzada com DEC/PM.
 
 ## alert-storm — `alert_storm_watch`
-- **Hook:** `alert-storm-suppressor`
+- **Hook:** `platform-sampling-guard`
 - **KPI:** `alerts.per_minute` ≤ 50 (janela 10m)
 - **Ação automática:** `enable_alert_mitigation`
 - **Owner:** SRE
@@ -25,7 +25,7 @@
 3. Registrar follow-up para ajustar regras de alerta.
 
 ## policy-violation — `policy_violation_watch`
-- **Hook:** `policy-violation-freeze`
+- **Hook:** `platform-sampling-guard`
 - **KPI:** `policy.violation_detected` = 0 (janela 5m)
 - **Ação automática:** `freeze_release`
 - **Owner:** SRE + Compliance
@@ -37,7 +37,7 @@
 3. Atualizar auditoria e checklist ACE.
 
 ## okr-alignment — `okr_risk_alignment_watch`
-- **Hook:** `okr-alignment-escalation`
+- **Hook:** `platform-sampling-guard`
 - **KPI:** `okr.risk_alignment_score` ≥ 0.8 (janela 7d)
 - **Ação:** `escalate_exec_review`
 - **Owner:** StrategyOps

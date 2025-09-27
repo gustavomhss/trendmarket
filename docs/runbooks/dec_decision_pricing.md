@@ -3,7 +3,7 @@
 Este runbook cobre os watchers de DEC definidos em `ops/watchers/core.yaml` e os respectivos hooks A110.
 
 ## metric-gap — `metrics_decision_hook_gap_watch`
-- **Hook:** `dec-latency-gap`
+- **Hook:** `dec-latency-degrade`
 - **KPI:** `dec.latency.p95` ≤ 800 ms (janela 5m)
 - **Ação automática:** `degrade_route`
 - **Owner:** SRE
@@ -16,7 +16,7 @@ Este runbook cobre os watchers de DEC definidos em `ops/watchers/core.yaml` e os
 4. Documente no ACE o impacto e anexos de traces.
 
 ## slo-burn — `slo_budget_breach_watch`
-- **Hook:** `slo-burn-rate-guard`
+- **Hook:** `platform-sampling-guard`
 - **KPI:** `slo.burn_rate` ≤ 1.0 (janela 60m)
 - **Ação automática:** `enforce_release_freeze`
 - **Owner:** SRE
