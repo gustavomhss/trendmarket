@@ -25,7 +25,7 @@ This repository now ships with first-class governance artifacts to guarantee tha
 
 ### Inventory
 
-- **Watchers:** Domain-specific configurations live under [`ops/watchers/`](ops/watchers). Each file describes the KPI, window, action, owner, and rollback policy for the mandatory watches covering DEC, PM, ML, DATA, PLAT, FE, SEC/PRIV and INT domains.
+- **Watchers:** Domain-specific configurations live under [`ops/watchers/`](ops/watchers). Each `.yml` file describes the KPI, window, action, owner, and rollback policy for the mandatory watches covering DEC, PM, ML, DATA, PLAT, FE, SEC/PRIV and INT domains. These inventories are the single source of truth consumed by `ops/scripts/watchers_dry_run.py`, which now enumerates every `.yml` file in that directory when generating `ops/reports/watchers_dry.json`.
 - **Gate A110 hooks:** The consolidated mapping is defined in [`ops/hooks/a110.yml`](ops/hooks/a110.yml). Every watcher is wired to the correct A110 hook, including the required thresholds and evidence links.
 
 ### Local enablement
