@@ -1,11 +1,11 @@
 {
-  "generated_at": "2025-09-27T20:10:26.318716+00:00",
+  "generated_at": "2025-09-27T21:30:30+00:00",
   "watchers_artifact": "ops/reports/watchers_dry.json",
   "hooks_artifact": "ops/reports/hooks_dry.json",
   "watchers_digest": "acc7e3641e7d0a0ba521176db8b857cad617c5a40e79ac3b1b6efe3534eaa5a6",
-  "hooks_digest": "69198f64b92da4213cb5fd251f78a9fa92c3847745c9ed3079c20c9933157a9b",
+  "hooks_digest": "f002a7e0e6e5b26f276cd46dc02992904762dc7c4f76a3828b07dfd8c499a255",
   "watchers_count": 31,
-  "hooks_count": 26,
+  "hooks_count": 27,
   "evidence": {
     "watchers": [
       {
@@ -283,6 +283,19 @@
           "playbook:docs/runbooks/dec_decision_pricing.md#metric-gap"
         ],
         "hash": "4f388f4a01aa9b5a1c92808b8bcb0b5cb0fb5bc1a85b7bed18da327c59c56cf8"
+      },
+      {
+        "hook": "idp-keys-rotation",
+        "kpi": "security.idp.keys_age_days",
+        "threshold": 90,
+        "window": "1d",
+        "action": "rotate_idp_keys",
+        "owner": "sec-priv@trendmarket",
+        "rollback": false,
+        "evidence": [
+          "playbook:docs/runbooks/sec_privacy.md#idp-keys"
+        ],
+        "hash": "040388b411f0303f293e5fb8393dcc98175a3275fc0ce6229b02d4fd859ae461"
       },
       {
         "hook": "model-drift-rollback",

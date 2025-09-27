@@ -237,3 +237,20 @@
       "action": "escalate_exec_review",
       "owner": "StrategyOps",
       "rollback": false,
+      "playbook": "docs/runbooks/plat_observability.md#okr-alignment"
+    },
+    {
+      "hook": "idp-keys-rotation",
+      "watchers": [
+        "idp_keys_rotation_watch"
+      ],
+      "kpi": "security.idp.keys_age_days",
+      "threshold": 90,
+      "window": "1d",
+      "action": "rotate_idp_keys",
+      "owner": "SEC/PRIV",
+      "rollback": false,
+      "playbook": "docs/runbooks/sec_privacy.md#idp-keys"
+    }
+  ]
+}
