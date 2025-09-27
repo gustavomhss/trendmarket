@@ -1,0 +1,42 @@
+[
+  {
+    "command": "make watchers.dry",
+    "status": "success",
+    "artifacts": [
+      "/workspace/trendmarket/ops/reports/watchers_dry.json"
+    ],
+    "recorded_at": "2025-09-27T02:26:03.336424+00:00"
+  },
+  {
+    "command": "make hooks.dry",
+    "status": "success",
+    "artifacts": [
+      "/workspace/trendmarket/ops/reports/hooks_dry.json"
+    ],
+    "recorded_at": "2025-09-27T02:26:06.817114+00:00"
+  },
+  {
+    "command": "make watchers.dry",
+    "status": "success",
+    "artifacts": [
+      "/workspace/trendmarket/ops/reports/watchers_dry.json"
+    ],
+    "recorded_at": "2025-09-27T02:26:10.076174+00:00"
+  },
+  {
+    "command": "make hooks.dry",
+    "status": "success",
+    "artifacts": [
+      "/workspace/trendmarket/ops/reports/hooks_dry.json"
+    ],
+    "recorded_at": "2025-09-27T02:26:11.690009+00:00"
+  },
+  {
+    "command": "make evidence.publish",
+    "status": "success",
+    "artifacts": [
+      "/workspace/trendmarket/ops/evidence/evidence.json"
+    ],
+    "recorded_at": "2025-09-27T02:26:13.291409+00:00"
+  }
+]
