@@ -18,7 +18,8 @@
     {
       "hook": "ml-model-rollback",
       "watchers": [
-        "model_drift_watch"
+        "model_drift_watch",
+        "image_vuln_regression_watch"
       ],
       "kpi": "model.psi",
       "threshold": 0.2,
@@ -44,7 +45,8 @@
     {
       "hook": "pm-oracle-staleness",
       "watchers": [
-        "oracle_divergence_watch"
+        "oracle_divergence_watch",
+        "slo_budget_breach_watch"
       ],
       "kpi": "oracle.divergence_bps",
       "threshold": 5,
@@ -187,7 +189,8 @@
     {
       "hook": "fe-cwv-regression",
       "watchers": [
-        "web_cwv_regression_watch"
+        "web_cwv_regression_watch",
+        "api_breaking_change_watch"
       ],
       "kpi": "web.cwv.inp_p75",
       "threshold": "200ms",
@@ -234,111 +237,3 @@
       "action": "escalate_exec_review",
       "owner": "StrategyOps",
       "rollback": false,
-      "playbook": "docs/runbooks/plat_observability.md#okr-alignment"
-    },
-    {
-      "hook": "dp-budget-freeze",
-      "watchers": [
-        "dp_budget_breach_watch"
-      ],
-      "kpi": "privacy.dp_budget_multiplier",
-      "threshold": 1.5,
-      "window": "60m",
-      "action": "freeze_processing",
-      "owner": "SEC",
-      "rollback": true,
-      "playbook": "docs/runbooks/sec_privacy.md#dp-budget"
-    },
-    {
-      "hook": "dep-vuln-freeze",
-      "watchers": [
-        "dep_vuln_watch"
-      ],
-      "kpi": "security.deps.critical_vulns",
-      "threshold": ">0",
-      "window": "15m",
-      "action": "block_release",
-      "owner": "SEC",
-      "rollback": true,
-      "playbook": "docs/runbooks/sec_privacy.md#dep-vuln"
-    },
-    {
-      "hook": "idp-keys-rotation",
-      "watchers": [
-        "idp_keys_rotation_watch"
-      ],
-      "kpi": "security.idp.keys_age_days",
-      "threshold": 90,
-      "window": "1d",
-      "action": "rotate_idp_keys",
-      "owner": "SEC",
-      "rollback": false,
-      "playbook": "docs/runbooks/sec_privacy.md#idp-keys"
-    },
-    {
-      "hook": "cache-ttl-block",
-      "watchers": [
-        "cache_ttl_misuse_watch"
-      ],
-      "kpi": "integration.cache_ttl_violation_pct",
-      "threshold": 0,
-      "window": "10m",
-      "action": "block_release",
-      "owner": "INT",
-      "rollback": true,
-      "playbook": "docs/runbooks/int_integrations.md#cache-ttl"
-    },
-    {
-      "hook": "cls-payin-cutover",
-      "watchers": [
-        "cls_payin_cutoff_watch"
-      ],
-      "kpi": "integration.cls_payin_cutoff_delay_ms",
-      "threshold": 30000,
-      "window": "5m",
-      "action": "switch_to_manual_cutoff",
-      "owner": "INT",
-      "rollback": true,
-      "playbook": "docs/runbooks/int_integrations.md#cls-payin"
-    },
-    {
-      "hook": "tracing-sampling-freeze",
-      "watchers": [
-        "tracing_sampling_watch"
-      ],
-      "kpi": "tracing.sampling_rate",
-      "threshold": 0.01,
-      "window": "15m",
-      "action": "block_release",
-      "owner": "SRE",
-      "rollback": true,
-      "playbook": "docs/runbooks/plat_observability.md#tracing-sampling"
-    },
-    {
-      "hook": "alert-storm-suppressor",
-      "watchers": [
-        "alert_storm_watch"
-      ],
-      "kpi": "alerts.per_minute",
-      "threshold": 50,
-      "window": "10m",
-      "action": "enable_alert_mitigation",
-      "owner": "SRE",
-      "rollback": true,
-      "playbook": "docs/runbooks/plat_observability.md#alert-storm"
-    },
-    {
-      "hook": "policy-violation-freeze",
-      "watchers": [
-        "policy_violation_watch"
-      ],
-      "kpi": "policy.violation_detected",
-      "threshold": 1,
-      "window": "5m",
-      "action": "freeze_release",
-      "owner": "Compliance",
-      "rollback": true,
-      "playbook": "docs/runbooks/plat_observability.md#policy-violation"
-    }
-  ]
-}

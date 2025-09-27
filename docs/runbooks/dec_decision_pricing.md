@@ -15,6 +15,19 @@ Este runbook cobre os watchers de DEC definidos em `ops/watchers/core.yaml` e os
 3. Se o fallback não estabilizar em 2 janelas, acione `plat@creditengine` e prepare a reversão manual da última alteração.
 4. Documente no ACE o impacto e anexos de traces.
 
+## model-drift-dec — `model_drift_watch`
+- **Hook:** `dec-latency-degrade`
+- **KPI:** `dec.latency.p95` ≤ 800 ms (janela 5m) sob fallback de rota
+- **Ação automática:** `degrade_route`
+- **Owner:** DEC Duty / SRE
+- **Rollback:** após `dec.latency.p95` < 700 ms por 2 janelas consecutivas e validação cruzada com ML.
+
+**Procedimento**
+1. Correlacione o alerta com `ml-model-rollback` para confirmar se o drift vem do modelo ativo ou de entrada degradada.
+2. Revise os traces `decision.core` e métricas de fila para garantir que o degrade aplicou ao perfil correto.
+3. Sincronize com ML/Data para avaliar necessidade de promover rollback completo do modelo ou ajustar features.
+4. Registre na linha do tempo do incidente o horário do degrade e o plano de retorno ao baseline.
+
 ## slo-burn — `slo_budget_breach_watch`
 - **Hook:** `slo-burn-rate-guard`
 - **KPI:** `slo.burn_rate` ≤ 1.0 (janela 60m)

@@ -13,7 +13,7 @@
 3. Aplique rollback via pipeline FE e comunique squads consumidores.
 
 ## api-breaking — `api_breaking_change_watch`
-- **Hook:** `api-contract-block`
+- **Hook:** `fe-cwv-regression`
 - **KPI:** `api.contract.breaking_changes` = 0 (janela 5m)
 - **Ação automática:** `block_release`
 - **Owner:** INT + FE

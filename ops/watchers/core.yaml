@@ -73,8 +73,8 @@
       "owner": "SRE",
       "hooks": {
         "DEC": "slo-burn-rate-guard",
-        "PLAT": "slo-burn-rate-guard",
-        "PM": "slo-burn-rate-guard"
+        "PM": "slo-burn-rate-guard",
+        "PLAT": "slo-burn-rate-guard"
       }
     },
     "oracle_divergence_watch": {
