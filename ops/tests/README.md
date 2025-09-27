@@ -14,3 +14,7 @@ make test        # confirma targets essenciais no Makefile
 make build       # gera manifest com probes e cobertura
 make evidence    # publica evidências em ops/evidence/ops-tests.json
 ```
+
+## Variáveis de ambiente principais
+- `K6_BASE_URL`: raiz do serviço de decisão (padrão: `http://localhost:8080`).
+- `K6_QUOTE_ENDPOINT`: path relativo para cotação (padrão: `/pricing/quote`).

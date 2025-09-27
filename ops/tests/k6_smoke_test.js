@@ -12,8 +12,26 @@ export const options = {
   summaryTrendStats: ['min', 'avg', 'med', 'p(90)', 'p(95)', 'p(99)'],
 };
 
-const baseUrl = __ENV.K6_BASE_URL || 'http://localhost:8080/healthz';
-const quoteEndpoint = __ENV.K6_QUOTE_ENDPOINT || '/pricing/quote';
+const DEFAULT_BASE_URL = 'http://localhost:8080';
+const DEFAULT_QUOTE_ENDPOINT = '/pricing/quote';
+
+const baseUrl = __ENV.K6_BASE_URL || DEFAULT_BASE_URL;
+const quoteEndpoint = __ENV.K6_QUOTE_ENDPOINT || DEFAULT_QUOTE_ENDPOINT;
+
+function assertDefaultQuotePath(base, endpoint) {
+  if (base === DEFAULT_BASE_URL && endpoint === DEFAULT_QUOTE_ENDPOINT) {
+    const expectedUrl = `${DEFAULT_BASE_URL}${DEFAULT_QUOTE_ENDPOINT}`;
+    const actualUrl = `${base.replace(/\/$/, '')}${endpoint}`;
+
+    if (actualUrl !== expectedUrl) {
+      throw new Error(
+        `Expected default quote URL to be ${expectedUrl}, but received ${actualUrl}`,
+      );
+    }
+  }
+}
+
+assertDefaultQuotePath(baseUrl, quoteEndpoint);
 const latency = new Trend('decision_latency', true);
 
 function buildQuotePayload() {
