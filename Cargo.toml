@@ -29,17 +29,10 @@ num-rational = "0.4"
 num-traits = "0.2"
 
 
-["rlib"]
-
-
 [lib]
 name = "credit_engine_core"
 path = "src/lib.rs"
 crate-type = ["rlib"]
-num-bigint = "0.4"
-num-integer = "0.1"
-num-rational = "0.4"
-num-traits = "0.2"
 
 [[bench]]
 name = "bench_swap"
