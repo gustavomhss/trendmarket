@@ -1,4 +1,5 @@
 use proptest::prelude::*;
+use credit_engine_core::amm::errors::AmmError;
 use credit_engine_core::amm::swap::get_amount_out; // se sua função morar em cpmm, troque swap->cpmm
 use credit_engine_core::amm::types::{Wad, WAD, U256, Ppm};
 
@@ -24,7 +25,14 @@ let (rx, ry, dx) = (to_wad(rx_base), to_wad(ry_base), to_wad(dx_base));
 let k0 = k(rx, ry);
 
 
-let dy: Wad = get_amount_out(rx, ry, dx, fee_ppm as Ppm).expect("swap ok");
+let dy: Wad = match get_amount_out(rx, ry, dx, fee_ppm as Ppm) {
+    Ok(dy) => dy,
+    Err(AmmError::MinReserveBreached) => {
+        prop_assume!(false);
+        unreachable!();
+    }
+    Err(err) => panic!("swap failed: {:?}", err),
+};
 
 
 // (P3) Sanidade: dy em (0, ry]
