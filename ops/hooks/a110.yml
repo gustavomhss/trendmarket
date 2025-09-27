@@ -237,3 +237,20 @@
       "action": "escalate_exec_review",
       "owner": "StrategyOps",
       "rollback": false,
+      "playbook": "docs/runbooks/plat_observability.md#okr-alignment"
+    },
+    {
+      "hook": "tracing-sampling-freeze",
+      "watchers": [
+        "tracing_sampling_watch"
+      ],
+      "kpi": "tracing.sampling_rate",
+      "threshold": 0.01,
+      "window": "15m",
+      "action": "block_release",
+      "owner": "SRE",
+      "rollback": true,
+      "playbook": "docs/runbooks/plat_observability.md#tracing-sampling"
+    }
+  ]
+}
