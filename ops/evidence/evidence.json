@@ -103,8 +103,8 @@
         "domain": "FE",
         "owner": "FE",
         "kpi": "web.cwv.inp_p75",
-        "hook": "web-cwv-rollback",
-        "hash": "10dc5fc4dc3c4f40beb91fed3f93e158c986ce819fec2c3ee03193f4d33a706d",
+        "hook": "fe-cwv-regression",
+        "hash": "9b421cdbff9a47f5a86cbbdca2df2c7b4137b863deec95bf2f40779098379042",
         "description": "Observa regressões de Core Web Vitals (INP p75).",
         "domains": ["FE"]
       },

@@ -189,8 +189,7 @@
     {
       "hook": "fe-cwv-regression",
       "watchers": [
-        "web_cwv_regression_watch",
-        "api_breaking_change_watch"
+        "web_cwv_regression_watch"
       ],
       "kpi": "web.cwv.inp_p75",
       "threshold": "200ms",
