@@ -40,4 +40,14 @@
 4. Só retomar streaming após aprovação conjunta PM/DATA/SEC.
 
 ## slo-burn — `slo_budget_breach_watch`
-Seguir plano descrito em `docs/runbooks/dec_decision_pricing.md#slo-burn` adicionando validações de mercado.
+- **Hook:** `pm-oracle-staleness`
+- **KPI:** `oracle.staleness_ms` ≤ 30.000 (janela 5m)
+- **Ação automática:** `switch_to_twap_failover`
+- **Owner:** PM/BC
+- **Rollback:** após staleness ≤ 15.000 ms por 3 janelas e confirmação de sincronia com DEC.
+
+**Passos**
+1. Validar dashboards de staleness e burn rate para confirmar que o failover TWAP foi aplicado.
+2. Checar com DEC se `dec-latency-degrade` também disparou para avaliar risco sistêmico.
+3. Revisar disponibilidade dos oráculos secundários (CLS, CME) e ajustar pesos se necessário.
+4. Sincronizar com FX/PLAT e registrar o incidente com evidências de timestamps e spreads.

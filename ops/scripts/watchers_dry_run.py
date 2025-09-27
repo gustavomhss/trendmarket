@@ -10,10 +10,13 @@ import json
 import pathlib
 import sys
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Mapping, MutableMapping, Sequence
+from typing import Any, Dict, List, Mapping, MutableMapping
 
 REQUIRED_FIELDS = {"id", "domain", "domains", "owner", "description"}
 OPTIONAL_FIELDS = ("kpi", "hook")
+
+# cache interno para hooks
+_HOOK_METADATA_CACHE: dict[str, dict[str, Any]] | None = None
 
 
 def _load_parser():
@@ -21,15 +24,66 @@ def _load_parser():
     if spec is None:
         return json.loads
     module = importlib.util.module_from_spec(spec)
-    assert spec.loader is not None  # for mypy/static analyzers
-    spec.loader.exec_module(module)  # type: ignore[assignment]
-    return module.safe_load  # type: ignore[attr-defined]
+    assert spec.loader is not None
+    spec.loader.exec_module(module)  # type: ignore
+    return module.safe_load  # type: ignore
 
 
 _parse_config = _load_parser()
 
 
-def _normalize_string(value: Any, *, field: str, source: pathlib.Path, allow_empty: bool = False) -> str:
+def _load_hook_metadata() -> Dict[str, Dict[str, Any]]:
+    """Carrega metadados de hooks para complementar watchers."""
+    global _HOOK_METADATA_CACHE
+    if _HOOK_METADATA_CACHE is not None:
+        return _HOOK_METADATA_CACHE
+
+    hooks_path = pathlib.Path("ops/hooks/a110.yml")
+    if not hooks_path.exists():
+        _HOOK_METADATA_CACHE = {}
+        return _HOOK_METADATA_CACHE
+
+    try:
+        payload = _parse_config(hooks_path.read_text(encoding="utf-8"))
+    except Exception:
+        _HOOK_METADATA_CACHE = {}
+        return _HOOK_METADATA_CACHE
+
+    hooks = payload.get("hooks")
+    if not isinstance(hooks, list):
+        _HOOK_METADATA_CACHE = {}
+        return _HOOK_METADATA_CACHE
+
+    metadata: Dict[str, Dict[str, Any]] = {}
+    for entry in hooks:
+        if not isinstance(entry, dict):
+            continue
+        watchers = entry.get("watchers")
+        if not isinstance(watchers, list):
+            continue
+        for watcher in watchers:
+            if not isinstance(watcher, str):
+                continue
+            name = watcher.strip()
+            if not name:
+                continue
+            metadata[name] = {
+                "hook": entry.get("hook"),
+                "owner": entry.get("owner"),
+                "kpi": entry.get("kpi"),
+                "threshold": entry.get("threshold"),
+                "window": entry.get("window"),
+                "action": entry.get("action"),
+                "rollback": entry.get("rollback"),
+            }
+
+    _HOOK_METADATA_CACHE = metadata
+    return metadata
+
+
+def _normalize_string(
+    value: Any, *, field: str, source: pathlib.Path, allow_empty: bool = False
+) -> str:
     if not isinstance(value, str):
         raise ValueError(f"{source}: {field} must be a string")
     text = value.strip()
@@ -46,9 +100,7 @@ def _extract_domains(payload: Mapping[str, Any], source: pathlib.Path) -> Dict[s
     watcher_domains: Dict[str, List[str]] = {}
     for domain_raw, watchers in domains.items():
         domain = _normalize_string(domain_raw, field="domain name", source=source)
-        if not isinstance(watchers, Sequence) or isinstance(watchers, (str, bytes)):
-            raise ValueError(f"{source}: domain '{domain}' must contain a list of watcher ids")
-        if not watchers:
+        if not isinstance(watchers, list) or not watchers:
             raise ValueError(f"{source}: domain '{domain}' must declare at least one watcher")
 
         seen: set[str] = set()

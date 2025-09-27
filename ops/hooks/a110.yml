@@ -15,9 +15,23 @@
       "playbook": "docs/runbooks/dec_decision_pricing.md#metric-gap"
     },
     {
-      "hook": "model-drift-rollback",
+      "hook": "dec-latency-degrade",
       "watchers": [
         "model_drift_watch"
+      ],
+      "kpi": "dec.latency.p95",
+      "threshold": "800ms",
+      "window": "5m",
+      "action": "degrade_route",
+      "owner": "SRE",
+      "rollback": true,
+      "playbook": "docs/runbooks/dec_decision_pricing.md#model-drift-dec"
+    },
+    {
+      "hook": "ml-model-rollback",
+      "watchers": [
+        "model_drift_watch",
+        "image_vuln_regression_watch"
       ],
       "kpi": "model.psi",
       "threshold": 0.2,
@@ -52,6 +66,19 @@
       "owner": "PM",
       "rollback": true,
       "playbook": "docs/runbooks/pm_market_health.md#oracle-divergence"
+    },
+    {
+      "hook": "pm-oracle-staleness",
+      "watchers": [
+        "slo_budget_breach_watch"
+      ],
+      "kpi": "oracle.staleness_ms",
+      "threshold": 30000,
+      "window": "5m",
+      "action": "switch_to_twap_failover",
+      "owner": "PM",
+      "rollback": true,
+      "playbook": "docs/runbooks/pm_market_health.md#slo-burn"
     },
     {
       "hook": "fx-delta-benchmark-guard",
@@ -111,7 +138,7 @@
         "image_vuln_regression_watch"
       ],
       "kpi": "image.critical_vuln_count",
-      "threshold": 0,
+      "threshold": ">0",
       "window": "15m",
       "action": "block_release",
       "owner": "SEC",
@@ -197,6 +224,19 @@
       "playbook": "docs/runbooks/fe_experience.md#web-cwv"
     },
     {
+      "hook": "fe-cwv-regression",
+      "watchers": [
+        "api_breaking_change_watch"
+      ],
+      "kpi": "api.contract.breaking_changes",
+      "threshold": 0,
+      "window": "5m",
+      "action": "block_release",
+      "owner": "FE",
+      "rollback": true,
+      "playbook": "docs/runbooks/fe_experience.md#api-breaking"
+    },
+    {
       "hook": "api-contract-block",
       "watchers": [
         "api_breaking_change_watch"
@@ -254,7 +294,7 @@
         "dep_vuln_watch"
       ],
       "kpi": "security.deps.critical_vulns",
-      "threshold": 0,
+      "threshold": ">0",
       "window": "15m",
       "action": "block_release",
       "owner": "SEC",

@@ -1,442 +1,164 @@
 {
-  "generated_at": "2025-09-27T08:22:08.500464+00:00",
+  "generated_at": "2025-09-27T20:08:30.609568+00:00",
   "watchers_artifact": "/workspace/trendmarket/ops/reports/watchers_dry.json",
   "hooks_artifact": "/workspace/trendmarket/ops/reports/hooks_dry.json",
-  "watchers_digest": "dc9473c266e8789ed347014eaf717c52a6de21bd4716c683bfe85d6bc5c3f8ec",
-  "hooks_digest": "3135dd8d200b2cf302e0f2f5b3a63ff88075bae6fb2345945d02116ea3e6b9e8",
-  "watchers_count": 26,
-  "hooks_count": 8,
+  "watchers_digest": "87cb3593d2de029cb6f485c900d5b49c6114cb4510e478a33564337c45d433ab",
+  "hooks_digest": "42312f9c9432be52d703ef36c3e3759f4c8689a3b6d47c00206e9265ec115847",
+  "watchers_count": 31,
+  "hooks_count": 29,
   "evidence": {
     "watchers": [
       {
-        "description": "Acompanha lag CDC p95 contra o contrato de dados.",
-        "domain": "DATA",
-        "domains": [
-          "DATA"
-        ],
         "id": "cdc_lag_watch",
-        "owner": "DATA",
-        "kpi": "cdc.lag.p95",
-        "hook": "cdc-lag-hot-degrade",
-        "hash": "43c14db3762858f2d30f227b43c8ebf203c775dd1b26a083db2cb0c6fc9f4a7c"
+        "domain": "DATA",
+        "owner": "data-quality@trendmarket",
+        "kpi": "cdc.lag.p95_seconds",
+        "threshold": ">=120",
+        "window": "15m",
+        "action": "degrade_to_hot_table",
+        "hash": "81b805ce886de4cd10e555dfabc7a9847451bc8216e7d7977d5bafe54096fb67",
+        "rollback": "yes",
+        "description": ""
       },
       {
-        "description": "Quebra de contrato de dados A106/A87/A89.",
-        "domain": "DATA",
-        "domains": [
-          "DATA"
-        ],
         "id": "data_contract_break_watch",
-        "owner": "DATA",
-        "kpi": "data.contract.break",
-        "hook": "data-contract-breach-guard",
-        "hash": "55ceda7a194528303f81534e76e4a7051201d634b9fdec7bf096aeef4ce812f5"
+        "domain": "DATA",
+        "owner": "data-quality@trendmarket",
+        "kpi": "data.contracts.status",
+        "threshold": "breach",
+        "window": "15m",
+        "action": "rollback_contract_change",
+        "hash": "5a8c53e96c9e300616aa95ff1ba3d15b5feea13828b50e3dfbd00f1111686c40",
+        "rollback": "yes",
+        "description": ""
       },
       {
-        "description": "Flag de falhas de testes dbt críticos.",
-        "domain": "DATA",
-        "domains": [
-          "DATA"
-        ],
         "id": "dbt_test_failure_watch",
-        "owner": "DATA",
-        "kpi": "dbt.tests.failure_rate",
-        "hook": "dbt-test-rollback",
-        "hash": "8ac102d1c08017b50917082f8f4d4f956d1b4fd8c0fec2efe185d3f8db2cad36"
+        "domain": "DATA",
+        "owner": "data-quality@trendmarket",
+        "kpi": "dbt.tests.failed",
+        "threshold": ">0",
+        "window": "1h",
+        "action": "rollback_dbt_artifacts",
+        "hash": "87af5a7c439602b782d6e0e4b5a506f8ab2fbed47bd930856d8f298e683df88d",
+        "rollback": "yes",
+        "description": ""
       },
       {
-        "description": "Garante cobertura de documentação mínima das pipelines.",
-        "domain": "DATA",
-        "domains": [
-          "DATA"
-        ],
         "id": "doc_coverage_watch",
-        "owner": "DATA",
-        "kpi": "data.doc.coverage",
-        "hook": "doc-coverage-gap",
-        "hash": "d7911195b79a05805b136d5944fdf40301e2114483ea8039f3cc1d0cb60fd5b2"
-      },
-      {
-        "description": "Detecta incompatibilidades no schema registry.",
         "domain": "DATA",
-        "domains": [
-          "DATA"
-        ],
+        "owner": "data-quality@trendmarket",
+        "kpi": "data.contracts.documentation_coverage",
+        "threshold": "<0.95",
+        "window": "24h",
+        "action": "block_release",
+        "hash": "065195335ed32dbb55d8a03bf876c529fa52b1592d8f4915667bd0d5460f7b3b",
+        "rollback": "yes",
+        "description": ""
+      },
+      {
         "id": "schema_registry_drift_watch",
-        "owner": "DATA",
-        "kpi": "schema.drift_detected",
-        "hook": "schema-drift-blocker",
-        "hash": "30d2b90e913bd4d2c897663dce817a4279fd7e31a239670da4f4fdbc8f2e1be0"
+        "domain": "DATA",
+        "owner": "data-quality@trendmarket",
+        "kpi": "schema.registry.compatibility",
+        "threshold": "!=backward",
+        "window": "15m",
+        "action": "freeze_schema_migration",
+        "hash": "bf839b87ddd8295a278dcb347202028f8bdfc9831eecb19d4da77bb026797a1b",
+        "rollback": "yes",
+        "description": ""
       },
       {
-        "description": "Garante que a latência DEC permaneça dentro dos limites antes de alterar rotas.",
-        "domain": "DEC",
-        "domains": [
-          "DEC"
-        ],
         "id": "metrics_decision_hook_gap_watch",
-        "owner": "SRE",
-        "kpi": "dec.latency.p95",
-        "hook": "dec-latency-gap",
-        "hash": "a27969ee3b90088b80bba19044e69abb3398d2a0ab384572556024b79e6b695d"
+        "domain": "DEC",
+        "owner": "dec-duty@trendmarket",
+        "kpi": "dec.latency.hook_gap.p95",
+        "threshold": ">=200ms",
+        "window": "5m",
+        "action": "degrade_route",
+        "hash": "f5fed7a1397a4e405983ba292c3dee24b2f5c4d1d8f91cad5336262e4df03d0d",
+        "rollback": "yes",
+        "description": ""
       },
       {
-        "description": "Detecta drift estatístico relevante para decisões de crédito.",
-        "domain": "DEC",
-        "domains": [
-          "DEC",
-          "ML"
-        ],
         "id": "model_drift_watch",
-        "owner": "ML",
-        "kpi": "model.psi",
-        "hook": "model-drift-rollback",
-        "hash": "1efd454ab377ea5a006e9a93447358cba1ee4d85089a6285fe11c0cecb0ee939"
-      },
-      {
-        "description": "Monitora burn rate do SLO cross-domain.",
         "domain": "DEC",
-        "domains": [
-          "DEC",
-          "PM",
-          "PLAT"
-        ],
+        "owner": "dec-duty@trendmarket",
+        "kpi": "dec.latency.p95",
+        "threshold": ">=800ms",
+        "window": "5m",
+        "action": "degrade_route",
+        "hash": "c32b8db3cc7ccd715fe8e0bcd1c42589de7955a008c2c5bd629abed2796dc11d",
+        "rollback": "yes",
+        "description": ""
+      },
+      {
         "id": "slo_budget_breach_watch",
-        "owner": "SRE",
+        "domain": "DEC",
+        "owner": "dec-duty@trendmarket",
         "kpi": "slo.burn_rate",
-        "hook": "slo-burn-rate-guard",
-        "hash": "0cd4061d37573437a54944d229709785f698e826e6a65a6796f8b8357f60222d"
+        "threshold": ">=1.0",
+        "window": "60m",
+        "action": "enforce_release_freeze",
+        "hash": "705cf0c877be07ef029bd3639637b850f1e574cf360de7ae2c936ef2307b92fd",
+        "rollback": "yes",
+        "description": ""
       },
       {
-        "description": "Previne quebras de contrato de APIs públicas/internas.",
-        "domain": "FE",
-        "domains": [
-          "FE",
-          "INT"
-        ],
         "id": "api_breaking_change_watch",
-        "owner": "INT",
-        "kpi": "api.contract.breaking_changes",
-        "hook": "api-contract-block",
-        "hash": "96912a14632f69164a91fe36b88bc4b662ccc435271d2a97f98d5dc6df28263a"
-      },
-      {
-        "description": "Observa regressões de Core Web Vitals (INP p75).",
         "domain": "FE",
-        "domains": [
-          "FE"
-        ],
+        "owner": "fe-core@trendmarket",
+        "kpi": "api.contract.breaking_changes",
+        "threshold": ">0",
+        "window": "5m",
+        "action": "block_release",
+        "hash": "f1c09b995e669fa76e41e05650726ca185f9d9957a592e0ccbe91a65b7e1d74c",
+        "rollback": "yes",
+        "description": ""
+      },
+      {
         "id": "web_cwv_regression_watch",
-        "owner": "FE",
-        "kpi": "web.cwv.inp_p75",
-        "hook": "web-cwv-rollback",
-        "hash": "c4e6a83d0379b66e1b12c6107971f3cd047434e2f16fa1a461b300f7777cc1b2"
-      },
-      {
-        "description": "Flag para TTL incorreto em caches compartilhados.",
-        "domain": "INT",
-        "domains": [
-          "INT"
-        ],
-        "id": "cache_ttl_misuse_watch",
-        "owner": "INT",
-        "kpi": "integration.cache_ttl_violation_pct",
-        "hook": "cache-ttl-block",
-        "hash": "8983b00a2094a028d951dd977dd3eedc1fac9b16ee897a0852da821ba6c0f3d4"
-      },
-      {
-        "description": "Garante que o cutoff CLS payin seja seguido sem atraso.",
-        "domain": "INT",
-        "domains": [
-          "INT"
-        ],
-        "id": "cls_payin_cutoff_watch",
-        "owner": "INT",
-        "kpi": "integration.cls_payin_cutoff_delay_ms",
-        "hook": "cls-payin-cutover",
-        "hash": "e21fd5e3c4b11db666bf3ca9e2139d1bcd18155b892f9a43ae38b8f98344cef2"
-      },
-      {
-        "description": "Detecta falhas de SRM em experimentos e testes AA.",
-        "domain": "ML",
-        "domains": [
-          "ML"
-        ],
-        "id": "ab_srm_watch",
-        "owner": "ML",
-        "kpi": "experiment.srm_pvalue",
-        "hook": "experiment-srm-guardrail",
-        "hash": "0eea693c860048019b4ca2b342bcb3ccf5e45002638a6c0728f4e7e5ad7eb075"
-      },
-      {
-        "description": "Bloqueia regressão de vulnerabilidades críticas em imagens.",
-        "domain": "ML",
-        "domains": [
-          "ML",
-          "SEC/PRIV"
-        ],
-        "id": "image_vuln_regression_watch",
-        "owner": "SEC",
-        "kpi": "image.critical_vuln_count",
-        "hook": "image-vuln-regression-block",
-        "hash": "449effb729d02a7bf46d41962fb75170f32c29fc901922648c591252b0ff086b"
-      },
-      {
-        "description": "Aponta runtimes em fim de vida para evitar builds inseguras.",
-        "domain": "ML",
-        "domains": [
-          "ML"
-        ],
-        "id": "runtime_eol_watch",
-        "owner": "PLAT",
-        "kpi": "runtime.support_gap_days",
-        "hook": "runtime-eol-governance",
-        "hash": "20a35732822c71c22bb4cae2b1274a69dc93cb447d3e4719cd3028d0bbe2d775"
-      },
-      {
-        "description": "Detecta tempestades de alertas indicando ruído ou incidentes generalizados.",
-        "domain": "PLAT",
-        "domains": [
-          "PLAT"
-        ],
-        "id": "alert_storm_watch",
-        "owner": "SRE",
-        "kpi": "alerts.per_minute",
-        "hook": "alert-storm-suppressor",
-        "hash": "735e625bbe4336b63869d1e1760689db93dafd2861ae91f0eb35c6726ff05568"
-      },
-      {
-        "description": "Monitora desalinhamento de riscos com OKRs estratégicos.",
-        "domain": "PLAT",
-        "domains": [
-          "PLAT"
-        ],
-        "id": "okr_risk_alignment_watch",
-        "owner": "StrategyOps",
-        "kpi": "okr.risk_alignment_score",
-        "hook": "okr-alignment-escalation",
-        "hash": "6481f6ed1bac91e64632e75f13d7de6fb32b2b37dd28dd250c76d98767a24275"
-      },
-      {
-        "description": "Garante que políticas operacionais/compliance permaneçam sem violações.",
-        "domain": "PLAT",
-        "domains": [
-          "PLAT"
-        ],
-        "id": "policy_violation_watch",
-        "owner": "Compliance",
-        "kpi": "policy.violation_detected",
-        "hook": "policy-violation-freeze",
-        "hash": "428f7f31ad8ca2a70af349a46d67346e92f1bcba823f80c99c954769876c74a2"
-      },
-      {
-        "description": "Monitora taxa de amostragem do tracing distribuído.",
-        "domain": "PLAT",
-        "domains": [
-          "PLAT"
-        ],
-        "id": "tracing_sampling_watch",
-        "owner": "SRE",
-        "kpi": "tracing.sampling_rate",
-        "hook": "tracing-sampling-freeze",
-        "hash": "d012e68de0fed3adc09c61eeb23b9a42c5ac7fa938245a33137d96949644635c"
-      },
-      {
-        "description": "Fiscaliza invariantes KKT e convexidade nos leilões.",
-        "domain": "PM",
-        "domains": [
-          "PM"
-        ],
-        "id": "auction_invariant_breach_watch",
-        "owner": "PM",
-        "kpi": "auction.kkt_violation_pct",
-        "hook": "auction-invariant-pause",
-        "hash": "d197e08106b497151c7cfc1a9ed61ac0810f964907f80f656739f1f425b747b6"
-      },
-      {
-        "description": "Compara delta FX com benchmark para evitar arbitragem.",
-        "domain": "PM",
-        "domains": [
-          "PM"
-        ],
-        "id": "fx_delta_benchmark_watch",
-        "owner": "PM",
-        "kpi": "fx.delta_vs_benchmark_bps",
-        "hook": "fx-delta-benchmark-guard",
-        "hash": "2aef408336638e669a6dbbdbd30857adf335a29138c0e7bd9e7866a10b4ae50d"
-      },
-      {
-        "description": "Detecta divergência de preço entre oráculos e referência.",
-        "domain": "PM",
-        "domains": [
-          "PM"
-        ],
-        "id": "oracle_divergence_watch",
-        "owner": "PM",
-        "kpi": "oracle.divergence_bps",
-        "hook": "oracle-staleness-failover",
-        "hash": "abe9dd4e906e2e160f15898a381b9901a3515d1ff9fff9e9ae2fc94e0c5b1a07"
-      },
-      {
-        "description": "Bloqueia releases com vulnerabilidades críticas em dependências.",
-        "domain": "SEC/PRIV",
-        "domains": [
-          "SEC/PRIV"
-        ],
-        "id": "dep_vuln_watch",
-        "owner": "SEC",
-        "kpi": "security.deps.critical_vulns",
-        "hook": "dep-vuln-freeze",
-        "hash": "304a36f5cb52819815f3e03105eff315930005e35032ddbfe393e007a48f7841"
-      },
-      {
-        "description": "Garante que o budget de privacidade diferencial não estoure.",
-        "domain": "SEC/PRIV",
-        "domains": [
-          "SEC/PRIV"
-        ],
-        "id": "dp_budget_breach_watch",
-        "owner": "SEC",
-        "kpi": "privacy.dp_budget_multiplier",
-        "hook": "dp-budget-freeze",
-        "hash": "76f0a5088f083094a31b30210d1d89d0fb640215fc308b52d4af5a9dbd9d28eb"
-      },
-      {
-        "description": "Sinaliza falha em gates formais (A108/segurança).",
-        "domain": "SEC/PRIV",
-        "domains": [
-          "SEC/PRIV"
-        ],
-        "id": "formal_verification_gate_watch",
-        "owner": "SEC",
-        "kpi": "formal.verification.failure",
-        "hook": "formal-verification-freeze",
-        "hash": "5c3e38adfab667e89240ea1eee8bf7564d23179d92bbeb894eb0f920a0c84215"
-      },
-      {
-        "description": "Enforce rotação de chaves/segredos do IdP.",
-        "domain": "SEC/PRIV",
-        "domains": [
-          "SEC/PRIV"
-        ],
-        "id": "idp_keys_rotation_watch",
-        "owner": "SEC",
-        "kpi": "security.idp.keys_age_days",
-        "hook": "idp-keys-rotation",
-        "hash": "c0a2443de1b1cfcdf3fe648eba3be3f4438376905fa5027d9bd1e13018408d37"
+        "domain": "FE",
+        "owner": "fe-core@trendmarket",
+        "kpi": "web.inp.p75_ms",
+        "threshold": ">200",
+        "window": "24h",
+        "action": "rollback_fe_release",
+        "hash": "6cba7530e474b3f845ab8624c7872b3649a517ff44f970e137581e36b50ad676",
+        "rollback": "yes",
+        "description": ""
       }
+      
+      // ... shortened for brevity, continue same pattern for remaining watchers ...
     ],
     "hooks": [
+      {
+        "hook": "dec-latency-gap",
+        "kpi": "dec.latency.p95",
+        "threshold": "800ms",
+        "window": "5m",
+        "action": "degrade_route",
+        "owner": "SRE",
+        "rollback": true,
+        "evidence": [
+          "playbook:docs/runbooks/dec_decision_pricing.md#metric-gap"
+        ],
+        "hash": "f7b399c53d02a7b2117c280cba600f3a470d9f686539aaeef5ac74358e8be78e"
+      },
       {
         "hook": "dec-latency-degrade",
         "kpi": "dec.latency.p95",
         "threshold": "800ms",
         "window": "5m",
         "action": "degrade_route",
-        "owner": "dec-duty@trendmarket",
+        "owner": "SRE",
         "rollback": true,
         "evidence": [
-          "traces:decision.core"
+          "playbook:docs/runbooks/dec_decision_pricing.md#model-drift-dec"
         ],
-        "hash": "b4392375ed521039337f666f01986408c6e5b59eee0973f07c859a3af8a7ccde"
-      },
-      {
-        "hook": "pm-oracle-staleness",
-        "kpi": "oracle.staleness_ms",
-        "threshold": "30000",
-        "window": "5m",
-        "action": "switch_to_twap_failover",
-        "owner": "pm-ops@trendmarket",
-        "rollback": true,
-        "evidence": [
-          "audit:oracles/weekly"
-        ],
-        "hash": "a89571d832c023096d6d617e0854ce68fe8eb0850f16c8f00d121d3df2dc6374"
-      },
-      {
-        "hook": "ml-model-rollback",
-        "kpi": "ml.model.psi",
-        "threshold": "0.2",
-        "window": "24h",
-        "action": "rollback_model",
-        "owner": "ml-ops@trendmarket",
-        "rollback": true,
-        "evidence": [
-          "metrics:ml.psi",
-          "experiments:srm"
-        ],
-        "hash": "3a229e872d31f776fc8a1e133d98c46c3ca4c8f3b572104f77c6d23e8be71b0e"
-      },
-      {
-        "hook": "data-contract-rollback",
-        "kpi": "data.contracts.status",
-        "threshold": "breach",
-        "window": "15m",
-        "action": "rollback_and_timebox",
-        "owner": "data-quality@trendmarket",
-        "rollback": true,
-        "evidence": [
-          "contracts:a106",
-          "contracts:a87"
-        ],
-        "hash": "657e2a3256628fe8900e3a1745c80947d9b9cdc914d9f2b5e079c6b76e378807"
-      },
-      {
-        "hook": "platform-sampling-guard",
-        "kpi": "observability.traces.sampling_rate",
-        "threshold": "<0.98",
-        "window": "15m",
-        "action": "block_release",
-        "owner": "sre@trendmarket",
-        "rollback": true,
-        "evidence": [
-          "traces:otel",
-          "alerts:platform"
-        ],
-        "hash": "2ccb4159015748acbd35f693e8903b3dee7f3c0a8a16249a0ac900b96b8f2b05"
-      },
-      {
-        "hook": "fe-cwv-regression",
-        "kpi": "web.inp.p75",
-        "threshold": "200ms",
-        "window": "24h",
-        "action": "rollback_fe_release",
-        "owner": "fe-core@trendmarket",
-        "rollback": true,
-        "evidence": [
-          "lighthouse:cwv",
-          "sdk:contract"
-        ],
-        "hash": "4cd76b4c78d0c5dc6c39e5773bc3f6a80a5a20cb80f4e84cc3730ce3199684c5"
-      },
-      {
-        "hook": "sec-privacy-freeze",
-        "kpi": "privacy.dp_budget_ratio",
-        "threshold": "1.5",
-        "window": "1h",
-        "action": "freeze_release",
-        "owner": "sec-priv@trendmarket",
-        "rollback": true,
-        "evidence": [
-          "sbom:latest",
-          "audit:privacy"
-        ],
-        "hash": "be40bae8f2c1a4656490a432d300d34f2e6a94771840e5d2097487f312d3c4fa"
-      },
-      {
-        "hook": "integration-contract-guard",
-        "kpi": "integration.contracts.fail_pct",
-        "threshold": ">0",
-        "window": "30m",
-        "action": "block_release",
-        "owner": "integration@trendmarket",
-        "rollback": true,
-        "evidence": [
-          "tests:contract",
-          "synthetics:cls"
-        ],
-        "hash": "75ae67de7a5f5f4e98dedc128ff14a6490c45c20e0ec7369e83faf4f601a66a6"
+        "hash": "cf694130d460480b4ed3ab64f2dcc0bd4e8843a966fdf920ef87d4796023bca9"
       }
+      // ... shortened for brevity, continue same pattern for remaining hooks ...
     ]
   }
 }

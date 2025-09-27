@@ -1,14 +1,12 @@
 {
-  "generated_at": "2025-09-27T08:22:06.408088+00:00",
-  "source": "/workspace/trendmarket/ops/watchers/core.yaml",
-  "total_watchers": 26,
+  "generated_at": "2025-09-27T20:08:28.319698+00:00",
+  "source": "/workspace/trendmarket/ops/watchers",
+  "total_watchers": 31,
   "watchers": [
     {
       "description": "Acompanha lag CDC p95 contra o contrato de dados.",
       "domain": "DATA",
-      "domains": [
-        "DATA"
-      ],
+      "domains": ["DATA"],
       "id": "cdc_lag_watch",
       "owner": "DATA",
       "kpi": "cdc.lag.p95",
@@ -18,9 +16,7 @@
     {
       "description": "Quebra de contrato de dados A106/A87/A89.",
       "domain": "DATA",
-      "domains": [
-        "DATA"
-      ],
+      "domains": ["DATA"],
       "id": "data_contract_break_watch",
       "owner": "DATA",
       "kpi": "data.contract.break",
@@ -30,9 +26,7 @@
     {
       "description": "Flag de falhas de testes dbt críticos.",
       "domain": "DATA",
-      "domains": [
-        "DATA"
-      ],
+      "domains": ["DATA"],
       "id": "dbt_test_failure_watch",
       "owner": "DATA",
       "kpi": "dbt.tests.failure_rate",
@@ -42,9 +36,7 @@
     {
       "description": "Garante cobertura de documentação mínima das pipelines.",
       "domain": "DATA",
-      "domains": [
-        "DATA"
-      ],
+      "domains": ["DATA"],
       "id": "doc_coverage_watch",
       "owner": "DATA",
       "kpi": "data.doc.coverage",
@@ -54,9 +46,7 @@
     {
       "description": "Detecta incompatibilidades no schema registry.",
       "domain": "DATA",
-      "domains": [
-        "DATA"
-      ],
+      "domains": ["DATA"],
       "id": "schema_registry_drift_watch",
       "owner": "DATA",
       "kpi": "schema.drift_detected",
@@ -66,9 +56,7 @@
     {
       "description": "Garante que a latência DEC permaneça dentro dos limites antes de alterar rotas.",
       "domain": "DEC",
-      "domains": [
-        "DEC"
-      ],
+      "domains": ["DEC"],
       "id": "metrics_decision_hook_gap_watch",
       "owner": "SRE",
       "kpi": "dec.latency.p95",
@@ -78,10 +66,7 @@
     {
       "description": "Detecta drift estatístico relevante para decisões de crédito.",
       "domain": "DEC",
-      "domains": [
-        "DEC",
-        "ML"
-      ],
+      "domains": ["DEC", "ML"],
       "id": "model_drift_watch",
       "owner": "ML",
       "kpi": "model.psi",
@@ -91,11 +76,7 @@
     {
       "description": "Monitora burn rate do SLO cross-domain.",
       "domain": "DEC",
-      "domains": [
-        "DEC",
-        "PM",
-        "PLAT"
-      ],
+      "domains": ["DEC", "PM", "PLAT"],
       "id": "slo_budget_breach_watch",
       "owner": "SRE",
       "kpi": "slo.burn_rate",
@@ -105,10 +86,7 @@
     {
       "description": "Previne quebras de contrato de APIs públicas/internas.",
       "domain": "FE",
-      "domains": [
-        "FE",
-        "INT"
-      ],
+      "domains": ["FE", "INT"],
       "id": "api_breaking_change_watch",
       "owner": "INT",
       "kpi": "api.contract.breaking_changes",
@@ -118,9 +96,7 @@
     {
       "description": "Observa regressões de Core Web Vitals (INP p75).",
       "domain": "FE",
-      "domains": [
-        "FE"
-      ],
+      "domains": ["FE"],
       "id": "web_cwv_regression_watch",
       "owner": "FE",
       "kpi": "web.cwv.inp_p75",
@@ -130,9 +106,7 @@
     {
       "description": "Flag para TTL incorreto em caches compartilhados.",
       "domain": "INT",
-      "domains": [
-        "INT"
-      ],
+      "domains": ["INT"],
       "id": "cache_ttl_misuse_watch",
       "owner": "INT",
       "kpi": "integration.cache_ttl_violation_pct",
@@ -142,9 +116,7 @@
     {
       "description": "Garante que o cutoff CLS payin seja seguido sem atraso.",
       "domain": "INT",
-      "domains": [
-        "INT"
-      ],
+      "domains": ["INT"],
       "id": "cls_payin_cutoff_watch",
       "owner": "INT",
       "kpi": "integration.cls_payin_cutoff_delay_ms",
@@ -154,9 +126,7 @@
     {
       "description": "Detecta falhas de SRM em experimentos e testes AA.",
       "domain": "ML",
-      "domains": [
-        "ML"
-      ],
+      "domains": ["ML"],
       "id": "ab_srm_watch",
       "owner": "ML",
       "kpi": "experiment.srm_pvalue",
@@ -166,10 +136,7 @@
     {
       "description": "Bloqueia regressão de vulnerabilidades críticas em imagens.",
       "domain": "ML",
-      "domains": [
-        "ML",
-        "SEC/PRIV"
-      ],
+      "domains": ["ML", "SEC/PRIV"],
       "id": "image_vuln_regression_watch",
       "owner": "SEC",
       "kpi": "image.critical_vuln_count",
@@ -179,9 +146,7 @@
     {
       "description": "Aponta runtimes em fim de vida para evitar builds inseguras.",
       "domain": "ML",
-      "domains": [
-        "ML"
-      ],
+      "domains": ["ML"],
       "id": "runtime_eol_watch",
       "owner": "PLAT",
       "kpi": "runtime.support_gap_days",
@@ -191,9 +156,7 @@
     {
       "description": "Detecta tempestades de alertas indicando ruído ou incidentes generalizados.",
       "domain": "PLAT",
-      "domains": [
-        "PLAT"
-      ],
+      "domains": ["PLAT"],
       "id": "alert_storm_watch",
       "owner": "SRE",
       "kpi": "alerts.per_minute",
@@ -203,9 +166,7 @@
     {
       "description": "Monitora desalinhamento de riscos com OKRs estratégicos.",
       "domain": "PLAT",
-      "domains": [
-        "PLAT"
-      ],
+      "domains": ["PLAT"],
       "id": "okr_risk_alignment_watch",
       "owner": "StrategyOps",
       "kpi": "okr.risk_alignment_score",
@@ -215,9 +176,7 @@
     {
       "description": "Garante que políticas operacionais/compliance permaneçam sem violações.",
       "domain": "PLAT",
-      "domains": [
-        "PLAT"
-      ],
+      "domains": ["PLAT"],
       "id": "policy_violation_watch",
       "owner": "Compliance",
       "kpi": "policy.violation_detected",
@@ -227,9 +186,7 @@
     {
       "description": "Monitora taxa de amostragem do tracing distribuído.",
       "domain": "PLAT",
-      "domains": [
-        "PLAT"
-      ],
+      "domains": ["PLAT"],
       "id": "tracing_sampling_watch",
       "owner": "SRE",
       "kpi": "tracing.sampling_rate",
@@ -239,9 +196,7 @@
     {
       "description": "Fiscaliza invariantes KKT e convexidade nos leilões.",
       "domain": "PM",
-      "domains": [
-        "PM"
-      ],
+      "domains": ["PM"],
       "id": "auction_invariant_breach_watch",
       "owner": "PM",
       "kpi": "auction.kkt_violation_pct",
@@ -251,9 +206,7 @@
     {
       "description": "Compara delta FX com benchmark para evitar arbitragem.",
       "domain": "PM",
-      "domains": [
-        "PM"
-      ],
+      "domains": ["PM"],
       "id": "fx_delta_benchmark_watch",
       "owner": "PM",
       "kpi": "fx.delta_vs_benchmark_bps",
@@ -263,9 +216,7 @@
     {
       "description": "Detecta divergência de preço entre oráculos e referência.",
       "domain": "PM",
-      "domains": [
-        "PM"
-      ],
+      "domains": ["PM"],
       "id": "oracle_divergence_watch",
       "owner": "PM",
       "kpi": "oracle.divergence_bps",
@@ -275,9 +226,7 @@
     {
       "description": "Bloqueia releases com vulnerabilidades críticas em dependências.",
       "domain": "SEC/PRIV",
-      "domains": [
-        "SEC/PRIV"
-      ],
+      "domains": ["SEC/PRIV"],
       "id": "dep_vuln_watch",
       "owner": "SEC",
       "kpi": "security.deps.critical_vulns",
@@ -287,9 +236,7 @@
     {
       "description": "Garante que o budget de privacidade diferencial não estoure.",
       "domain": "SEC/PRIV",
-      "domains": [
-        "SEC/PRIV"
-      ],
+      "domains": ["SEC/PRIV"],
       "id": "dp_budget_breach_watch",
       "owner": "SEC",
       "kpi": "privacy.dp_budget_multiplier",
@@ -299,9 +246,7 @@
     {
       "description": "Sinaliza falha em gates formais (A108/segurança).",
       "domain": "SEC/PRIV",
-      "domains": [
-        "SEC/PRIV"
-      ],
+      "domains": ["SEC/PRIV"],
       "id": "formal_verification_gate_watch",
       "owner": "SEC",
       "kpi": "formal.verification.failure",
@@ -311,9 +256,7 @@
     {
       "description": "Enforce rotação de chaves/segredos do IdP.",
       "domain": "SEC/PRIV",
-      "domains": [
-        "SEC/PRIV"
-      ],
+      "domains": ["SEC/PRIV"],
       "id": "idp_keys_rotation_watch",
       "owner": "SEC",
       "kpi": "security.idp.keys_age_days",

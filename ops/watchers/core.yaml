@@ -60,13 +60,20 @@
       "description": "Detecta drift estatístico relevante para decisões de crédito.",
       "kpi": "model.psi",
       "owner": "ML",
-      "hook": "model-drift-rollback"
+      "hooks": {
+        "DEC": "dec-latency-degrade",
+        "ML": "ml-model-rollback"
+      }
     },
     "slo_budget_breach_watch": {
       "description": "Monitora burn rate do SLO cross-domain.",
       "kpi": "slo.burn_rate",
       "owner": "SRE",
-      "hook": "slo-burn-rate-guard"
+      "hooks": {
+        "DEC": "slo-burn-rate-guard",
+        "PM": "pm-oracle-staleness",
+        "PLAT": "slo-burn-rate-guard"
+      }
     },
     "oracle_divergence_watch": {
       "description": "Detecta divergência de preço entre oráculos e referência.",
@@ -102,7 +109,10 @@
       "description": "Bloqueia regressão de vulnerabilidades críticas em imagens.",
       "kpi": "image.critical_vuln_count",
       "owner": "SEC",
-      "hook": "image-vuln-regression-block"
+      "hooks": {
+        "ML": "ml-model-rollback",
+        "SEC/PRIV": "image-vuln-regression-block"
+      }
     },
     "cdc_lag_watch": {
       "description": "Acompanha lag CDC p95 contra o contrato de dados.",
@@ -144,7 +154,10 @@
       "description": "Previne quebras de contrato de APIs públicas/internas.",
       "kpi": "api.contract.breaking_changes",
       "owner": "INT",
-      "hook": "api-contract-block"
+      "hooks": {
+        "FE": "fe-cwv-regression",
+        "INT": "api-contract-block"
+      }
     },
     "formal_verification_gate_watch": {
       "description": "Sinaliza falha em gates formais (A108/segurança).",
