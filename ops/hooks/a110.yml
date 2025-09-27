@@ -214,6 +214,19 @@
       "playbook": "docs/runbooks/int_integrations.md#api-breaking"
     },
     {
+      "hook": "cls-payin-cutover",
+      "watchers": [
+        "cls_payin_cutoff_watch"
+      ],
+      "kpi": "integration.cls_payin_cutoff_delay_ms",
+      "threshold": 30000,
+      "window": "5m",
+      "action": "switch_to_manual_cutoff",
+      "owner": "INT/Payments",
+      "rollback": true,
+      "playbook": "docs/runbooks/int_integrations.md#cls-payin"
+    },
+    {
       "hook": "formal-verification-freeze",
       "watchers": [
         "formal_verification_gate_watch"
@@ -237,3 +250,7 @@
       "action": "escalate_exec_review",
       "owner": "StrategyOps",
       "rollback": false,
+      "playbook": "docs/runbooks/plat_observability.md#okr-alignment"
+    }
+  ]
+}
