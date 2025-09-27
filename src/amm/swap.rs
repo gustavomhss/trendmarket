@@ -8,6 +8,7 @@ use super::guardrails::{
     div_nearest_even_u256_to_u128,
     ensure_nonzero,
     ensure_reserves,
+    u256_to_u128_checked,
 };
 use super::types::{U256, Ppm, Wad, PPM_SCALE, MIN_RESERVE};
 
@@ -18,11 +19,12 @@ fn ceil_div_u256(n: U256, d: U256) -> U256 {
 }
 
 #[inline]
-fn fee_on_input_ceil(dx: Wad, fee_ppm: Ppm) -> Wad {
-    if fee_ppm == 0 { return 0; }
+fn fee_on_input_ceil(dx: Wad, fee_ppm: Ppm) -> Result<Wad, AmmError> {
+    if fee_ppm == 0 { return Ok(0); }
     let n = U256::from(dx) * U256::from(fee_ppm as u64);
     let d = U256::from(PPM_SCALE as u64);
-    ceil_div_u256(n, d).as_u128()
+    let fee_u256 = ceil_div_u256(n, d);
+    u256_to_u128_checked(fee_u256)
 }
 
 /// Calcula o `amount_out` ao enviar `dx` do ativo X e receber Y (X→Y).
@@ -35,7 +37,7 @@ pub fn get_amount_out(x: Wad, y: Wad, dx: Wad, fee_ppm: Ppm) -> Result<Wad, AmmE
     ensure_nonzero(dx)?;
 
     // taxa sobre o input
-    let dx_fee = fee_on_input_ceil(dx, fee_ppm);
+    let dx_fee = fee_on_input_ceil(dx, fee_ppm)?;
     let dx_net = dx.checked_sub(dx_fee).ok_or(AmmError::Overflow)?;
     if dx_net == 0 { return Err(AmmError::InputTooSmall); }
 
@@ -77,15 +79,15 @@ pub fn get_amount_in(x: Wad, y: Wad, dy: Wad, fee_ppm: Ppm) -> Result<Wad, AmmEr
     // dx_net = ceil( x * dy / (y - dy) )
     let num = U256::from(x) * U256::from(dy);
     let den = U256::from(y.checked_sub(dy).ok_or(AmmError::Overflow)?);
-    let dx_net = ceil_div_u256(num, den).as_u128();
+    let dx_net = u256_to_u128_checked(ceil_div_u256(num, den))?;
 
     // dx_gross = ceil( dx_net * 1e6 / (1e6 - fee) )
     let denom_ppm = (PPM_SCALE as u64).checked_sub(fee_ppm as u64).ok_or(AmmError::InputTooSmall)?;
     if denom_ppm == 0 { return Err(AmmError::InputTooSmall); }
-    let mut hi = ceil_div_u256(
+    let mut hi = u256_to_u128_checked(ceil_div_u256(
         U256::from(dx_net) * U256::from(PPM_SCALE as u64),
         U256::from(denom_ppm),
-    ).as_u128();
+    ))?;
     if hi == 0 { hi = 1; }
 
     // garante que `hi` satisfaz (expande se necessário)
@@ -125,7 +127,7 @@ pub fn get_amount_in(x: Wad, y: Wad, dy: Wad, fee_ppm: Ppm) -> Result<Wad, AmmEr
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::amm::types::{MIN_RESERVE, U256, Ppm, WAD};
+    use crate::amm::types::{MIN_RESERVE, U256, Ppm, WAD, PPM_SCALE};
 
     const FEE0: Ppm = 0;
     const FEE3: Ppm = 3000; // 0,30%
@@ -151,7 +153,7 @@ mod tests {
         let (x, y, dx) = (1_000_000u128 * WAD, 1_000_000u128 * WAD, 10_000u128 * WAD);
         let out = get_amount_out(x, y, dx, FEE3).unwrap();
 
-        let dx_fee = super::fee_on_input_ceil(dx, FEE3);
+        let dx_fee = super::fee_on_input_ceil(dx, FEE3).unwrap();
         let x1 = x + (dx - dx_fee);
         let k = U256::from(x) * U256::from(y);
         let y_star = crate::amm::guardrails::div_nearest_even_u256_to_u128(k, U256::from(x1)).unwrap();
@@ -218,5 +220,33 @@ mod tests {
         let (x, y, dx) = (MIN_RESERVE + 10, MIN_RESERVE, MIN_RESERVE);
         let err = get_amount_out(x, y, dx, FEE0).unwrap_err();
         assert_eq!(err, AmmError::MinReserveBreached);
+    }
+
+    #[test]
+    fn t_fee_overflow_propagates() {
+        let x = MIN_RESERVE * 2;
+        let y = MIN_RESERVE * 2;
+        let dx = u128::MAX;
+        let err = get_amount_out(x, y, dx, u32::MAX).unwrap_err();
+        assert_eq!(err, AmmError::Overflow);
+    }
+
+    #[test]
+    fn t_dx_net_overflow_errors() {
+        let x = u128::MAX;
+        let dy = u128::MAX / 4;
+        let y = dy + MIN_RESERVE + 1;
+        let err = get_amount_in(x, y, dy, FEE0).unwrap_err();
+        assert_eq!(err, AmmError::Overflow);
+    }
+
+    #[test]
+    fn t_hi_overflow_errors() {
+        let x = u128::MAX / 2;
+        let y = MIN_RESERVE * 2;
+        let dy = MIN_RESERVE - 1;
+        let fee = PPM_SCALE - 1;
+        let err = get_amount_in(x, y, dy, fee).unwrap_err();
+        assert_eq!(err, AmmError::Overflow);
     }
 }
