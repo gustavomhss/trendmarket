@@ -84,8 +84,11 @@ def _coerce_aggregated_watcher(
     domain: str,
     watcher_name: str,
     watcher_details: Dict[str, Any],
+    *,
+    alias: Optional[str] = None,
 ) -> Dict[str, Any]:
-    record: Dict[str, Any] = {"id": watcher_name, "domain": domain}
+    record_id = alias or watcher_name
+    record: Dict[str, Any] = {"id": record_id, "domain": domain}
 
     hook_metadata = _load_hook_metadata().get(watcher_name, {})
 
@@ -123,9 +126,12 @@ def _coerce_aggregated_watcher(
         if value is None or (isinstance(value, str) and not value)
     ]
     if missing:
+        reference = watcher_name
+        if alias and alias != watcher_name:
+            reference = f"{alias} (ref {watcher_name})"
         raise ValueError(
             "Watcher '%s' for domain '%s' missing required fields %s in %s"
-            % (watcher_name, domain, missing, path)
+            % (reference, domain, missing, path)
         )
 
     record.update(
@@ -169,23 +175,74 @@ def _load_watchers_from_aggregated(
             raise ValueError(
                 f"Domain '{domain}' must map to a non-empty list of watchers in {path}"
             )
-        for idx, watcher in enumerate(watchers, start=1):
-            if not isinstance(watcher, str):
+        for idx, watcher_entry in enumerate(watchers, start=1):
+            alias: Optional[str] = None
+            overrides: Dict[str, Any] = {}
+            if isinstance(watcher_entry, str):
+                watcher_name = watcher_entry.strip()
+                if not watcher_name:
+                    raise ValueError(
+                        f"Watcher #{idx} for domain '{domain}' missing name in {path}"
+                    )
+            elif isinstance(watcher_entry, dict):
+                ref: Optional[str] = None
+                if isinstance(watcher_entry.get("watcher"), str):
+                    ref = watcher_entry["watcher"].strip()
+                elif isinstance(watcher_entry.get("ref"), str):
+                    ref = watcher_entry["ref"].strip()
+                if ref:
+                    for key in ("id", "name", "alias"):
+                        value = watcher_entry.get(key)
+                        if isinstance(value, str):
+                            candidate = value.strip()
+                            if candidate and candidate != ref:
+                                alias = candidate
+                                break
+                    watcher_name = ref
+                else:
+                    watcher_name = None
+                    for key in ("id", "name"):
+                        value = watcher_entry.get(key)
+                        if isinstance(value, str):
+                            candidate = value.strip()
+                            if candidate:
+                                watcher_name = candidate
+                                break
+                    if watcher_name is None:
+                        raise ValueError(
+                            f"Watcher #{idx} for domain '{domain}' missing identifier in {path}"
+                        )
+                overrides = {
+                    key: value
+                    for key, value in watcher_entry.items()
+                    if key
+                    not in {"watcher", "ref", "id", "name", "alias"}
+                }
+                if not watcher_name:
+                    raise ValueError(
+                        f"Watcher #{idx} for domain '{domain}' missing name in {path}"
+                    )
+            else:
                 raise ValueError(
-                    f"Watcher #{idx} for domain '{domain}' must be a string in {path}"
+                    f"Watcher #{idx} for domain '{domain}' must be a string or mapping in {path}"
                 )
-            watcher_name = watcher.strip()
-            if not watcher_name:
-                raise ValueError(
-                    f"Watcher #{idx} for domain '{domain}' missing name in {path}"
-                )
+
             details = watchers_map.get(watcher_name)
             if not isinstance(details, dict):
                 raise ValueError(
                     f"Watcher '{watcher_name}' referenced by domain '{domain}' missing definition in {path}"
                 )
+            combined = dict(details)
+            if overrides:
+                combined.update(overrides)
             entries.append(
-                _coerce_aggregated_watcher(path, domain, watcher_name, details)
+                _coerce_aggregated_watcher(
+                    path,
+                    domain,
+                    watcher_name,
+                    combined,
+                    alias=alias,
+                )
             )
 
     return entries
