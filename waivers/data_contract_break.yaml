@@ -1,0 +1,40 @@
+waiver_id: WAIVER-20240415-data-contract-break
+created_at: 2025-04-15
+expires_at: 2025-04-29
+owner:
+  team: DATA
+  primary: Marcelo Couto
+  slack: "#data-governance"
+justification: |
+  Exceção temporária para o contrato A106 `creditengine.customer_profile` devido a atraso na sincronização de schema
+  com parceiro externo. O waiver permite seguir com deploy crítico enquanto as tabelas CDC são reprocessadas.
+ci_gates:
+  - name: watchers.dry
+    requirement: pass
+    status: conditional
+    condition: "Allow data_contract_break_watch degradation"
+  - name: hooks.dry
+    requirement: pass
+    status: pass
+  - name: evidence.publish
+    requirement: pass
+    status: pass
+watchers_impacted:
+  - data_contract_break_watch
+  - schema_registry_drift_watch
+mitigations:
+  - action: Rodar `make data.contracts.verify` a cada 2h
+    owner: DATA on-call
+  - action: Publicar relatório de reconciliação no Confluence
+    owner: Marcelo Couto
+rollback_plan: |
+  Reverter para schema anterior assim que a sincronização completar e garantir que `data_contract_break_watch` volte a verde.
+approvals:
+  - role: Data Steward
+    name: Camila Lopes
+  - role: Compliance
+    name: Ana Paula Duarte
+links:
+  prfaq: docs/PRFAQ.md#how-do-we-solve-it
+  narrative: docs/6P.md#5-product
+  environment: docs/environment.md

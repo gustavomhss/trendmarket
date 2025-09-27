@@ -1,0 +1,79 @@
+{
+  "report_version": "2025-04-15",
+  "owners": {
+    "executive_sponsor": "Joana Ribeiro",
+    "technical_lead": "Carlos Menezes",
+    "compliance": "Ana Paula Duarte"
+  },
+  "artifacts": {
+    "prfaq": {
+      "path": "docs/PRFAQ.md",
+      "hash": "sha256:c8e0fcee4419d5f1263e25ed8062254d24bf8c844e2bfd852a703cacd8846c48",
+      "last_reviewed_at": "2025-04-15"
+    },
+    "narrative_6p": {
+      "path": "docs/6P.md",
+      "hash": "sha256:84ede7398d7d6178d25afb7382dc8d04466d0f7c694692cbb7265fa27cca27eb",
+      "last_reviewed_at": "2025-04-15"
+    },
+    "environment": {
+      "path": "docs/environment.md",
+      "hash": "sha256:6e13248daced2ddf3c68fccfe244f0d721042af2061fef92dc8d6a05c98dadaf",
+      "toolchain": {
+        "python": "3.11.8",
+        "node": "20.11",
+        "rust": "1.77",
+        "go": "1.22"
+      },
+      "seeds": {
+        "CE_SEED": "20240117",
+        "MODEL_SEED": "20231201",
+        "AB_SEED": "0xC0FFEE"
+      }
+    },
+    "notebooks": {
+      "path": "docs/notebooks/working_backwards_experiments.ipynb",
+      "artifacts": [
+        "docs/notebooks/artifacts/latency_summary.json",
+        "docs/notebooks/figures/latency_budget.svg"
+      ],
+      "last_run": "2025-04-15",
+      "metrics": {
+        "latency_p75_ms": 412.47,
+        "latency_p95_ms": 494.48,
+        "psi": "<=0.2"
+      }
+    }
+  },
+  "waivers": [
+    {
+      "path": "waivers/template.yaml",
+      "expires_at": "2025-05-15",
+      "owner": "Joana Ribeiro",
+      "ci_gates": ["watchers.dry", "hooks.dry", "evidence.publish"]
+    },
+    {
+      "path": "waivers/data_contract_break.yaml",
+      "expires_at": "2025-04-29",
+      "owner": "Marcelo Couto",
+      "ci_gates": ["watchers.dry", "hooks.dry", "evidence.publish"]
+    },
+    {
+      "path": "waivers/latency_guardrail.yaml",
+      "expires_at": "2025-04-22",
+      "owner": "Lucas Almeida",
+      "ci_gates": ["watchers.dry", "hooks.dry", "evidence.publish"]
+    }
+  ],
+  "ci_requirements": {
+    "must_pass": [
+      "make watchers.dry",
+      "make hooks.dry",
+      "make evidence.publish"
+    ],
+    "evidence_links": [
+      "docs/notebooks/artifacts/latency_summary.json",
+      "ops/reports/repo_audit.json"
+    ]
+  }
+}

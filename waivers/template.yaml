@@ -1,0 +1,38 @@
+waiver_id: WAIVER-20240415-governanca-base
+created_at: 2025-04-15
+expires_at: 2025-05-15
+owner:
+  team: DEC
+  primary: Joana Ribeiro
+  slack: "#dec-squad"
+justification: |
+  Base template aprovado pelo comitê A110. Duplique este arquivo e atualize os campos com o contexto do waiver.
+ci_gates:
+  - name: watchers.dry
+    requirement: pass
+    status: pending
+  - name: hooks.dry
+    requirement: pass
+    status: pending
+  - name: evidence.publish
+    requirement: pass
+    status: pending
+watchers_impacted:
+  - metrics_decision_hook_gap_watch
+  - model_drift_watch
+mitigations:
+  - action: Monitorar dashboards de latência a cada 30 min
+    owner: SRE on-call
+  - action: Reexecutar make hooks.dry após correção
+    owner: Squad DEC
+rollback_plan: |
+  Executar rollback para a política de latência padrão e remover o waiver após validação dos watchers.
+approvals:
+  - role: Tech Lead
+    name: Carlos Menezes
+  - role: Compliance
+    name: Ana Paula Duarte
+links:
+  prfaq: docs/PRFAQ.md
+  narrative: docs/6P.md
+  environment: docs/environment.md

@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-label="Distribuição de latência com p75 e p95">
+  <title>Distribuição de Latência — CreditEngine$</title>
+  <rect width="640" height="360" fill="#0f172a" />
+  <g transform="translate(60,40)">
+    <rect x="0" y="0" width="520" height="260" fill="#fff" rx="8" />
+    <text x="260" y="-12" text-anchor="middle" font-family="Inter,Arial" font-size="18" fill="#0f172a">Distribuição de Latência (ms)</text>
+    <g stroke="#94a3b8" stroke-width="1">
+      <line x1="40" y1="20" x2="40" y2="220" />
+      <line x1="40" y1="220" x2="480" y2="220" />
+    </g>
+    <g fill="#1d4ed8">
+      <rect x="60" y="180" width="40" height="40" opacity="0.85" />
+      <rect x="110" y="140" width="40" height="80" opacity="0.85" />
+      <rect x="160" y="110" width="40" height="110" opacity="0.85" />
+      <rect x="210" y="90" width="40" height="130" opacity="0.85" />
+      <rect x="260" y="70" width="40" height="150" opacity="0.85" />
+      <rect x="310" y="90" width="40" height="130" opacity="0.85" />
+      <rect x="360" y="130" width="40" height="90" opacity="0.85" />
+      <rect x="410" y="170" width="40" height="50" opacity="0.85" />
+    </g>
+    <g stroke-width="3">
+      <line x1="320" y1="40" x2="320" y2="220" stroke="#f97316" stroke-dasharray="8 6" />
+      <line x1="400" y1="40" x2="400" y2="220" stroke="#ef4444" stroke-dasharray="8 6" />
+    </g>
+    <g font-family="Inter,Arial" font-size="14" fill="#0f172a">
+      <text x="320" y="240" text-anchor="middle">p75 = 412.47 ms</text>
+      <text x="400" y="240" text-anchor="middle" fill="#b91c1c">p95 = 494.48 ms</text>
+    </g>
+    <g font-family="Inter,Arial" font-size="12" fill="#475569">
+      <text x="40" y="240">0</text>
+      <text x="140" y="240">200</text>
+      <text x="240" y="240">300</text>
+      <text x="340" y="240">400</text>
+      <text x="440" y="240">500</text>
+    </g>
+    <text x="-32" y="140" text-anchor="middle" transform="rotate(-90 -32 140)" font-family="Inter,Arial" font-size="12" fill="#475569">Frequência</text>
+  </g>
+</svg>
