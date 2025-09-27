@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
-from typing import Dict, Iterable, Set
+from typing import Dict, Iterable, List, Set, Tuple
 
 EXPECTED_DOMAIN_WATCHERS: Dict[str, Set[str]] = {
     "DEC": {
@@ -92,7 +92,7 @@ class WatcherValidationError(RuntimeError):
     """Represents a validation error during watcher loading."""
 
 
-def _load_watchers_file(path: Path) -> Dict[str, Set[str]]:
+def _load_watchers_file(path: Path) -> Tuple[Dict[str, Set[str]], bool]:
     try:
         payload = json.loads(path.read_text())
     except json.JSONDecodeError as exc:  # pragma: no cover - defensive
@@ -101,7 +101,10 @@ def _load_watchers_file(path: Path) -> Dict[str, Set[str]]:
     if not isinstance(payload, dict):
         raise WatcherValidationError(f"{path}: expected a mapping with domain and watchers")
 
+    is_aggregated = False
+
     if "domains" in payload:
+        is_aggregated = True
         domains = payload.get("domains")
         if not isinstance(domains, dict) or not domains:
             raise WatcherValidationError(f"{path}: domains must be a non-empty mapping")
@@ -139,7 +142,7 @@ def _load_watchers_file(path: Path) -> Dict[str, Set[str]]:
 
             results[domain] = names
 
-        return results
+        return results, is_aggregated
 
     domain_raw = payload.get("domain")
     domain = str(domain_raw).upper() if domain_raw else path.stem.upper()
@@ -178,7 +181,7 @@ def _load_watchers_file(path: Path) -> Dict[str, Set[str]]:
 
         seen.add(name)
 
-    return {domain: seen}
+    return {domain: seen}, is_aggregated
 
 
 def _summarize_domain_counts(domain_watchers: Dict[str, Set[str]]) -> Iterable[str]:
@@ -192,46 +195,49 @@ def main() -> int:
         print("[watchers.dry] ops/watchers directory not found", file=sys.stderr)
         return 1
 
-    errors = []
+    errors: List[str] = []
     domain_watchers: Dict[str, Set[str]] = {}
-    aggregated_inventory = False
+    aggregated_domains: Set[str] = set()
+    non_aggregated_domains: Set[str] = set()
 
-    for path in sorted({path for path in watchers_dir.glob("*.yaml")}):
+    all_paths = sorted({*watchers_dir.glob("*.yml"), *watchers_dir.glob("*.yaml")})
+
+    for path in all_paths:
         try:
-            domain_entries = _load_watchers_file(path)
+            domain_entries, is_aggregated = _load_watchers_file(path)
         except WatcherValidationError as exc:
             errors.append(str(exc))
             continue
 
-        if len(domain_entries) > 1:
-            aggregated_inventory = True
+        if is_aggregated:
+            aggregated_domains.update(domain_entries.keys())
 
         for domain, watchers in domain_entries.items():
-            if domain in domain_watchers:
-                errors.append(f"duplicate watcher definition for domain '{domain}' in {path}")
+            existing = domain_watchers.get(domain)
+
+            if existing is None:
+                domain_watchers[domain] = set(watchers)
+                if not is_aggregated:
+                    non_aggregated_domains.add(domain)
                 continue
 
-            domain_watchers[domain] = watchers
-
-    for path in sorted({path for path in watchers_dir.glob("*.yml")}):
-        try:
-            domain_entries = _load_watchers_file(path)
-        except WatcherValidationError as exc:
-            errors.append(str(exc))
-            continue
-
-        for domain, watchers in domain_entries.items():
-            if aggregated_inventory and domain in domain_watchers:
-                # Aggregated inventories already define this domain; keep the
-                # duplicate-domain guard behaviour for other cases while
-                # avoiding redundant definitions here.
+            if is_aggregated:
+                existing.update(watchers)
+                aggregated_domains.add(domain)
                 continue
 
-            if domain in domain_watchers:
-                errors.append(f"duplicate watcher definition for domain '{domain}' in {path}")
+            if domain in aggregated_domains:
+                if domain in non_aggregated_domains:
+                    errors.append(
+                        f"duplicate watcher definition for domain '{domain}' in {path}"
+                    )
+                    continue
+
+                existing.update(watchers)
+                non_aggregated_domains.add(domain)
                 continue
 
-            domain_watchers[domain] = watchers
+            errors.append(f"duplicate watcher definition for domain '{domain}' in {path}")
 
     expected_domains = set(EXPECTED_DOMAIN_WATCHERS)
 

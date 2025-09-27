@@ -19,7 +19,7 @@ def _load_module():
 watchers_dry = _load_module()
 
 
-def _write_aggregated_inventory(base_dir: Path) -> Path:
+def _write_aggregated_inventory(base_dir: Path, filename: str = "core.yaml") -> Path:
     watchers_dir = base_dir / "ops" / "watchers"
     watchers_dir.mkdir(parents=True, exist_ok=True)
 
@@ -31,7 +31,7 @@ def _write_aggregated_inventory(base_dir: Path) -> Path:
         },
     }
 
-    path = watchers_dir / "core.yaml"
+    path = watchers_dir / filename
     path.write_text(json.dumps(payload, indent=2))
     return watchers_dir
 
@@ -60,9 +60,34 @@ def test_load_watchers_file_supports_aggregated_payload(tmp_path: Path) -> None:
     path = tmp_path / "core.yaml"
     path.write_text(json.dumps(payload))
 
-    result = watchers_dry._load_watchers_file(path)
+    result, aggregated = watchers_dry._load_watchers_file(path)
 
     assert result == {"DEC": {"a", "b"}}
+    assert aggregated is True
+
+
+def test_load_watchers_file_for_domain_payload(tmp_path: Path) -> None:
+    payload = {
+        "domain": "DEC",
+        "watchers": [
+            {
+                "name": "metrics_decision_hook_gap_watch",
+                "kpi": "metric",
+                "threshold": "value",
+                "window": "5m",
+                "action": "act",
+                "owner": "owner@trendmarket",
+                "rollback": "yes",
+            }
+        ],
+    }
+    path = tmp_path / "dec.yml"
+    path.write_text(json.dumps(payload))
+
+    result, aggregated = watchers_dry._load_watchers_file(path)
+
+    assert result == {"DEC": {"metrics_decision_hook_gap_watch"}}
+    assert aggregated is False
 
 
 def test_main_accepts_aggregated_inventory(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
@@ -88,3 +113,47 @@ def test_main_allows_per_domain_files_with_aggregated_inventory(
     captured = capsys.readouterr()
     assert exit_code == 0
     assert "DEC: 3 watcher(s)" in captured.out
+
+
+def test_main_handles_aggregated_inventory_loaded_after_domain(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    watchers_dir = _write_aggregated_inventory(tmp_path, filename="zzz_core.yaml")
+    _write_domain_file(watchers_dir, "DEC")
+
+    monkeypatch.chdir(tmp_path)
+    watchers_files = sorted(path.name for path in (tmp_path / "ops" / "watchers").iterdir())
+    assert watchers_files == ["dec.yml", "zzz_core.yaml"]
+
+    exit_code = watchers_dry.main()
+
+    assert exit_code == 0
+
+
+def test_main_rejects_duplicate_per_domain_files_when_aggregated_present(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    watchers_dir = _write_aggregated_inventory(tmp_path)
+    _write_domain_file(watchers_dir, "DEC")
+    duplicate_payload = {
+        "domain": "DEC",
+        "watchers": [
+            {
+                "name": "metrics_decision_hook_gap_watch",
+                "kpi": "metric",
+                "threshold": "threshold",
+                "window": "5m",
+                "action": "action",
+                "owner": "owner@trendmarket",
+                "rollback": "yes",
+            }
+        ],
+    }
+    (watchers_dir / "dec_duplicate.yml").write_text(json.dumps(duplicate_payload, indent=2))
+
+    monkeypatch.chdir(tmp_path)
+    exit_code = watchers_dry.main()
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert "duplicate watcher definition for domain 'DEC'" in captured.err
