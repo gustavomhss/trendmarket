@@ -101,10 +101,7 @@ def _load_watchers_file(path: Path) -> Tuple[Dict[str, Set[str]], bool]:
     if not isinstance(payload, dict):
         raise WatcherValidationError(f"{path}: expected a mapping with domain and watchers")
 
-    is_aggregated = False
-
     if "domains" in payload:
-        is_aggregated = True
         domains = payload.get("domains")
         if not isinstance(domains, dict) or not domains:
             raise WatcherValidationError(f"{path}: domains must be a non-empty mapping")
@@ -142,7 +139,7 @@ def _load_watchers_file(path: Path) -> Tuple[Dict[str, Set[str]], bool]:
 
             results[domain] = names
 
-        return results, is_aggregated
+        return results, True
 
     domain_raw = payload.get("domain")
     domain = str(domain_raw).upper() if domain_raw else path.stem.upper()
@@ -181,7 +178,7 @@ def _load_watchers_file(path: Path) -> Tuple[Dict[str, Set[str]], bool]:
 
         seen.add(name)
 
-    return {domain: seen}, is_aggregated
+    return {domain: seen}, False
 
 
 def _summarize_domain_counts(domain_watchers: Dict[str, Set[str]]) -> Iterable[str]:
