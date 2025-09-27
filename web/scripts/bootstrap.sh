@@ -4,6 +4,7 @@ set -euo pipefail
 COMMAND="${1:-}"
 DOMAIN_SLUG="web"
 OWNER="FE"
+PYTHON_BIN="${PYTHON_BIN:-python3}"
 WATCHERS_JSON='["web_cwv_regression_watch","api_breaking_change_watch","dep_vuln_watch"]'
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/.. && pwd)"
 REPO_ROOT="$(git -C "$ROOT_DIR" rev-parse --show-toplevel)"
@@ -19,7 +20,7 @@ USAGE
 }
 
 ensure_inventory() {
-  python - <<PY
+  "$PYTHON_BIN" - <<PY
 import json
 from pathlib import Path
 slug = "${DOMAIN_SLUG}"
@@ -43,7 +44,7 @@ PY
 
 write_manifest() {
   mkdir -p "$BUILD_DIR"
-  python - <<PY
+  "$PYTHON_BIN" - <<PY
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -64,7 +65,7 @@ PY
 
 publish_evidence() {
   mkdir -p "$EVIDENCE_DIR"
-  python - <<PY
+  "$PYTHON_BIN" - <<PY
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -94,7 +95,7 @@ case "$COMMAND" in
   lint)
     ensure_inventory
     check_lock
-    python - <<'PY'
+    "$PYTHON_BIN" - <<'PY'
 from pathlib import Path
 if "web_cwv_regression_watch" not in Path("web/README.md").read_text():
     raise SystemExit("README precisa documentar watchers FE")
@@ -103,7 +104,7 @@ PY
     ;;
   test)
     ensure_inventory
-    python - <<'PY'
+    "$PYTHON_BIN" - <<'PY'
 from pathlib import Path
 makefile = Path("web/Makefile").read_text()
 required = ["lint", "test", "build", "evidence"]
@@ -124,13 +125,13 @@ PY
     ;;
   hooks.dry|watchers.dry)
     ensure_inventory
-    python - <<'PY'
+    "$PYTHON_BIN" - <<'PY'
 print("[hooks/watchers] simulação concluída para FE")
 PY
     ;;
   run)
     ensure_inventory
-    python - <<'PY'
+    "$PYTHON_BIN" - <<'PY'
 print("[run] utilize \"pnpm dev\" após provisionar o app")
 PY
     ;;

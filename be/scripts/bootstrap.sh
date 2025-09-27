@@ -4,6 +4,7 @@ set -euo pipefail
 COMMAND="${1:-}"
 DOMAIN_SLUG="be"
 OWNER="DEC"
+PYTHON_BIN="${PYTHON_BIN:-python3}"
 WATCHERS_JSON='["api_breaking_change_watch","metrics_decision_hook_gap_watch","slo_budget_breach_watch","runtime_eol_watch","dep_vuln_watch"]'
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/.. && pwd)"
 REPO_ROOT="$(git -C "$ROOT_DIR" rev-parse --show-toplevel)"
@@ -18,7 +19,7 @@ USAGE
 }
 
 ensure_inventory() {
-  python - <<PY
+  "$PYTHON_BIN" - <<PY
 import json
 from pathlib import Path
 slug = "${DOMAIN_SLUG}"
@@ -43,7 +44,7 @@ PY
 
 write_manifest() {
   mkdir -p "$BUILD_DIR"
-  python - <<PY
+  "$PYTHON_BIN" - <<PY
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -63,7 +64,7 @@ PY
 
 publish_evidence() {
   mkdir -p "$EVIDENCE_DIR"
-  python - <<PY
+  "$PYTHON_BIN" - <<PY
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -85,7 +86,7 @@ PY
 case "$COMMAND" in
   lint)
     ensure_inventory
-    python - <<'PY'
+    "$PYTHON_BIN" - <<'PY'
 from pathlib import Path
 readme = Path("be/README.md")
 required = ["Watchers", "Owner", "Makefile"]
@@ -98,7 +99,7 @@ PY
     ;;
   test)
     ensure_inventory
-    python - <<'PY'
+    "$PYTHON_BIN" - <<'PY'
 from pathlib import Path
 makefile = Path("be/Makefile").read_text()
 for target in ("lint", "test", "build", "evidence", "hooks.dry", "watchers.dry"):
@@ -117,13 +118,13 @@ PY
     ;;
   hooks.dry|watchers.dry)
     ensure_inventory
-    python - <<'PY'
+    "$PYTHON_BIN" - <<'PY'
 print("[hooks/watchers] verificação sintética concluída")
 PY
     ;;
   run)
     ensure_inventory
-    python - <<'PY'
+    "$PYTHON_BIN" - <<'PY'
 print("[run] ambiente ainda não possui serviço levantado; usar uv/fastapi no commit seguinte")
 PY
     ;;

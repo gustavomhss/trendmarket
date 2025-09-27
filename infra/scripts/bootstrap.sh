@@ -4,6 +4,7 @@ set -euo pipefail
 COMMAND="${1:-}"
 DOMAIN_SLUG="infra"
 OWNER="SRE"
+PYTHON_BIN="${PYTHON_BIN:-python3}"
 WATCHERS_JSON='["slo_budget_breach_watch","runtime_eol_watch","dep_vuln_watch","alert_storm_watch"]'
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/.. && pwd)"
 REPO_ROOT="$(git -C "$ROOT_DIR" rev-parse --show-toplevel)"
@@ -19,7 +20,7 @@ USAGE
 }
 
 ensure_inventory() {
-  python - <<PY
+  "$PYTHON_BIN" - <<PY
 import json
 from pathlib import Path
 slug = "${DOMAIN_SLUG}"
@@ -43,7 +44,7 @@ PY
 
 write_manifest() {
   mkdir -p "$BUILD_DIR"
-  python - <<PY
+  "$PYTHON_BIN" - <<PY
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -66,7 +67,7 @@ PY
 
 publish_evidence() {
   mkdir -p "$EVIDENCE_DIR"
-  python - <<PY
+  "$PYTHON_BIN" - <<PY
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -96,7 +97,7 @@ case "$COMMAND" in
   lint)
     ensure_inventory
     check_lock
-    python - <<'PY'
+    "$PYTHON_BIN" - <<'PY'
 from pathlib import Path
 text = Path("infra/README.md").read_text()
 if "IaC" not in text or "SLO" not in text:
@@ -106,7 +107,7 @@ PY
     ;;
   test)
     ensure_inventory
-    python - <<'PY'
+    "$PYTHON_BIN" - <<'PY'
 from pathlib import Path
 makefile = Path("infra/Makefile").read_text()
 required = ["lint", "test", "build", "evidence"]
@@ -127,13 +128,13 @@ PY
     ;;
   hooks.dry|watchers.dry)
     ensure_inventory
-    python - <<'PY'
+    "$PYTHON_BIN" - <<'PY'
 print("[hooks/watchers] simulação concluída para Infra")
 PY
     ;;
   run)
     ensure_inventory
-    python - <<'PY'
+    "$PYTHON_BIN" - <<'PY'
 print("[run] execute pipelines Terraform/Terragrunt conforme o ambiente")
 PY
     ;;
