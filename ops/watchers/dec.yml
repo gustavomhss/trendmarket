@@ -12,19 +12,19 @@
     },
     {
       "name": "model_drift_watch",
-      "kpi": "ml.model.psi",
-      "threshold": ">0.2",
-      "window": "24h",
-      "action": "rollback_model",
+      "kpi": "dec.latency.p95",
+      "threshold": ">=800ms",
+      "window": "5m",
+      "action": "degrade_route",
       "owner": "dec-duty@trendmarket",
       "rollback": "yes"
     },
     {
       "name": "slo_budget_breach_watch",
-      "kpi": "dec.latency.burn_rate",
-      "threshold": ">1.0",
-      "window": "1h",
-      "action": "page_oncall",
+      "kpi": "slo.burn_rate",
+      "threshold": ">=1.0",
+      "window": "60m",
+      "action": "enforce_release_freeze",
       "owner": "dec-duty@trendmarket",
       "rollback": "yes"
     }

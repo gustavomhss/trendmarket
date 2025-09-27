@@ -9,15 +9,14 @@
       "threshold": "800ms",
       "window": "5m",
       "action": "degrade_route",
-      "owner": "dec-duty@trendmarket",
+      "owner": "SRE",
+      "rollback": "yes",
       "evidence": [
-        "traces:decision.core",
-        "playbook:docs/runbooks/dec_decision_pricing.md#metric-gap"
-      ],
-      "rollback": "yes"
+        "playbook:docs/runbooks/dec_decision_pricing.md#model-drift-dec"
+      ]
     },
     {
-      "hook": "model-drift-rollback",
+      "hook": "ml-model-rollback",
       "watchers": [
         "model_drift_watch"
       ],
@@ -26,12 +25,10 @@
       "window": "24h",
       "action": "rollback_model",
       "owner": "ml-ops@trendmarket",
+      "rollback": "yes",
       "evidence": [
-        "metrics:ml.psi",
-        "experiments:srm",
         "playbook:docs/runbooks/ml_model_ops.md#model-drift"
-      ],
-      "rollback": "yes"
+      ]
     },
     {
       "hook": "slo-burn-rate-guard",
@@ -43,10 +40,10 @@
       "window": "60m",
       "action": "enforce_release_freeze",
       "owner": "sre@trendmarket",
+      "rollback": "yes",
       "evidence": [
         "playbook:docs/runbooks/plat_observability.md#slo-burn"
-      ],
-      "rollback": "yes"
+      ]
     },
     {
       "hook": "oracle-staleness-failover",
@@ -57,12 +54,12 @@
       "threshold": 5,
       "window": "10m",
       "action": "switch_to_twap_failover",
-      "owner": "pm-ops@trendmarket",
+      "owner": "PM",
+      "rollback": "yes",
       "evidence": [
         "audit:oracles/weekly",
         "playbook:docs/runbooks/pm_market_health.md#oracle-divergence"
-      ],
-      "rollback": "yes"
+      ]
     },
     {
       "hook": "fx-delta-benchmark-guard",
@@ -74,10 +71,10 @@
       "window": "10m",
       "action": "switch_to_reference_rate",
       "owner": "pm-ops@trendmarket",
+      "rollback": "yes",
       "evidence": [
         "playbook:docs/runbooks/pm_market_health.md#fx-delta"
-      ],
-      "rollback": "yes"
+      ]
     },
     {
       "hook": "auction-invariant-pause",
@@ -89,10 +86,10 @@
       "window": "5m",
       "action": "pause_auction_stream",
       "owner": "pm-ops@trendmarket",
+      "rollback": "yes",
       "evidence": [
         "playbook:docs/runbooks/pm_market_health.md#auction-invariant"
-      ],
-      "rollback": "yes"
+      ]
     },
     {
       "hook": "experiment-srm-guardrail",
@@ -104,10 +101,10 @@
       "window": "24h",
       "action": "pause_experiment",
       "owner": "ml-ops@trendmarket",
+      "rollback": "yes",
       "evidence": [
         "playbook:docs/runbooks/ml_model_ops.md#srm"
-      ],
-      "rollback": "yes"
+      ]
     },
     {
       "hook": "runtime-eol-governance",
@@ -119,10 +116,10 @@
       "window": "7d",
       "action": "schedule_runtime_upgrade",
       "owner": "platform@trendmarket",
+      "rollback": "no",
       "evidence": [
         "playbook:docs/runbooks/ml_model_ops.md#runtime-eol"
-      ],
-      "rollback": "no"
+      ]
     },
     {
       "hook": "image-vuln-regression-block",
@@ -134,10 +131,10 @@
       "window": "15m",
       "action": "block_release",
       "owner": "sec-priv@trendmarket",
+      "rollback": "yes",
       "evidence": [
         "playbook:docs/runbooks/sec_privacy.md#image-vuln"
-      ],
-      "rollback": "yes"
+      ]
     },
     {
       "hook": "cdc-lag-hot-degrade",
@@ -149,10 +146,10 @@
       "window": "15m",
       "action": "degrade_to_hot_table",
       "owner": "data-quality@trendmarket",
+      "rollback": "yes",
       "evidence": [
         "playbook:docs/runbooks/data_contracts.md#cdc-lag"
-      ],
-      "rollback": "yes"
+      ]
     },
     {
       "hook": "schema-drift-blocker",
@@ -164,10 +161,10 @@
       "window": "5m",
       "action": "block_deploy",
       "owner": "data-quality@trendmarket",
+      "rollback": "yes",
       "evidence": [
         "playbook:docs/runbooks/data_contracts.md#schema-drift"
-      ],
-      "rollback": "yes"
+      ]
     },
     {
       "hook": "dbt-test-rollback",
@@ -179,10 +176,10 @@
       "window": "15m",
       "action": "rollback_transform",
       "owner": "data-quality@trendmarket",
+      "rollback": "yes",
       "evidence": [
         "playbook:docs/runbooks/data_contracts.md#dbt-tests"
-      ],
-      "rollback": "yes"
+      ]
     },
     {
       "hook": "data-contract-breach-guard",
@@ -194,12 +191,12 @@
       "window": "5m",
       "action": "trigger_contract_waiver",
       "owner": "data-quality@trendmarket",
+      "rollback": "yes",
       "evidence": [
         "contracts:a106",
         "contracts:a87",
         "playbook:docs/runbooks/data_contracts.md#contract-breach"
-      ],
-      "rollback": "yes"
+      ]
     },
     {
       "hook": "doc-coverage-gap",
@@ -211,10 +208,10 @@
       "window": "24h",
       "action": "raise_doc_gap",
       "owner": "data-quality@trendmarket",
+      "rollback": "no",
       "evidence": [
         "playbook:docs/runbooks/data_contracts.md#doc-coverage"
-      ],
-      "rollback": "no"
+      ]
     },
     {
       "hook": "web-cwv-rollback",
@@ -225,13 +222,13 @@
       "threshold": "200ms",
       "window": "24h",
       "action": "rollback_fe_release",
-      "owner": "fe-core@trendmarket",
+      "owner": "FE",
+      "rollback": "yes",
       "evidence": [
         "lighthouse:cwv",
         "sdk:contract",
         "playbook:docs/runbooks/fe_experience.md#web-cwv"
-      ],
-      "rollback": "yes"
+      ]
     },
     {
       "hook": "api-contract-block",
@@ -243,12 +240,12 @@
       "window": "5m",
       "action": "block_release",
       "owner": "integration@trendmarket",
+      "rollback": "yes",
       "evidence": [
         "tests:contract",
         "synthetics:cls",
         "playbook:docs/runbooks/int_integrations.md#api-breaking"
-      ],
-      "rollback": "yes"
+      ]
     },
     {
       "hook": "formal-verification-freeze",
@@ -260,10 +257,10 @@
       "window": "5m",
       "action": "freeze_pipeline",
       "owner": "sec-priv@trendmarket",
+      "rollback": "yes",
       "evidence": [
         "playbook:docs/runbooks/sec_privacy.md#formal-verification"
-      ],
-      "rollback": "yes"
+      ]
     },
     {
       "hook": "okr-alignment-escalation",
@@ -275,10 +272,10 @@
       "window": "7d",
       "action": "escalate_exec_review",
       "owner": "strategyops@trendmarket",
+      "rollback": "no",
       "evidence": [
         "playbook:docs/runbooks/plat_observability.md#okr-alignment"
-      ],
-      "rollback": "no"
+      ]
     },
     {
       "hook": "dp-budget-freeze",
@@ -290,12 +287,12 @@
       "window": "60m",
       "action": "freeze_processing",
       "owner": "sec-priv@trendmarket",
+      "rollback": "yes",
       "evidence": [
         "sbom:latest",
         "audit:privacy",
         "playbook:docs/runbooks/sec_privacy.md#dp-budget"
-      ],
-      "rollback": "yes"
+      ]
     },
     {
       "hook": "dep-vuln-freeze",
@@ -307,10 +304,10 @@
       "window": "15m",
       "action": "block_release",
       "owner": "sec-priv@trendmarket",
+      "rollback": "yes",
       "evidence": [
         "playbook:docs/runbooks/sec_privacy.md#dep-vuln"
-      ],
-      "rollback": "yes"
+      ]
     },
     {
       "hook": "idp-keys-rotation",
@@ -322,10 +319,10 @@
       "window": "1d",
       "action": "rotate_idp_keys",
       "owner": "sec-priv@trendmarket",
+      "rollback": "no",
       "evidence": [
         "playbook:docs/runbooks/sec_privacy.md#idp-keys"
-      ],
-      "rollback": "no"
+      ]
     },
     {
       "hook": "cache-ttl-block",
@@ -337,10 +334,10 @@
       "window": "10m",
       "action": "block_release",
       "owner": "integration@trendmarket",
+      "rollback": "yes",
       "evidence": [
         "playbook:docs/runbooks/int_integrations.md#cache-ttl"
-      ],
-      "rollback": "yes"
+      ]
     },
     {
       "hook": "cls-payin-cutover",
@@ -352,10 +349,10 @@
       "window": "5m",
       "action": "switch_to_manual_cutoff",
       "owner": "integration@trendmarket",
+      "rollback": "yes",
       "evidence": [
         "playbook:docs/runbooks/int_integrations.md#cls-payin"
-      ],
-      "rollback": "yes"
+      ]
     },
     {
       "hook": "tracing-sampling-freeze",
@@ -367,12 +364,12 @@
       "window": "15m",
       "action": "block_release",
       "owner": "sre@trendmarket",
+      "rollback": "yes",
       "evidence": [
         "traces:otel",
         "alerts:platform",
         "playbook:docs/runbooks/plat_observability.md#tracing-sampling"
-      ],
-      "rollback": "yes"
+      ]
     },
     {
       "hook": "alert-storm-suppressor",
@@ -384,10 +381,10 @@
       "window": "10m",
       "action": "enable_alert_mitigation",
       "owner": "sre@trendmarket",
+      "rollback": "yes",
       "evidence": [
         "playbook:docs/runbooks/plat_observability.md#alert-storm"
-      ],
-      "rollback": "yes"
+      ]
     },
     {
       "hook": "policy-violation-freeze",
@@ -399,10 +396,10 @@
       "window": "5m",
       "action": "freeze_release",
       "owner": "compliance@trendmarket",
+      "rollback": "yes",
       "evidence": [
         "playbook:docs/runbooks/plat_observability.md#policy-violation"
-      ],
-      "rollback": "yes"
+      ]
     }
   ]
 }

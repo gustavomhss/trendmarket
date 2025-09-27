@@ -12,10 +12,10 @@
     },
     {
       "name": "api_breaking_change_watch",
-      "kpi": "sdk.contract.breaking_changes",
+      "kpi": "api.contract.breaking_changes",
       "threshold": ">0",
-      "window": "30m",
-      "action": "block_fe_release",
+      "window": "5m",
+      "action": "block_release",
       "owner": "fe-core@trendmarket",
       "rollback": "yes"
     }

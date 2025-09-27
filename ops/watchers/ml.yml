@@ -4,7 +4,7 @@
     {
       "name": "model_drift_watch",
       "kpi": "ml.model.psi",
-      "threshold": ">0.2",
+      "threshold": ">=0.2",
       "window": "24h",
       "action": "rollback_model",
       "owner": "ml-ops@trendmarket",
@@ -30,10 +30,10 @@
     },
     {
       "name": "image_vuln_regression_watch",
-      "kpi": "serving.image.cvss_max",
-      "threshold": ">=7.0",
+      "kpi": "image.critical_vuln_count",
+      "threshold": ">0",
       "window": "24h",
-      "action": "rollback_model_image",
+      "action": "rollback_model",
       "owner": "ml-ops@trendmarket",
       "rollback": "yes"
     }
