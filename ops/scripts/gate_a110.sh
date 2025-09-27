@@ -59,6 +59,7 @@ trap 'rm -f "$script_path"' EXIT
 
 cat <<'PY' >"$script_path"
 import json
+from collections import defaultdict
 from pathlib import Path
 import sys
 
@@ -94,14 +95,38 @@ if sorted(domains.keys()) != sorted(expected_domains):
     errors.append(f"domains mismatch: expected {expected_domains}, found {sorted(domains.keys())}")
 
 watcher_defs = watchers_data.get("watchers", {})
+watcher_domains = defaultdict(set)
 all_domain_watchers = []
+domain_hook_bindings = {}
 for domain, watchers in domains.items():
     if not watchers:
         errors.append(f"domain {domain} has no watchers configured")
     for watcher in watchers:
         all_domain_watchers.append(watcher)
+        watcher_domains[watcher].add(domain)
         if watcher not in watcher_defs:
             errors.append(f"watcher {watcher} referenced in domain {domain} but missing definition")
+            continue
+
+        hooks_mapping = watcher_defs[watcher].get("hooks")
+        if not isinstance(hooks_mapping, dict) or not hooks_mapping:
+            errors.append(f"watcher {watcher} lacks per-domain hook mappings")
+            continue
+
+        hook_name = hooks_mapping.get(domain)
+        if hook_name is None:
+            available = ", ".join(sorted(hooks_mapping)) or "<none>"
+            errors.append(
+                f"watcher {watcher} has no hook assignment for domain {domain} (available: {available})"
+            )
+            continue
+
+        hook_value = str(hook_name).strip()
+        if not hook_value:
+            errors.append(f"watcher {watcher} has blank hook assignment for domain {domain}")
+            continue
+
+        domain_hook_bindings.setdefault(domain, {})[watcher] = hook_value
 
 hooks = hooks_data.get("hooks", [])
 if not hooks:
@@ -145,11 +170,65 @@ if watchers_missing_hooks:
 
 for watcher, meta in watcher_defs.items():
     hook_name = meta.get("hook")
+    hook_map = meta.get("hooks")
+
+    if hook_map:
+        if hook_name:
+            errors.append(
+                f"watcher {watcher} não deve definir campos 'hook' e 'hooks' simultaneamente"
+            )
+        if not isinstance(hook_map, dict) or not hook_map:
+            errors.append(f"watcher {watcher} possui mapeamento 'hooks' inválido")
+            continue
+
+        mapped_domains = {}
+        for domain_key, mapped_hook in hook_map.items():
+            domain_label = str(domain_key).strip().upper()
+            if not domain_label:
+                errors.append(
+                    f"watcher {watcher} possui domínio inválido no mapeamento de hooks"
+                )
+                continue
+
+            expected = watcher_domains.get(watcher, set())
+            if expected and domain_label not in expected:
+                errors.append(
+                    f"watcher {watcher} tem hook configurado para domínio inesperado {domain_label}"
+                )
+
+            hook_value = str(mapped_hook).strip()
+            if not hook_value:
+                errors.append(
+                    f"watcher {watcher} domínio {domain_label} sem nome de hook definido"
+                )
+                continue
+            if hook_value not in hooks_by_name:
+                errors.append(
+                    f"watcher {watcher} domínio {domain_label} aponta para hook inexistente {hook_value}"
+                )
+            mapped_domains[domain_label] = hook_value
+
+        expected_domains = watcher_domains.get(watcher, set())
+        missing = expected_domains - set(mapped_domains.keys())
+        if missing:
+            errors.append(
+                f"watcher {watcher} sem hook mapeado para domínio(s) {sorted(missing)}"
+            )
+        continue
+
     if not hook_name:
         errors.append(f"watcher {watcher} sem hook configurado")
         continue
+
+    hook_name = str(hook_name).strip()
     if hook_name not in hooks_by_name:
         errors.append(f"watcher {watcher} aponta para hook inexistente {hook_name}")
+
+    expected = watcher_domains.get(watcher, set())
+    if len(expected) > 1:
+        errors.append(
+            f"watcher {watcher} atende domínios {sorted(expected)} mas não possui mapeamento 'hooks'"
+        )
 
 if errors:
     for err in errors:

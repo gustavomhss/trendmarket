@@ -3,9 +3,9 @@
   "watchers": [
     {
       "name": "api_breaking_change_watch",
-      "kpi": "integration.contract.breaking_changes",
+      "kpi": "api.contract.breaking_changes",
       "threshold": ">0",
-      "window": "30m",
+      "window": "5m",
       "action": "block_release",
       "owner": "integration@trendmarket",
       "rollback": "yes"

@@ -92,7 +92,7 @@ class WatcherValidationError(RuntimeError):
     """Represents a validation error during watcher loading."""
 
 
-def _load_watchers_file(path: Path) -> Dict[str, Set[str]]:
+def _load_watchers_file(path: Path) -> Tuple[Dict[str, Set[str]], bool]:
     try:
         payload = json.loads(path.read_text())
     except json.JSONDecodeError as exc:  # pragma: no cover - defensive
@@ -111,6 +111,7 @@ def _load_watchers_file(path: Path) -> Dict[str, Set[str]]:
             domain = str(domain_raw or "").strip().upper()
             if not domain:
                 raise WatcherValidationError(f"{path}: domain entries must have a valid name")
+
             if not isinstance(watchers, list) or not watchers:
                 raise WatcherValidationError(
                     f"{path}: domain '{domain}' must map to a non-empty watcher list"
@@ -138,7 +139,7 @@ def _load_watchers_file(path: Path) -> Dict[str, Set[str]]:
 
             results[domain] = names
 
-        return results
+        return results, True
 
     domain_raw = payload.get("domain")
     domain = str(domain_raw).upper() if domain_raw else path.stem.upper()
@@ -177,7 +178,7 @@ def _load_watchers_file(path: Path) -> Dict[str, Set[str]]:
 
         seen.add(name)
 
-    return {domain: seen}
+    return {domain: seen}, False
 
 
 def _summarize_domain_counts(domain_watchers: Dict[str, Set[str]]) -> Iterable[str]:
@@ -187,92 +188,101 @@ def _summarize_domain_counts(domain_watchers: Dict[str, Set[str]]) -> Iterable[s
 
 def _load_watchers() -> Tuple[Dict[str, Set[str]], List[str]]:
     watchers_dir = Path("ops/watchers")
-    if not watchers_dir.is_dir():
-        return {}, ["ops/watchers directory not found"]
-
     errors: List[str] = []
     domain_watchers: Dict[str, Set[str]] = {}
+    aggregated_domains: Set[str] = set()
+    non_aggregated_domains: Set[str] = set()
 
-    yaml_paths = sorted({path for path in watchers_dir.glob("*.yaml")})
-    aggregated_inventory = False
+    if not watchers_dir.is_dir():
+        errors.append("ops/watchers directory not found")
+        return domain_watchers, errors
 
-    for path in yaml_paths:
+    all_paths = sorted({*watchers_dir.glob("*.yml"), *watchers_dir.glob("*.yaml")})
+
+    for path in all_paths:
         try:
-            domain_entries = _load_watchers_file(path)
+            domain_entries, is_aggregated = _load_watchers_file(path)
         except WatcherValidationError as exc:
             errors.append(str(exc))
             continue
 
-        if len(domain_entries) > 1:
-            aggregated_inventory = True
+        if is_aggregated:
+            aggregated_domains.update(domain_entries.keys())
 
         for domain, watchers in domain_entries.items():
-            if domain in domain_watchers:
-                errors.append(f"duplicate watcher definition for domain '{domain}' in {path}")
+            existing = domain_watchers.get(domain)
+
+            if existing is None:
+                domain_watchers[domain] = set(watchers)
+                if not is_aggregated:
+                    non_aggregated_domains.add(domain)
                 continue
 
-            domain_watchers[domain] = watchers
-
-    yml_paths = sorted({path for path in watchers_dir.glob("*.yml")})
-
-    for path in yml_paths:
-        try:
-            domain_entries = _load_watchers_file(path)
-        except WatcherValidationError as exc:
-            errors.append(str(exc))
-            continue
-
-        for domain, watchers in domain_entries.items():
-            if aggregated_inventory and domain in domain_watchers:
+            if is_aggregated:
+                existing.update(watchers)
+                aggregated_domains.add(domain)
                 continue
 
-            if domain in domain_watchers:
-                errors.append(f"duplicate watcher definition for domain '{domain}' in {path}")
+            if domain in aggregated_domains:
+                if domain in non_aggregated_domains:
+                    errors.append(
+                        f"duplicate watcher definition for domain '{domain}' in {path}"
+                    )
+                    continue
+
+                existing.update(watchers)
+                non_aggregated_domains.add(domain)
                 continue
 
-            domain_watchers[domain] = watchers
+            errors.append(f"duplicate watcher definition for domain '{domain}' in {path}")
 
     return domain_watchers, errors
 
 
 def main() -> int:
     domain_watchers, errors = _load_watchers()
-    if errors:
-        print("[watchers.dry] validation failed:", file=sys.stderr)
-        for message in errors:
-            print(f"  - {message}", file=sys.stderr)
-        return 1
 
-    expected_domains = set(EXPECTED_DOMAIN_WATCHERS)
+    missing_directory = any(
+        message == "ops/watchers directory not found" for message in errors
+    )
 
-    missing_domains = expected_domains - domain_watchers.keys()
-    if missing_domains:
-        errors.append(
-            "missing watcher definitions for domain(s): " + ", ".join(sorted(missing_domains))
-        )
+    if not missing_directory:
+        expected_domains = set(EXPECTED_DOMAIN_WATCHERS)
 
-    extra_domains = domain_watchers.keys() - expected_domains
-    if extra_domains:
-        errors.append("unexpected watcher domains found: " + ", ".join(sorted(extra_domains)))
-
-    for domain, expected_watchers in EXPECTED_DOMAIN_WATCHERS.items():
-        actual = domain_watchers.get(domain, set())
-        missing = expected_watchers - actual
-        if missing:
+        missing_domains = expected_domains - domain_watchers.keys()
+        if missing_domains:
             errors.append(
-                f"domain '{domain}' missing required watcher(s): " + ", ".join(sorted(missing))
+                "missing watcher definitions for domain(s): "
+                + ", ".join(sorted(missing_domains))
             )
 
-    union_watchers: Set[str] = set()
-    for watchers in domain_watchers.values():
-        union_watchers.update(watchers)
+        extra_domains = domain_watchers.keys() - expected_domains
+        if extra_domains:
+            errors.append(
+                "unexpected watcher domains found: " + ", ".join(sorted(extra_domains))
+            )
 
-    missing_globals = MANDATORY_GLOBAL_WATCHERS - union_watchers
-    if missing_globals:
-        errors.append(
-            "mandatory watcher(s) absent from configuration: "
-            + ", ".join(sorted(missing_globals))
-        )
+        for domain, expected_watchers in EXPECTED_DOMAIN_WATCHERS.items():
+            actual = domain_watchers.get(domain, set())
+            missing = expected_watchers - actual
+            if missing:
+                errors.append(
+                    f"domain '{domain}' missing required watcher(s): "
+                    + ", ".join(sorted(missing))
+                )
+
+        union_watchers: Set[str] = set()
+        for watchers in domain_watchers.values():
+            union_watchers.update(watchers)
+
+        missing_globals = MANDATORY_GLOBAL_WATCHERS - union_watchers
+        if missing_globals:
+            errors.append(
+                "mandatory watcher(s) absent from configuration: "
+                + ", ".join(sorted(missing_globals))
+            )
+    else:
+        union_watchers = set()
 
     if errors:
         print("[watchers.dry] validation failed:", file=sys.stderr)

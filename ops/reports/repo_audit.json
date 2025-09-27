@@ -53,7 +53,7 @@
     "artifacts": [
       "/workspace/trendmarket/ops/reports/watchers_dry.json"
     ],
-    "recorded_at": "2025-09-27T20:01:45.774521+00:00"
+    "recorded_at": "2025-09-27T20:05:51.658912+00:00"
   },
   {
     "command": "make watchers.dry",
@@ -61,15 +61,7 @@
     "artifacts": [
       "/workspace/trendmarket/ops/reports/watchers_dry.json"
     ],
-    "recorded_at": "2025-09-27T20:02:52.941354+00:00"
-  },
-  {
-    "command": "make watchers.dry",
-    "status": "success",
-    "artifacts": [
-      "/workspace/trendmarket/ops/reports/watchers_dry.json"
-    ],
-    "recorded_at": "2025-09-27T20:02:59.392881+00:00"
+    "recorded_at": "2025-09-27T20:06:12.313389+00:00"
   },
   {
     "command": "make hooks.dry",
@@ -77,7 +69,23 @@
     "artifacts": [
       "/workspace/trendmarket/ops/reports/hooks_dry.json"
     ],
-    "recorded_at": "2025-09-27T20:03:01.250044+00:00"
+    "recorded_at": "2025-09-27T20:06:18.795343+00:00"
+  },
+  {
+    "command": "make watchers.dry",
+    "status": "success",
+    "artifacts": [
+      "/workspace/trendmarket/ops/reports/watchers_dry.json"
+    ],
+    "recorded_at": "2025-09-27T20:06:23.173194+00:00"
+  },
+  {
+    "command": "make hooks.dry",
+    "status": "success",
+    "artifacts": [
+      "/workspace/trendmarket/ops/reports/hooks_dry.json"
+    ],
+    "recorded_at": "2025-09-27T20:06:24.406127+00:00"
   },
   {
     "command": "make evidence.publish",
@@ -85,6 +93,38 @@
     "artifacts": [
       "/workspace/trendmarket/ops/evidence/evidence.json"
     ],
-    "recorded_at": "2025-09-27T20:03:02.955173+00:00"
+    "recorded_at": "2025-09-27T20:06:25.630754+00:00"
+  },
+  {
+    "command": "make hooks.dry",
+    "status": "success",
+    "artifacts": [
+      "/workspace/trendmarket/ops/reports/hooks_dry.json"
+    ],
+    "recorded_at": "2025-09-27T20:08:21.346081+00:00"
+  },
+  {
+    "command": "make watchers.dry",
+    "status": "success",
+    "artifacts": [
+      "/workspace/trendmarket/ops/reports/watchers_dry.json"
+    ],
+    "recorded_at": "2025-09-27T20:08:28.890916+00:00"
+  },
+  {
+    "command": "make hooks.dry",
+    "status": "success",
+    "artifacts": [
+      "/workspace/trendmarket/ops/reports/hooks_dry.json"
+    ],
+    "recorded_at": "2025-09-27T20:08:30.046370+00:00"
+  },
+  {
+    "command": "make evidence.publish",
+    "status": "success",
+    "artifacts": [
+      "/workspace/trendmarket/ops/evidence/evidence.json"
+    ],
+    "recorded_at": "2025-09-27T20:08:31.205651+00:00"
   }
 ]

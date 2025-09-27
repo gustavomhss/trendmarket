@@ -30,10 +30,10 @@
     },
     {
       "name": "slo_budget_breach_watch",
-      "kpi": "pm.routing.latency.burn_rate",
-      "threshold": ">1.0",
-      "window": "1h",
-      "action": "escalate_oncall",
+      "kpi": "oracle.staleness_ms",
+      "threshold": ">=30000",
+      "window": "5m",
+      "action": "switch_to_twap_failover",
       "owner": "pm-ops@trendmarket",
       "rollback": "yes"
     }
