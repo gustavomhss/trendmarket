@@ -6,38 +6,101 @@
       "threshold": "800ms",
       "window": "5m",
       "action": "degrade_route",
-      "owner": "sre",
-      "evidence": {
-        "traces": "decision.core",
-        "audit": "ops/reports/dryrun.json"
-      },
-      "rollback": true
+      "owner": "dec-duty@trendmarket",
+      "evidence": [
+        "traces:decision.core"
+      ],
+      "rollback": "yes"
     },
     {
-      "hook": "oracle-stale-failover",
+      "hook": "pm-oracle-staleness",
       "kpi": "oracle.staleness_ms",
-      "threshold": 30000,
+      "threshold": "30000",
       "window": "5m",
       "action": "switch_to_twap_failover",
-      "owner": "bc",
-      "evidence": {
-        "traces": "oracle.fetch",
-        "audit": "ops/evidence/evidence.json"
-      },
-      "rollback": true
+      "owner": "pm-ops@trendmarket",
+      "evidence": [
+        "audit:oracles/weekly"
+      ],
+      "rollback": "yes"
     },
     {
-      "hook": "model-drift-rollback",
-      "kpi": "model.psi.p95",
-      "threshold": 0.2,
+      "hook": "ml-model-rollback",
+      "kpi": "ml.model.psi",
+      "threshold": "0.2",
       "window": "24h",
       "action": "rollback_model",
-      "owner": "ml-ops",
-      "evidence": {
-        "traces": "inference.serving",
-        "audit": "ml/monitoring/psi.json"
-      },
-      "rollback": true
+      "owner": "ml-ops@trendmarket",
+      "evidence": [
+        "metrics:ml.psi",
+        "experiments:srm"
+      ],
+      "rollback": "yes"
+    },
+    {
+      "hook": "data-contract-rollback",
+      "kpi": "data.contracts.status",
+      "threshold": "breach",
+      "window": "15m",
+      "action": "rollback_and_timebox",
+      "owner": "data-quality@trendmarket",
+      "evidence": [
+        "contracts:a106",
+        "contracts:a87"
+      ],
+      "rollback": "yes"
+    },
+    {
+      "hook": "platform-sampling-guard",
+      "kpi": "observability.traces.sampling_rate",
+      "threshold": "<0.98",
+      "window": "15m",
+      "action": "block_release",
+      "owner": "sre@trendmarket",
+      "evidence": [
+        "traces:otel",
+        "alerts:platform"
+      ],
+      "rollback": "yes"
+    },
+    {
+      "hook": "fe-cwv-regression",
+      "kpi": "web.inp.p75",
+      "threshold": "200ms",
+      "window": "24h",
+      "action": "rollback_fe_release",
+      "owner": "fe-core@trendmarket",
+      "evidence": [
+        "lighthouse:cwv",
+        "sdk:contract"
+      ],
+      "rollback": "yes"
+    },
+    {
+      "hook": "sec-privacy-freeze",
+      "kpi": "privacy.dp_budget_ratio",
+      "threshold": "1.5",
+      "window": "1h",
+      "action": "freeze_release",
+      "owner": "sec-priv@trendmarket",
+      "evidence": [
+        "sbom:latest",
+        "audit:privacy"
+      ],
+      "rollback": "yes"
+    },
+    {
+      "hook": "integration-contract-guard",
+      "kpi": "integration.contracts.fail_pct",
+      "threshold": ">0",
+      "window": "30m",
+      "action": "block_release",
+      "owner": "integration@trendmarket",
+      "evidence": [
+        "tests:contract",
+        "synthetics:cls"
+      ],
+      "rollback": "yes"
     }
   ]
 }
