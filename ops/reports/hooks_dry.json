@@ -1,7 +1,7 @@
 {
-  "generated_at": "2025-09-27T20:15:00+00:00",
+  "generated_at": "2025-09-27T22:26:51.457983+00:00",
   "source": "ops/hooks/a110.yml",
-  "total_hooks": 29,
+  "total_hooks": 26,
   "hooks": [
     {
       "hook": "dec-latency-gap",
@@ -12,22 +12,9 @@
       "owner": "SRE",
       "rollback": true,
       "evidence": [
-        "playbook:docs/runbooks/dec_decision_pricing.md#metric-gap"
-      ],
-      "hash": "f7b399c53d02a7b2117c280cba600f3a470d9f686539aaeef5ac74358e8be78e"
-    },
-    {
-      "hook": "dec-latency-degrade",
-      "kpi": "dec.latency.p95",
-      "threshold": "800ms",
-      "window": "5m",
-      "action": "degrade_route",
-      "owner": "SRE",
-      "rollback": true,
-      "evidence": [
         "playbook:docs/runbooks/dec_decision_pricing.md#model-drift-dec"
       ],
-      "hash": "cf694130d460480b4ed3ab64f2dcc0bd4e8843a966fdf920ef87d4796023bca9"
+      "hash": "b57a23ecbd0a1e208032c8fde1c947f0f3e56d19540f6f284b59d933f3608688"
     },
     {
       "hook": "ml-model-rollback",
@@ -35,12 +22,12 @@
       "threshold": 0.2,
       "window": "24h",
       "action": "rollback_model",
-      "owner": "ML",
+      "owner": "ml-ops@trendmarket",
       "rollback": true,
       "evidence": [
         "playbook:docs/runbooks/ml_model_ops.md#model-drift"
       ],
-      "hash": "6546739abb03fb41321221447521cd09dd3a51ad7be350fa4ed390a4f7b7cbfe"
+      "hash": "2dd003cb427dfae35b6fe7eeacab4e3e2b238053412dda6b6e85ab5ae5feb23a"
     },
     {
       "hook": "slo-burn-rate-guard",
@@ -48,12 +35,12 @@
       "threshold": 1.0,
       "window": "60m",
       "action": "enforce_release_freeze",
-      "owner": "SRE",
+      "owner": "sre@trendmarket",
       "rollback": true,
       "evidence": [
         "playbook:docs/runbooks/plat_observability.md#slo-burn"
       ],
-      "hash": "22c4c33291d27dc0d62a01f6b11017b66a5ac8c7f02a956a4e0bf27aa031def6"
+      "hash": "ec9ba0f78ac55b7fd61e68fc0216a40f072726331e33a6311831d96f7057ff47"
     },
     {
       "hook": "oracle-staleness-failover",
@@ -64,22 +51,10 @@
       "owner": "PM",
       "rollback": true,
       "evidence": [
+        "audit:oracles/weekly",
         "playbook:docs/runbooks/pm_market_health.md#oracle-divergence"
       ],
-      "hash": "ae2582a4579bc794c4645da7cbee914c3ecb64e9103d88bb4e79d09c2e1b2266"
-    },
-    {
-      "hook": "pm-oracle-staleness",
-      "kpi": "oracle.staleness_ms",
-      "threshold": "30000",
-      "window": "5m",
-      "action": "switch_to_twap_failover",
-      "owner": "PM",
-      "rollback": true,
-      "evidence": [
-        "playbook:docs/runbooks/pm_market_health.md#slo-burn"
-      ],
-      "hash": "c5777a0942e43a73c24d105f72bc68720b476e90c57ce17e6a9cba0885e0398e"
+      "hash": "d1f07f40ff4b19b2b94c045feb78562939523bd64a34a77a4e9e5369baed8bbd"
     },
     {
       "hook": "fx-delta-benchmark-guard",
@@ -87,12 +62,12 @@
       "threshold": 15,
       "window": "10m",
       "action": "switch_to_reference_rate",
-      "owner": "PM",
+      "owner": "pm-ops@trendmarket",
       "rollback": true,
       "evidence": [
         "playbook:docs/runbooks/pm_market_health.md#fx-delta"
       ],
-      "hash": "2cead07ab36d3faadbad53622384ef8e00b777a0caa1de1f43cc91ba78c0c9a3"
+      "hash": "e999c8f792c71713d6040d65c6cc38da4cf37c4a38ffb98baf68f95cfcc9b3b3"
     },
     {
       "hook": "auction-invariant-pause",
@@ -100,12 +75,12 @@
       "threshold": 0.0,
       "window": "5m",
       "action": "pause_auction_stream",
-      "owner": "PM",
+      "owner": "pm-ops@trendmarket",
       "rollback": true,
       "evidence": [
         "playbook:docs/runbooks/pm_market_health.md#auction-invariant"
       ],
-      "hash": "aa362df1fbd865b48eb59f256c36db8c878887dd27a9fe23ebaf5a0c24588ff7"
+      "hash": "89f02509375bd87d5533e01a59499a30c89174174a8a2936ec86d9ee394e0c95"
     },
     {
       "hook": "experiment-srm-guardrail",
@@ -113,12 +88,12 @@
       "threshold": 0.01,
       "window": "24h",
       "action": "pause_experiment",
-      "owner": "ML",
+      "owner": "ml-ops@trendmarket",
       "rollback": true,
       "evidence": [
         "playbook:docs/runbooks/ml_model_ops.md#srm"
       ],
-      "hash": "0bbd0162771429e92184886f9cf44af10e8e627016b333d098bfc800a1685cec"
+      "hash": "a94732d92f3081a4a689b1dfe484c252ba20512019f07b9607c7596cbc552794"
     },
     {
       "hook": "runtime-eol-governance",
@@ -126,13 +101,249 @@
       "threshold": 0,
       "window": "7d",
       "action": "schedule_runtime_upgrade",
-      "owner": "PLAT",
+      "owner": "platform@trendmarket",
       "rollback": false,
       "evidence": [
         "playbook:docs/runbooks/ml_model_ops.md#runtime-eol"
       ],
-      "hash": "436e9fb108365037f424a94ae6f12e3ba4bbc40069720848c1d245b45b646f46"
-    }
-    // ... demais hooks até totalizar 29, seguindo o mesmo padrão ...
-  ]
-}
+      "hash": "a2044cbd08ba8121b43e1d5689cad0c865ddb1a9465eaa380b0d6b9d4d38b377"
+    },
+    {
+      "hook": "image-vuln-regression-block",
+      "kpi": "image.critical_vuln_count",
+      "threshold": 0,
+      "window": "15m",
+      "action": "block_release",
+      "owner": "sec-priv@trendmarket",
+      "rollback": true,
+      "evidence": [
+        "playbook:docs/runbooks/sec_privacy.md#image-vuln"
+      ],
+      "hash": "623318802e465fb1f1f271c7c1d3063368ee2eca05278a2c8268d87f340f9093"
+    },
+    {
+      "hook": "cdc-lag-hot-degrade",
+      "kpi": "cdc.lag.p95",
+      "threshold": "120s",
+      "window": "15m",
+      "action": "degrade_to_hot_table",
+      "owner": "data-quality@trendmarket",
+      "rollback": true,
+      "evidence": [
+        "playbook:docs/runbooks/data_contracts.md#cdc-lag"
+      ],
+      "hash": "159a26dcc9dd7299305693643188b1997f5d03cfd9d0de8916afba87b338fa0c"
+    },
+    {
+      "hook": "schema-drift-blocker",
+      "kpi": "schema.drift_detected",
+      "threshold": 1,
+      "window": "5m",
+      "action": "block_deploy",
+      "owner": "data-quality@trendmarket",
+      "rollback": true,
+      "evidence": [
+        "playbook:docs/runbooks/data_contracts.md#schema-drift"
+      ],
+      "hash": "1de24acb6aa1e8a91a59f2ff85344a890ef1ea20f44475f81dcae5b596fbce64"
+    },
+    {
+      "hook": "dbt-test-rollback",
+      "kpi": "dbt.tests.failure_rate",
+      "threshold": 0,
+      "window": "15m",
+      "action": "rollback_transform",
+      "owner": "data-quality@trendmarket",
+      "rollback": true,
+      "evidence": [
+        "playbook:docs/runbooks/data_contracts.md#dbt-tests"
+      ],
+      "hash": "90c5608c7cd90eb1452aec341d8559a47742ca6b4f1902cb21a1359d7a3018ae"
+    },
+    {
+      "hook": "data-contract-breach-guard",
+      "kpi": "data.contract.break",
+      "threshold": 1,
+      "window": "5m",
+      "action": "trigger_contract_waiver",
+      "owner": "data-quality@trendmarket",
+      "rollback": true,
+      "evidence": [
+        "contracts:a106",
+        "contracts:a87",
+        "playbook:docs/runbooks/data_contracts.md#contract-breach"
+      ],
+      "hash": "4761a1608df508688bc88d9aac94958190c1fe6edc7f3b312828a91a6d598453"
+    },
+    {
+      "hook": "doc-coverage-gap",
+      "kpi": "data.doc.coverage",
+      "threshold": 0.95,
+      "window": "24h",
+      "action": "raise_doc_gap",
+      "owner": "data-quality@trendmarket",
+      "rollback": false,
+      "evidence": [
+        "playbook:docs/runbooks/data_contracts.md#doc-coverage"
+      ],
+      "hash": "b37af3b085a396bfb384eade07728c4219b21b557be9bd7da81cbb67298dc3ee"
+    },
+    {
+      "hook": "web-cwv-rollback",
+      "kpi": "web.cwv.inp_p75",
+      "threshold": "200ms",
+      "window": "24h",
+      "action": "rollback_fe_release",
+      "owner": "FE",
+      "rollback": true,
+      "evidence": [
+        "lighthouse:cwv",
+        "sdk:contract",
+        "playbook:docs/runbooks/fe_experience.md#web-cwv"
+      ],
+      "hash": "e8346d4b7b9601ecd665a7d3ff5f7ef1c8c4bc30ab5d60042fd4a486fea05d65"
+    },
+    {
+      "hook": "api-contract-block",
+      "kpi": "api.contract.breaking_changes",
+      "threshold": 0,
+      "window": "5m",
+      "action": "block_release",
+      "owner": "integration@trendmarket",
+      "rollback": true,
+      "evidence": [
+        "tests:contract",
+        "synthetics:cls",
+        "playbook:docs/runbooks/int_integrations.md#api-breaking"
+      ],
+      "hash": "b5b5ec2a1daac051b91bb5dc7d20eb553af99189db5cdd3dc7e06f1398f99d82"
+    },
+    {
+      "hook": "formal-verification-freeze",
+      "kpi": "formal.verification.failure",
+      "threshold": 1,
+      "window": "5m",
+      "action": "freeze_pipeline",
+      "owner": "sec-priv@trendmarket",
+      "rollback": true,
+      "evidence": [
+        "playbook:docs/runbooks/sec_privacy.md#formal-verification"
+      ],
+      "hash": "192b233c46f28ce42c14b56356fd3bc2afea1f84dab4e80ea300259f72c2de3b"
+    },
+    {
+      "hook": "okr-alignment-escalation",
+      "kpi": "okr.risk_alignment_score",
+      "threshold": 0.8,
+      "window": "7d",
+      "action": "escalate_exec_review",
+      "owner": "strategyops@trendmarket",
+      "rollback": false,
+      "evidence": [
+        "playbook:docs/runbooks/plat_observability.md#okr-alignment"
+      ],
+      "hash": "09bb750ac9ced443b30a9ea0997b37ff9c5503dc304cd371b08b3f7119a1cbf5"
+    },
+    {
+      "hook": "dp-budget-freeze",
+      "kpi": "privacy.dp_budget_multiplier",
+      "threshold": 1.5,
+      "window": "60m",
+      "action": "freeze_processing",
+      "owner": "sec-priv@trendmarket",
+      "rollback": true,
+      "evidence": [
+        "sbom:latest",
+        "audit:privacy",
+        "playbook:docs/runbooks/sec_privacy.md#dp-budget"
+      ],
+      "hash": "296782ec7acc00c40f98e18fe9d10b906e30bf7f21eb7c28850396423b5afdbe"
+    },
+    {
+      "hook": "dep-vuln-freeze",
+      "kpi": "security.deps.critical_vulns",
+      "threshold": 0,
+      "window": "15m",
+      "action": "block_release",
+      "owner": "sec-priv@trendmarket",
+      "rollback": true,
+      "evidence": [
+        "playbook:docs/runbooks/sec_privacy.md#dep-vuln"
+      ],
+      "hash": "7f8539929194ca0b3b3ce305904570ca89136188d817d60abd101b7aef02a9f3"
+    },
+    {
+      "hook": "idp-keys-rotation",
+      "kpi": "security.idp.keys_age_days",
+      "threshold": 90,
+      "window": "1d",
+      "action": "rotate_idp_keys",
+      "owner": "sec-priv@trendmarket",
+      "rollback": false,
+      "evidence": [
+        "playbook:docs/runbooks/sec_privacy.md#idp-keys"
+      ],
+      "hash": "d5362a3c29bfbcf119411b5f1201e2373f77454dc9bf497b25730ec2c051d57b"
+    },
+    {
+      "hook": "cache-ttl-block",
+      "kpi": "integration.cache_ttl_violation_pct",
+      "threshold": 0,
+      "window": "10m",
+      "action": "block_release",
+      "owner": "integration@trendmarket",
+      "rollback": true,
+      "evidence": [
+        "playbook:docs/runbooks/int_integrations.md#cache-ttl"
+      ],
+      "hash": "8521f279244b937777ec446fad96bf035d2779b95091ac0d9d72faf5ca69c799"
+    },
+    {
+      "hook": "cls-payin-cutover",
+      "kpi": "integration.cls_payin_cutoff_delay_ms",
+      "threshold": 30000,
+      "window": "5m",
+      "action": "switch_to_manual_cutoff",
+      "owner": "integration@trendmarket",
+      "rollback": true,
+      "evidence": [
+        "playbook:docs/runbooks/int_integrations.md#cls-payin"
+      ],
+      "hash": "fcea9df066745b672202442d21b72aa2edbe0fcef46c9795005b3c52ea22f6a1"
+    },
+    {
+      "hook": "tracing-sampling-freeze",
+      "kpi": "tracing.sampling_rate",
+      "threshold": 0.01,
+      "window": "15m",
+      "action": "block_release",
+      "owner": "sre@trendmarket",
+      "rollback": true,
+      "evidence": [
+        "traces:otel",
+        "alerts:platform",
+        "playbook:docs/runbooks/plat_observability.md#tracing-sampling"
+      ],
+      "hash": "ccfb569ccd76b59dee3e5d7c107bba12d788866ac5f67571cac9f38cf5f4a397"
+    },
+    {
+      "hook": "alert-storm-suppressor",
+      "kpi": "alerts.per_minute",
+      "threshold": 50,
+      "window": "10m",
+      "action": "enable_alert_mitigation",
+      "owner": "sre@trendmarket",
+      "rollback": true,
+      "evidence": [
+        "playbook:docs/runbooks/plat_observability.md#alert-storm"
+      ],
+      "hash": "1397f32be347905e66f4e1b070f3722dba9bef623c0e4c7285e3ea936591e5c4"
+    },
+    {
+      "hook": "policy-violation-freeze",
+      "kpi": "policy.violation_detected",
+      "threshold": 1,
+      "window": "5m",
+      "action": "freeze_release",
+      "owner": "compliance@trendmarket",
+      "rollback":
