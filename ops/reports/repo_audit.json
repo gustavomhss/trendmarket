@@ -1,0 +1,12 @@
+{
+  "artifacts": {
+    "latency_summary": {
+      "path": "docs/notebooks/artifacts/latency_summary.json",
+      "psi": 0.0017076859105591795,
+      "psi_threshold": 0.2,
+      "status": "within_threshold"
+    }
+  },
+  "generated_at": "2025-09-27T03:23:07Z",
+  "report": "repo_audit"
+}

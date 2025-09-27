@@ -1,0 +1,18 @@
+{
+  "baseline_latency_share": {
+    "0-200ms": 0.42,
+    "200-400ms": 0.37,
+    "400ms+": 0.21
+  },
+  "current_latency_share": {
+    "0-200ms": 0.4,
+    "200-400ms": 0.38,
+    "400ms+": 0.22
+  },
+  "experiment_id": "working_backwards_experiments",
+  "generated_at": "2025-09-27T03:22:59Z",
+  "metrics": {
+    "psi": 0.0017076859105591795,
+    "psi_threshold": 0.2
+  }
+}
