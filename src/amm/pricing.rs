@@ -63,7 +63,8 @@ pub fn min_out_with_tolerance(
     let factor = (PPM_SCALE as u64) - tol; // (1 - tol)
     let n = U256::from(out) * U256::from(factor);
     let q = n / U256::from(PPM_SCALE as u64); // floor
-    u256_to_u128_checked(q)
+    let min_out = u256_to_u128_checked(q)?;
+    Ok(min_out)
 }
 
 /// Retorna **max_in** aceito pela UI para atingir `dy` com tolerância `slippage_tolerance_ppm` (0..1e6)
@@ -76,7 +77,8 @@ pub fn max_in_with_tolerance(
     let factor = (PPM_SCALE as u64) + tol; // (1 + tol)
     let n = U256::from(dx) * U256::from(factor);
     let q = ceil_div_u256(n, U256::from(PPM_SCALE as u64)); // ceil
-    u256_to_u128_checked(q)
+    let max_in = u256_to_u128_checked(q)?;
+    Ok(max_in)
 }
 
 // -------------------------
@@ -155,7 +157,8 @@ mod tests {
         let out = get_amount_out(x, y, dx, FEE0).unwrap();
         let p_exec = execution_price_x_to_y(x, y, dx, FEE0).unwrap();
         let p_exec_check = (U256::from(out) * U256::from(WAD)) / U256::from(dx);
-        assert_eq!(p_exec as u128, p_exec_check.as_u128());
+        let expected = u256_to_u128_checked(p_exec_check).unwrap();
+        assert_eq!(p_exec, expected);
     }
 
     #[test]
@@ -164,5 +167,20 @@ mod tests {
         assert!(spot_price_x_in_y(0, MIN_RESERVE).is_err());
         // dx zero na execução
         assert!(execution_price_x_to_y(MIN_RESERVE, MIN_RESERVE, 0, FEE0).is_err());
+    }
+
+    #[test]
+    fn t_slippage_tolerance_scaling_overflow() {
+        // min_out: reservas extremamente altas fazem x + dx_net estourar u128
+        let huge = u128::MAX - 1; // garante reserva válida
+        let err_min = min_out_with_tolerance(huge, huge, 2, FEE0, PPM_SCALE).unwrap_err();
+        assert_eq!(err_min, AmmError::Overflow);
+
+        // max_in: tolerância máxima dobra o dx estimado além do limite de Wad
+        let x: Wad = 113_229_132_117_011_277_213_194_849_153_838_560_637;
+        let y: Wad = 69_146_007_138_591_361_040_841_291_813_918_140_014;
+        let dy: Wad = 46_553_188_727_118_245_868_803_577_825_302_814_579;
+        let err_max = max_in_with_tolerance(x, y, dy, FEE0, PPM_SCALE).unwrap_err();
+        assert_eq!(err_max, AmmError::Overflow);
     }
 }
