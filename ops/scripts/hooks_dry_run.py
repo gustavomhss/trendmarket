@@ -30,11 +30,26 @@ def _normalize(value: Any) -> Any:
     return value
 
 
+def _coerce_rollback(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized == "yes":
+            return True
+        if normalized == "no":
+            return False
+    raise ValueError(
+        "Rollback flag must be a boolean or the string 'yes'/'no'"
+    )
+
+
 def _validate_hook(hook: Dict[str, Any]) -> Dict[str, Any]:
     missing = REQUIRED_FIELDS - hook.keys()
     if missing:
         raise ValueError(f"Hook '{hook.get('hook')}' missing fields: {sorted(missing)}")
     normalized = {key: _normalize(hook[key]) for key in sorted(REQUIRED_FIELDS)}
+    normalized["rollback"] = _coerce_rollback(normalized["rollback"])
     encoded = json.dumps(normalized, sort_keys=True, ensure_ascii=False).encode("utf-8")
     digest = hashlib.sha256(encoded).hexdigest()
     return {
