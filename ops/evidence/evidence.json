@@ -1,298 +1,198 @@
 {
-  "generated_at": "2025-09-27T20:10:26.318716+00:00",
-  "watchers_artifact": "ops/reports/watchers_dry.json",
-  "hooks_artifact": "ops/reports/hooks_dry.json",
-  "watchers_digest": "acc7e3641e7d0a0ba521176db8b857cad617c5a40e79ac3b1b6efe3534eaa5a6",
-  "hooks_digest": "69198f64b92da4213cb5fd251f78a9fa92c3847745c9ed3079c20c9933157a9b",
-  "watchers_count": 31,
+  "generated_at": "2025-09-27T22:21:12.599764+00:00",
+  "watchers_artifact": "/workspace/trendmarket/ops/reports/watchers_dry.json",
+  "hooks_artifact": "/workspace/trendmarket/ops/reports/hooks_dry.json",
+  "watchers_digest": "1cf3d6f18c8f3478da46701bc6e91e51803f79e216f17e2cfb1531b92fdf478e",
+  "hooks_digest": "8ddb4f13a357fef10515a7af058cb019878e570e75f9e0f63c7331109beb6f8a",
+  "watchers_count": 26,
   "hooks_count": 26,
   "evidence": {
     "watchers": [
       {
-        "id": "cdc_lag_watch",
-        "domain": "DATA",
-        "owner": "DATA",
-        "kpi": "cdc.lag.p95",
-        "hook": "cdc-lag-hot-degrade",
-        "hash": "15fd7ba001ba83c9dff823bbb0985133afe7d8fc8fcdb62f3f412d13488fe684",
         "description": "Acompanha lag CDC p95 contra o contrato de dados.",
-        "domains": ["DATA"]
+        "domain": "DATA",
+        "domains": ["DATA"],
+        "hook_id": "cdc-lag-hot-degrade",
+        "id": "cdc_lag_watch",
+        "kpi": "cdc.lag.p95",
+        "owner": "DATA",
+        "hash": "0dc8811eb1e1894ea6f1c12e5adf9347223377db1b718231d2a35d0295da3203"
       },
       {
-        "id": "data_contract_break_watch",
-        "domain": "DATA",
-        "owner": "DATA",
-        "kpi": "data.contract.break",
-        "hook": "data-contract-breach-guard",
-        "hash": "ae1cffab19691d69984313e78e699b21a26b9fcb32ddf8ab5484f51d5618f657",
         "description": "Quebra de contrato de dados A106/A87/A89.",
-        "domains": ["DATA"]
+        "domain": "DATA",
+        "domains": ["DATA"],
+        "hook_id": "data-contract-breach-guard",
+        "id": "data_contract_break_watch",
+        "kpi": "data.contract.break",
+        "owner": "DATA",
+        "hash": "0e451f1ed0cd8a2f4ed1e81e484cac7aa94bb9010450122df6c6b39ec5ecf775"
       },
       {
-        "id": "dbt_test_failure_watch",
-        "domain": "DATA",
-        "owner": "DATA",
-        "kpi": "dbt.tests.failure_rate",
-        "hook": "dbt-test-rollback",
-        "hash": "fb02c04d8d9983bd0052edc1fedccdd699366ccef890723fb2f113c37e5f8c10",
         "description": "Flag de falhas de testes dbt críticos.",
-        "domains": ["DATA"]
+        "domain": "DATA",
+        "domains": ["DATA"],
+        "hook_id": "dbt-test-rollback",
+        "id": "dbt_test_failure_watch",
+        "kpi": "dbt.tests.failure_rate",
+        "owner": "DATA",
+        "hash": "512d106e1ff2db263cbc11eda962890b7b683e976f559dc07cade7a1a709a404"
       },
       {
-        "id": "doc_coverage_watch",
-        "domain": "DATA",
-        "owner": "DATA",
-        "kpi": "data.doc.coverage",
-        "hook": "doc-coverage-gap",
-        "hash": "53940df6c56bff0ae118e5e965b50cf0bfb3f44c4f201debe3bd3f6953ff2914",
         "description": "Garante cobertura de documentação mínima das pipelines.",
-        "domains": ["DATA"]
-      },
-      {
-        "id": "schema_registry_drift_watch",
         "domain": "DATA",
+        "domains": ["DATA"],
+        "hook_id": "doc-coverage-gap",
+        "id": "doc_coverage_watch",
+        "kpi": "data.doc.coverage",
         "owner": "DATA",
-        "kpi": "schema.drift_detected",
-        "hook": "schema-drift-blocker",
-        "hash": "42e20d0cb3b3c898ae785b21371fc34b665947f7478ba6553f0ce7baaa150b0c",
+        "hash": "4fc16321f4e4bc063b0b5ba1e19e57c399a82c2e9a96e0eada7059c23b8cecf7"
+      },
+      {
         "description": "Detecta incompatibilidades no schema registry.",
-        "domains": ["DATA"]
+        "domain": "DATA",
+        "domains": ["DATA"],
+        "hook_id": "schema-drift-blocker",
+        "id": "schema_registry_drift_watch",
+        "kpi": "schema.drift_detected",
+        "owner": "DATA",
+        "hash": "7df43024fac63c8f62e6f9dde45f2e008be400b56b3fa74bfbbc0c625914264c"
       },
       {
-        "id": "metrics_decision_hook_gap_watch",
-        "domain": "DEC",
-        "owner": "SRE",
-        "kpi": "dec.latency.p95",
-        "hook": "dec-latency-gap",
-        "hash": "795bfb476e5cce514ed1f7e1353e0932c0210fb3ddeffdadf0a7670d14dfdc28",
         "description": "Garante que a latência DEC permaneça dentro dos limites antes de alterar rotas.",
-        "domains": ["DEC"]
-      },
-      {
-        "id": "model_drift_watch",
         "domain": "DEC",
-        "owner": "ML",
-        "kpi": "model.psi",
-        "hook": "model-drift-rollback",
-        "hash": "1d1f27faf6da3d14ba450fc433b33d81306c3289bc72d7f3f0375a4cd1058ead",
-        "description": "Detecta drift estatístico relevante para decisões de crédito.",
-        "domains": ["DEC", "ML"]
-      },
-      {
-        "id": "slo_budget_breach_watch",
-        "domain": "DEC",
-        "owner": "SRE",
-        "kpi": "slo.burn_rate",
-        "hook": "slo-burn-rate-guard",
-        "hash": "57a9e2c019f2f9db385c1af6d5278f732a9cfbe11ea9f4288eba0d71e0a5816e",
-        "description": "Monitora burn rate do SLO cross-domain.",
-        "domains": ["DEC", "PLAT", "PM"]
-      },
-      {
-        "id": "api_breaking_change_watch",
-        "domain": "FE",
-        "owner": "INT",
-        "kpi": "api.contract.breaking_changes",
-        "hook": "api-contract-block",
-        "hash": "5d7bbadfeee5467c5b361d093fe9611f630a00fec367b4b0d23364b5f85a2d91",
-        "description": "Previne quebras de contrato de APIs públicas/internas.",
-        "domains": ["FE", "INT"]
-      },
-      {
-        "id": "web_cwv_regression_watch",
-        "domain": "FE",
-        "owner": "FE",
-        "kpi": "web.cwv.inp_p75",
-        "hook": "fe-cwv-regression",
-        "hash": "9b421cdbff9a47f5a86cbbdca2df2c7b4137b863deec95bf2f40779098379042",
-        "description": "Observa regressões de Core Web Vitals (INP p75).",
-        "domains": ["FE"]
-      },
-      {
-        "id": "cache_ttl_misuse_watch",
-        "domain": "INT",
-        "owner": "INT",
-        "kpi": "integration.cache_ttl_violation_pct",
-        "hook": "cache-ttl-block",
-        "hash": "ba92c760699093a33d14a3e9fa487df06bca5b7daf69321b936625e4e9c656ea",
-        "description": "Flag para TTL incorreto em caches compartilhados.",
-        "domains": ["INT"]
-      },
-      {
-        "id": "cls_payin_cutoff_watch",
-        "domain": "INT",
-        "owner": "INT",
-        "kpi": "integration.cls_payin_cutoff_delay_ms",
-        "hook": "cls-payin-cutover",
-        "hash": "f527e8075db337277afe9da71e456ead04f9f320b1e0a8547a52f64efdd401ba",
-        "description": "Garante que o cutoff CLS payin seja seguido sem atraso.",
-        "domains": ["INT"]
-      },
-      {
-        "id": "ab_srm_watch",
-        "domain": "ML",
-        "owner": "ML",
-        "kpi": "experiment.srm_pvalue",
-        "hook": "experiment-srm-guardrail",
-        "hash": "90ea6b211ecf6502e88a5606471d17b6b7e6ffd1e1f58f6d0773b0725eeba31d",
-        "description": "Detecta falhas de SRM em experimentos e testes AA.",
-        "domains": ["ML"]
-      },
-      {
-        "id": "image_vuln_regression_watch",
-        "domain": "ML",
-        "owner": "SEC",
-        "kpi": "image.critical_vuln_count",
-        "hook": "image-vuln-regression-block",
-        "hash": "0be058a3cf16abeabc2ea872a4615b8edb1b4e7fe55921e2f1c90cc2558fbc9b",
-        "description": "Bloqueia regressão de vulnerabilidades críticas em imagens.",
-        "domains": ["ML", "SEC/PRIV"]
-      },
-      {
-        "id": "runtime_eol_watch",
-        "domain": "ML",
-        "owner": "PLAT",
-        "kpi": "runtime.support_gap_days",
-        "hook": "runtime-eol-governance",
-        "hash": "8bb782ef243c4a433542fb0be2b4e1e33eb75107c2c276b66394548b60846060",
-        "description": "Aponta runtimes em fim de vida para evitar builds inseguras.",
-        "domains": ["ML"]
-      },
-      {
-        "id": "alert_storm_watch",
-        "domain": "PLAT",
-        "owner": "SRE",
-        "kpi": "alerts.per_minute",
-        "hook": "alert-storm-suppressor",
-        "hash": "32f699dad27858c69d17b1707111661d6fc46d0b7022e9a7f2b223fe0f0aa2bf",
-        "description": "Detecta tempestades de alertas indicando ruído ou incidentes generalizados.",
-        "domains": ["PLAT"]
-      },
-      {
-        "id": "okr_risk_alignment_watch",
-        "domain": "PLAT",
-        "owner": "StrategyOps",
-        "kpi": "okr.risk_alignment_score",
-        "hook": "okr-alignment-escalation",
-        "hash": "d5238e8583445b6e91743f2b4e6b15cc8829b1fa719dc2cf8263ddfdfcad8ee5",
-        "description": "Monitora desalinhamento de riscos com OKRs estratégicos.",
-        "domains": ["PLAT"]
-      },
-      {
-        "id": "policy_violation_watch",
-        "domain": "PLAT",
-        "owner": "Compliance",
-        "kpi": "policy.violation_detected",
-        "hook": "policy-violation-freeze",
-        "hash": "f4fa82cb5d3993cb8ee4cbc1f93c32595fcbe0e5d7db726713fc478fd5a2d662",
-        "description": "Garante que políticas operacionais/compliance permaneçam sem violações.",
-        "domains": ["PLAT"]
-      },
-      {
-        "id": "tracing_sampling_watch",
-        "domain": "PLAT",
-        "owner": "SRE",
-        "kpi": "tracing.sampling_rate",
-        "hook": "tracing-sampling-freeze",
-        "hash": "2214975b95da58de23f0e5f68e77af241e6241851aa17c45ffd4d1bf9b07c68c",
-        "description": "Monitora taxa de amostragem do tracing distribuído.",
-        "domains": ["PLAT"]
-      },
-      {
-        "id": "auction_invariant_breach_watch",
-        "domain": "PM",
-        "owner": "PM",
-        "kpi": "auction.kkt_violation_pct",
-        "hook": "auction-invariant-pause",
-        "hash": "37c3882cc16ee5ef241f4c760ca125a89b29ae93f945e14faebbb937882dbc9b",
-        "description": "Fiscaliza invariantes KKT e convexidade nos leilões.",
-        "domains": ["PM"]
-      },
-      {
-        "id": "fx_delta_benchmark_watch",
-        "domain": "PM",
-        "owner": "PM",
-        "kpi": "fx.delta_vs_benchmark_bps",
-        "hook": "fx-delta-benchmark-guard",
-        "hash": "8f47bec24244e9092048358b6cab353cbe1e025d0909f72806f8dd109fdb2541",
-        "description": "Compara delta FX com benchmark para evitar arbitragem.",
-        "domains": ["PM"]
-      },
-      {
-        "id": "oracle_divergence_watch",
-        "domain": "PM",
-        "owner": "PM",
-        "kpi": "oracle.divergence_bps",
-        "hook": "oracle-staleness-failover",
-        "hash": "045a11e3dc6701614358513489313219f84929700b112245e9da7fa1061c9897",
-        "description": "Detecta divergência de preço entre oráculos e referência.",
-        "domains": ["PM"]
-      },
-      {
-        "id": "dep_vuln_watch",
-        "domain": "SEC/PRIV",
-        "owner": "SEC",
-        "kpi": "security.deps.critical_vulns",
-        "hook": "dep-vuln-freeze",
-        "hash": "8d894368d04d7e40defb617fabb4414dfa56bab70dc5880fec1b7e17e79ec2d3",
-        "description": "Bloqueia releases com vulnerabilidades críticas em dependências.",
-        "domains": ["SEC/PRIV"]
-      },
-      {
-        "id": "dp_budget_breach_watch",
-        "domain": "SEC/PRIV",
-        "owner": "SEC",
-        "kpi": "privacy.dp_budget_multiplier",
-        "hook": "dp-budget-freeze",
-        "hash": "64d4a05f5cc5f1944acbb35409e5d5255ff4d2182dde0b939fbf0e8d4a5929fa",
-        "description": "Garante que o budget de privacidade diferencial não estoure.",
-        "domains": ["SEC/PRIV"]
-      },
-      {
-        "id": "formal_verification_gate_watch",
-        "domain": "SEC/PRIV",
-        "owner": "SEC",
-        "kpi": "formal.verification.failure",
-        "hook": "formal-verification-freeze",
-        "hash": "e57aefa70c3c2f641f70053ad2bb7e60186b8c8a5a6fa4c19fe6335796f9efb3",
-        "description": "Sinaliza falha em gates formais (A108/segurança).",
-        "domains": ["SEC/PRIV"]
-      },
-      {
-        "id": "idp_keys_rotation_watch",
-        "domain": "SEC/PRIV",
-        "owner": "SEC",
-        "kpi": "security.idp.keys_age_days",
-        "hook": "idp-keys-rotation",
-        "hash": "afcb896d9604c656132ac220732a68ebc70fcf0e86b407222833d5ecd9a6dc3e",
-        "description": "Enforce rotação de chaves/segredos do IdP.",
-        "domains": ["SEC/PRIV"]
-      }
-    ],
-    "hooks": [
-      {
-        "hook": "dec-latency-gap",
+        "domains": ["DEC"],
+        "hook_id": "dec-latency-degrade",
+        "id": "metrics_decision_hook_gap_watch",
         "kpi": "dec.latency.p95",
-        "threshold": "800ms",
-        "window": "5m",
-        "action": "degrade_route",
-        "owner": "dec-duty@trendmarket",
-        "rollback": true,
-        "evidence": [
-          "traces:decision.core",
-          "playbook:docs/runbooks/dec_decision_pricing.md#metric-gap"
-        ],
-        "hash": "4f388f4a01aa9b5a1c92808b8bcb0b5cb0fb5bc1a85b7bed18da327c59c56cf8"
+        "owner": "SRE",
+        "hash": "df96683c39890d93d60a9d06123722898bc89752af504420eb42b1b21307a48c"
       },
       {
-        "hook": "model-drift-rollback",
+        "description": "Detecta drift estatístico relevante para decisões de crédito.",
+        "domain": "DEC",
+        "domains": ["DEC","ML"],
+        "hook_id": "dec-latency-degrade",
+        "id": "model_drift_watch",
         "kpi": "model.psi",
-        "threshold": 0.2,
-        "window": "24h",
-        "action": "rollback_model",
-        "owner": "ml-ops@trendmarket",
-        "rollback": true,
-        "evidence": [
-          "metrics:ml.psi",
-          "experiments:srm",
-          "playbook:docs/runbooks/ml_model_ops
+        "owner": "ML",
+        "hash": "1eef2a5f2bca037d8dbd5f943836b34dfbecb82b116421321a76aa5b719b2b42"
+      },
+      {
+        "description": "Monitora burn rate do SLO cross-domain.",
+        "domain": "DEC",
+        "domains": ["DEC","PM","PLAT"],
+        "hook_id": "slo-burn-rate-guard",
+        "id": "slo_budget_breach_watch",
+        "kpi": "slo.burn_rate",
+        "owner": "SRE",
+        "hash": "654f18ce37feada1539b0ec58eb70ff0ff16e5ff80e0206da653fe189744a07b"
+      },
+      {
+        "description": "Previne quebras de contrato de APIs públicas/internas.",
+        "domain": "FE",
+        "domains": ["FE","INT"],
+        "hook_id": "api-contract-block",
+        "id": "api_breaking_change_watch",
+        "kpi": "api.contract.breaking_changes",
+        "owner": "INT",
+        "hash": "843bc0690412d9a155bd1da88b6bd1d34f72ae70c67ed49494d034831f8c5911"
+      },
+      {
+        "description": "Observa regressões de Core Web Vitals (INP p75).",
+        "domain": "FE",
+        "domains": ["FE"],
+        "hook_id": "fe-cwv-regression",
+        "id": "web_cwv_regression_watch",
+        "kpi": "web.cwv.inp_p75",
+        "owner": "FE",
+        "hash": "0ba2ee6d268cee8299b772c276909094cfa6a6b925e2a6329482c4dcb2bbc9d8"
+      },
+      {
+        "description": "Flag para TTL incorreto em caches compartilhados.",
+        "domain": "INT",
+        "domains": ["INT"],
+        "hook_id": "cache-ttl-block",
+        "id": "cache_ttl_misuse_watch",
+        "kpi": "integration.cache_ttl_violation_pct",
+        "owner": "INT",
+        "hash": "a29a9396679cc710af1d62d56f69fee163476d63611ee3b0bf5d88b081c86860"
+      },
+      {
+        "description": "Garante que o cutoff CLS payin seja seguido sem atraso.",
+        "domain": "INT",
+        "domains": ["INT"],
+        "hook_id": "cls-payin-cutover",
+        "id": "cls_payin_cutoff_watch",
+        "kpi": "integration.cls_payin_cutoff_delay_ms",
+        "owner": "INT",
+        "hash": "e7ba374a1b1816860de09880dfd42900d539bcf10c35c90953f7c3d9e2d475e8"
+      },
+      {
+        "description": "Detecta falhas de SRM em experimentos e testes AA.",
+        "domain": "ML",
+        "domains": ["ML"],
+        "hook_id": "experiment-srm-guardrail",
+        "id": "ab_srm_watch",
+        "kpi": "experiment.srm_pvalue",
+        "owner": "ML",
+        "hash": "40c34cb4f5fc4efaf75af08c8f596717fedddfbe72f4b787a1b5f9b6e80d5a40"
+      },
+      {
+        "description": "Bloqueia regressão de vulnerabilidades críticas em imagens.",
+        "domain": "ML",
+        "domains": ["ML","SEC/PRIV"],
+        "hook_id": "image-vuln-regression-block",
+        "id": "image_vuln_regression_watch",
+        "kpi": "image.critical_vuln_count",
+        "owner": "SEC",
+        "hash": "293a4790a7e43e8985be136eab9551cd898962a481a069eafc94183e5ca1a662"
+      },
+      {
+        "description": "Aponta runtimes em fim de vida para evitar builds inseguras.",
+        "domain": "ML",
+        "domains": ["ML"],
+        "hook_id": "runtime-eol-governance",
+        "id": "runtime_eol_watch",
+        "kpi": "runtime.support_gap_days",
+        "owner": "PLAT",
+        "hash": "097ac976a804480f39645e2094f7d24b52e103519ea0e41ff4328972e1e9e03d"
+      },
+      {
+        "description": "Detecta tempestades de alertas indicando ruído ou incidentes generalizados.",
+        "domain": "PLAT",
+        "domains": ["PLAT"],
+        "hook_id": "alert-storm-suppressor",
+        "id": "alert_storm_watch",
+        "kpi": "alerts.per_minute",
+        "owner": "SRE",
+        "hash": "427bdd3d4096cea9646d40b4c782f74d1a8adffdf03b6877a7e5b7db8e57800d"
+      },
+      {
+        "description": "Monitora desalinhamento de riscos com OKRs estratégicos.",
+        "domain": "PLAT",
+        "domains": ["PLAT"],
+        "hook_id": "okr-alignment-escalation",
+        "id": "okr_risk_alignment_watch",
+        "kpi": "okr.risk_alignment_score",
+        "owner": "StrategyOps",
+        "hash": "cd0f778ba38ea88b8b376f5b39ec9affe6e5e15649f28493cab47fb43f87a6bd"
+      },
+      {
+        "description": "Garante que políticas operacionais/compliance permaneçam sem violações.",
+        "domain": "PLAT",
+        "domains": ["PLAT"],
+        "hook_id": "policy-violation-freeze",
+        "id": "policy_violation_watch",
+        "kpi": "policy.violation_detected",
+        "owner": "Compliance",
+        "hash": "9670730d1d52af8176b20429e4957d2da30acffae70c58c615be3ad2c7c18d45"
+      },
+      {
+        "description": "Monitora taxa de amostragem do tracing distribuído.",
+        "domain": "PLAT",
+        "domains": ["PLAT"],
+        "hook_id": "tracing-sampling-freeze",
+        "id": "tracing_sampling_watch",
+        "kpi": "tracing.sampling_rate",
+        "owner": "SRE",
