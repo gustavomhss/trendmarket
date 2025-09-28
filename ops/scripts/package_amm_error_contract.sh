@@ -123,22 +123,21 @@ if log_dir.exists():
             log_lines.append(f"- {entry.name}")
 log_section = "\n".join(log_lines) if log_lines else "- (logs not generated in this run)"
 
-pr_lines = [
-    "## Summary",
-    "- Align the AMM error descriptors, catalog, and index JSON to a single source of truth.",
-    "- Harden the contract tests to iterate every variant and enforce code/message/status constraints.",
-    "- Refresh packaging automation to emit the required evidence bundles under out/pkg/.",
-]
-pr_lines.append("")
-pr_lines.append("## Hardened AMM Variants")
-pr_lines.extend(error_lines)
-pr_lines.append("")
-pr_lines.append("## Testing & Guardrails")
-pr_lines.extend(log_lines if log_lines else ["- (logs not generated in this run)"])
-pr_summary = "\n".join(pr_lines).strip() + "\n"
+pr_summary = dedent(f"""
+    ## Summary
+    - Align the AMM error descriptors, catalog, and index JSON to a single source of truth.
+    - Harden the contract tests to iterate every variant and enforce code/message/status constraints.
+    - Refresh packaging automation to emit the required evidence bundles under out/pkg/.
+
+    ## Hardened AMM Variants
+    {error_section}
+
+    ## Testing & Guardrails
+    {log_section}
+    """).strip() + "\n"
 
 pr_path = root / 'out' / 'pr' / 'PR_DESCRIPTION.md'
-pr_path.write_text(pr_summary, encoding='utf-8')
+pr_path.write_text(pr_summary + "\n", encoding='utf-8')
 
 if not pr_url:
     pr_url = "PR not yet created at packaging time."

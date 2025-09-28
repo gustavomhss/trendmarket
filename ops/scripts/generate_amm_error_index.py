@@ -82,12 +82,14 @@ def main() -> None:
     missing_meta = {key for key in ("domain", "prefix", "version") if key not in meta}
     if missing_meta:
         raise SystemExit(f"catalog meta missing required keys: {sorted(missing_meta)}")
+
     try:
         version_value = int(meta["version"])
     except ValueError as exc:  # pragma: no cover - defensive guard
         raise SystemExit(
             f"catalog meta version must be an integer, found {meta['version']!r}"
         ) from exc
+
     normalized_meta: dict[str, Any] = {
         "domain": meta["domain"],
         "prefix": meta["prefix"],
@@ -107,7 +109,9 @@ def main() -> None:
         try:
             http_status = int(entry["http_status"])
         except ValueError as exc:  # pragma: no cover - defensive guard
-            raise SystemExit(f"http_status must be an integer for {entry['variant']}") from exc
+            raise SystemExit(
+                f"http_status must be an integer for {entry['variant']}"
+            ) from exc
         normalized_errors.append(
             {
                 "variant": entry["variant"],
@@ -125,4 +129,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+   
