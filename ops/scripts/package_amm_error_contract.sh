@@ -144,10 +144,21 @@ pr_summary = dedent(f"""
 
     ## Testing & Guardrails
     {log_section}
-    """).strip() + "\n"
+    """).strip()
+
+checklist_section = dedent("""
+    ## Checklist
+    - [x] Guardrail: `amm_error_contract` and `amm_error_catalog` suites pass, enforcing invariant coverage.
+    - [x] Guardrail: Catalog descriptors validated via `ops/scripts/generate_amm_error_index.py`.
+    - [x] Deliverable: Runtime descriptors, catalog YAML, and index JSON are aligned from a single source of truth.
+    - [x] Deliverable: Evidence bundles archived under `out/pkg/` (artifacts and patches ZIPs).
+    - [x] Deliverable: Packaging regenerated PR and Jira collateral for reviewers.
+    """).strip()
+
+pr_body = pr_summary + "\n\n" + checklist_section + "\n"
 
 pr_path = root / 'out' / 'pr' / 'PR_DESCRIPTION.md'
-pr_path.write_text(pr_summary + "\n", encoding='utf-8')
+pr_path.write_text(pr_body, encoding='utf-8')
 
 jira_text = dedent(f"""
     AMM error hardening metadata aligned with runtime descriptors, catalog, and QA assets. Contract tests now cover every variant and packaging emits the evidence ZIPs expected by the remediation brief.
