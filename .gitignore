@@ -1,5 +1,6 @@
 /target
 **/*.DS_Store
 *.log
+out/**/*.zip
 /.idea
 /.vscode

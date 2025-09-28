@@ -2,6 +2,7 @@ use anyhow::Result;
 use opentelemetry::KeyValue;
 use std::time::Instant;
 
+use credit_engine_core::amm::errors::AmmError;
 use credit_engine_core::telemetry; // troque para ce_core se o crate tiver esse nome
 
 #[tokio::main]
@@ -20,6 +21,25 @@ async fn main() -> Result<()> {
             .record(elapsed_ms, &[KeyValue::new("op", "swap")]);
         tel.invariant_error_rel
             .record(0.001_f64, &[KeyValue::new("op", "swap")]);
+    }
+
+    // Emit an example error log with the hardened contract fields.
+    let sample_error = AmmError::MinReserveBreached;
+    if let Some(status) = sample_error.http_status() {
+        tracing::error!(
+            error_code = sample_error.error_code(),
+            error_message = sample_error.user_message(),
+            error_variant = sample_error.variant_name(),
+            http_status = status,
+            "sample AMM error emitted"
+        );
+    } else {
+        tracing::error!(
+            error_code = sample_error.error_code(),
+            error_message = sample_error.user_message(),
+            error_variant = sample_error.variant_name(),
+            "sample AMM error emitted"
+        );
     }
 
     tel.shutdown();

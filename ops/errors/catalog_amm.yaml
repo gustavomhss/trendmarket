@@ -1,0 +1,29 @@
+meta:
+  domain: AMM
+  prefix: CE-AMM
+  version: 1
+errors:
+  - variant: ZeroAmount
+    code: CE-AMM-0001
+    default_message: "Input amount must be greater than zero."
+    http_status: 400
+  - variant: ZeroReserve
+    code: CE-AMM-0002
+    default_message: "Reserves must stay above zero."
+    http_status: 400
+  - variant: MinReserveBreached
+    code: CE-AMM-0003
+    default_message: "Operation would breach the minimum reserve."
+    http_status: 409
+  - variant: Overflow
+    code: CE-AMM-0004
+    default_message: "Numerical overflow or underflow detected."
+    http_status: 500
+  - variant: InputTooSmall
+    code: CE-AMM-0005
+    default_message: "Effective input amount is too small."
+    http_status: 400
+  - variant: InvalidFee
+    code: CE-AMM-0006
+    default_message: "Fee ppm must be at most 1,000,000."
+    http_status: 400
