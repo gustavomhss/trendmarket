@@ -11,6 +11,7 @@ hooks:
     rollback: "yes"
     evidence:
       - "playbook:docs/runbooks/dec_decision_pricing.md#model-drift-dec"
+
   - hook: "ml-model-rollback"
     watchers:
       - "model_drift_watch"
@@ -22,6 +23,7 @@ hooks:
     rollback: "yes"
     evidence:
       - "playbook:docs/runbooks/ml_model_ops.md#model-drift"
+
   - hook: "slo-burn-rate-guard"
     watchers:
       - "slo_budget_breach_watch"
@@ -33,6 +35,7 @@ hooks:
     rollback: "yes"
     evidence:
       - "playbook:docs/runbooks/plat_observability.md#slo-burn"
+
   - hook: "oracle-staleness-failover"
     watchers:
       - "oracle_divergence_watch"
@@ -45,6 +48,7 @@ hooks:
     evidence:
       - "audit:oracles/weekly"
       - "playbook:docs/runbooks/pm_market_health.md#oracle-divergence"
+
   - hook: "fx-delta-benchmark-guard"
     watchers:
       - "fx_delta_benchmark_watch"
@@ -56,6 +60,7 @@ hooks:
     rollback: "yes"
     evidence:
       - "playbook:docs/runbooks/pm_market_health.md#fx-delta"
+
   - hook: "auction-invariant-pause"
     watchers:
       - "auction_invariant_breach_watch"
@@ -67,6 +72,7 @@ hooks:
     rollback: "yes"
     evidence:
       - "playbook:docs/runbooks/pm_market_health.md#auction-invariant"
+
   - hook: "experiment-srm-guardrail"
     watchers:
       - "ab_srm_watch"
@@ -78,6 +84,7 @@ hooks:
     rollback: "yes"
     evidence:
       - "playbook:docs/runbooks/ml_model_ops.md#srm"
+
   - hook: "runtime-eol-governance"
     watchers:
       - "runtime_eol_watch"
@@ -89,6 +96,7 @@ hooks:
     rollback: "no"
     evidence:
       - "playbook:docs/runbooks/ml_model_ops.md#runtime-eol"
+
   - hook: "image-vuln-regression-block"
     watchers:
       - "image_vuln_regression_watch"
@@ -100,6 +108,7 @@ hooks:
     rollback: "yes"
     evidence:
       - "playbook:docs/runbooks/sec_privacy.md#image-vuln"
+
   - hook: "cdc-lag-hot-degrade"
     watchers:
       - "cdc_lag_watch"
@@ -111,6 +120,7 @@ hooks:
     rollback: "yes"
     evidence:
       - "playbook:docs/runbooks/data_contracts.md#cdc-lag"
+
   - hook: "schema-drift-blocker"
     watchers:
       - "schema_registry_drift_watch"
@@ -122,6 +132,7 @@ hooks:
     rollback: "yes"
     evidence:
       - "playbook:docs/runbooks/data_contracts.md#schema-drift"
+
   - hook: "dbt-test-rollback"
     watchers:
       - "dbt_test_failure_watch"
@@ -133,6 +144,7 @@ hooks:
     rollback: "yes"
     evidence:
       - "playbook:docs/runbooks/data_contracts.md#dbt-tests"
+
   - hook: "data-contract-breach-guard"
     watchers:
       - "data_contract_break_watch"
@@ -146,6 +158,7 @@ hooks:
       - "contracts:a106"
       - "contracts:a87"
       - "playbook:docs/runbooks/data_contracts.md#contract-breach"
+
   - hook: "doc-coverage-gap"
     watchers:
       - "doc_coverage_watch"
@@ -157,6 +170,7 @@ hooks:
     rollback: "no"
     evidence:
       - "playbook:docs/runbooks/data_contracts.md#doc-coverage"
+
   - hook: "web-cwv-rollback"
     watchers:
       - "web_cwv_regression_watch"
@@ -170,6 +184,7 @@ hooks:
       - "lighthouse:cwv"
       - "sdk:contract"
       - "playbook:docs/runbooks/fe_experience.md#web-cwv"
+
   - hook: "api-contract-block"
     watchers:
       - "api_breaking_change_watch"
@@ -183,6 +198,7 @@ hooks:
       - "tests:contract"
       - "synthetics:cls"
       - "playbook:docs/runbooks/int_integrations.md#api-breaking"
+
   - hook: "formal-verification-freeze"
     watchers:
       - "formal_verification_gate_watch"
@@ -194,6 +210,7 @@ hooks:
     rollback: "yes"
     evidence:
       - "playbook:docs/runbooks/sec_privacy.md#formal-verification"
+
   - hook: "okr-alignment-escalation"
     watchers:
       - "okr_risk_alignment_watch"
@@ -205,6 +222,7 @@ hooks:
     rollback: "no"
     evidence:
       - "playbook:docs/runbooks/plat_observability.md#okr-alignment"
+
   - hook: "dp-budget-freeze"
     watchers:
       - "dp_budget_breach_watch"
@@ -218,6 +236,7 @@ hooks:
       - "sbom:latest"
       - "audit:privacy"
       - "playbook:docs/runbooks/sec_privacy.md#dp-budget"
+
   - hook: "dep-vuln-freeze"
     watchers:
       - "dep_vuln_watch"
@@ -229,6 +248,7 @@ hooks:
     rollback: "yes"
     evidence:
       - "playbook:docs/runbooks/sec_privacy.md#dep-vuln"
+
   - hook: "idp-keys-rotation"
     watchers:
       - "idp_keys_rotation_watch"
@@ -240,6 +260,7 @@ hooks:
     rollback: "no"
     evidence:
       - "playbook:docs/runbooks/sec_privacy.md#idp-keys"
+
   - hook: "cache-ttl-block"
     watchers:
       - "cache_ttl_misuse_watch"
@@ -251,6 +272,7 @@ hooks:
     rollback: "yes"
     evidence:
       - "playbook:docs/runbooks/int_integrations.md#cache-ttl"
+
   - hook: "cls-payin-cutover"
     watchers:
       - "cls_payin_cutoff_watch"
@@ -262,6 +284,7 @@ hooks:
     rollback: "yes"
     evidence:
       - "playbook:docs/runbooks/int_integrations.md#cls-payin"
+
   - hook: "tracing-sampling-freeze"
     watchers:
       - "tracing_sampling_watch"
@@ -275,6 +298,7 @@ hooks:
       - "traces:otel"
       - "alerts:platform"
       - "playbook:docs/runbooks/plat_observability.md#tracing-sampling"
+
   - hook: "alert-storm-suppressor"
     watchers:
       - "alert_storm_watch"
@@ -286,6 +310,7 @@ hooks:
     rollback: "yes"
     evidence:
       - "playbook:docs/runbooks/plat_observability.md#alert-storm"
+
   - hook: "policy-violation-freeze"
     watchers:
       - "policy_violation_watch"
