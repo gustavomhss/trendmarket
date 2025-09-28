@@ -42,3 +42,4 @@ O contrato é consumido por **UI, API e superfícies de observabilidade** e **de
 cargo fmt
 cargo clippy --all-targets --all-features
 cargo test
+```

@@ -65,7 +65,17 @@ SHORT_SHA=$(git rev-parse --short HEAD)
 echo "Using merge base: $BASE_REF"
 
 rm -f "$PATCH_DIR"/*.patch >/dev/null 2>&1 || true
-git format-patch "$BASE_REF"..HEAD -o "$PATCH_DIR"
+
+COMMITS_IN_RANGE=$(git rev-list --count "$BASE_REF"..HEAD)
+if [[ "$COMMITS_IN_RANGE" -gt 0 ]]; then
+  git format-patch "$BASE_REF"..HEAD -o "$PATCH_DIR"
+else
+  if git diff --quiet "$BASE_REF" --; then
+    echo "No changes detected between $BASE_REF and working tree; skipping patch generation." >&2
+  else
+    git diff --binary --full-index "$BASE_REF" -- >"$PATCH_DIR/0001-working-tree.patch"
+  fi
+fi
 
 ARTIFACT_ZIP="$PKG_DIR/amm_error_hardening_artifacts_${TIMESTAMP}.zip"
 PATCH_ZIP="$PKG_DIR/amm_error_hardening_patches_${TIMESTAMP}.zip"

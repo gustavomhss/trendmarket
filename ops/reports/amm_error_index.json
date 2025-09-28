@@ -2,7 +2,7 @@
   "meta": {
     "domain": "AMM",
     "prefix": "CE-AMM",
-    "version": "1"
+    "version": 1
   },
   "errors": [
     {
