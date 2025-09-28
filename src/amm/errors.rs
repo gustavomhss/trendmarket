@@ -12,6 +12,7 @@ macro_rules! amm_error_contract {
         ),+ $(,)?
     ) => {
         #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+        #[repr(u8)]
         pub enum AmmError {
             $( $variant, )+
         }
@@ -29,22 +30,20 @@ macro_rules! amm_error_contract {
                 $( AmmError::$variant, )+
             ];
 
+            pub const fn descriptor(self) -> AmmErrorDescriptor {
+                AMM_ERROR_DESCRIPTORS[self as usize]
+            }
+
             pub const fn error_code(self) -> &'static str {
-                match self {
-                    $( AmmError::$variant => $code, )+
-                }
+                self.descriptor().code
             }
 
             pub const fn user_message(self) -> &'static str {
-                match self {
-                    $( AmmError::$variant => $message, )+
-                }
+                self.descriptor().message
             }
 
             pub const fn http_status(self) -> u16 {
-                match self {
-                    $( AmmError::$variant => $status, )+
-                }
+                self.descriptor().http_status
             }
 
             pub const fn variant_name(self) -> &'static str {
