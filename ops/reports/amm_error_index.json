@@ -1,0 +1,32 @@
+[
+  {
+    "variant": "ZeroAmount",
+    "code": "CE-AMM-0001",
+    "default_message": "amount deve ser > 0"
+  },
+  {
+    "variant": "ZeroReserve",
+    "code": "CE-AMM-0002",
+    "default_message": "reserve deve ser > 0"
+  },
+  {
+    "variant": "MinReserveBreached",
+    "code": "CE-AMM-0003",
+    "default_message": "reserva ficaria abaixo do mínimo"
+  },
+  {
+    "variant": "Overflow",
+    "code": "CE-AMM-0004",
+    "default_message": "overflow/underflow numérico"
+  },
+  {
+    "variant": "InputTooSmall",
+    "code": "CE-AMM-0005",
+    "default_message": "input efetivo após taxa é 0"
+  },
+  {
+    "variant": "InvalidFee",
+    "code": "CE-AMM-0006",
+    "default_message": "fee_ppm deve ser ≤ 1e6"
+  }
+]
