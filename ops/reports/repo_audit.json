@@ -128,12 +128,28 @@
     "recorded_at": "2025-09-27T20:08:31.205651+00:00"
   },
   {
+    "command": "make hooks.dry",
+    "status": "success",
+    "artifacts": [
+      "/workspace/trendmarket/ops/reports/hooks_dry.json"
+    ],
+    "recorded_at": "2025-09-27T22:25:20.698935+00:00"
+  },
+  {
     "command": "make watchers.dry",
     "status": "success",
     "artifacts": [
       "/workspace/trendmarket/ops/reports/watchers_dry.json"
     ],
-    "recorded_at": "2025-09-27T22:21:10.032344+00:00"
+    "recorded_at": "2025-09-27T22:25:37.400969+00:00"
+  },
+  {
+    "command": "make watchers.dry",
+    "status": "success",
+    "artifacts": [
+      "/workspace/trendmarket/ops/reports/watchers_dry.json"
+    ],
+    "recorded_at": "2025-09-27T22:25:41.338611+00:00"
   },
   {
     "command": "make hooks.dry",
@@ -141,7 +157,7 @@
     "artifacts": [
       "/workspace/trendmarket/ops/reports/hooks_dry.json"
     ],
-    "recorded_at": "2025-09-27T22:21:11.723684+00:00"
+    "recorded_at": "2025-09-27T22:25:42.471817+00:00"
   },
   {
     "command": "make evidence.publish",
@@ -149,6 +165,6 @@
     "artifacts": [
       "/workspace/trendmarket/ops/evidence/evidence.json"
     ],
-    "recorded_at": "2025-09-27T22:21:13.445522+00:00"
+    "recorded_at": "2025-09-27T22:25:43.640341+00:00"
   }
 ]
