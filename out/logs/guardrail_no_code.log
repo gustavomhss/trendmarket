@@ -1,0 +1,10 @@
+$ rg --stats --fixed-strings "CODE" src/amm
+
+0 matches
+0 matched lines
+0 files contained matches
+8 files searched
+0 bytes printed
+37747 bytes searched
+0.000100 seconds spent searching
+0.006837 seconds
