@@ -6,8 +6,8 @@ ROOT_DIR=$(git rev-parse --show-toplevel)
 cd "$ROOT_DIR"
 
 BASE_REF=""
-PR_URL=""
-TAG_NAME=""
+PR_URL="${PR_URL:-}"
+TAG_NAME="${TAG_NAME:-}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -44,13 +44,23 @@ if [[ -z "$BASE_REF" ]]; then
 fi
 
 if [[ -z "$PR_URL" ]]; then
+  if [[ -n "${CI_PR_URL:-}" ]]; then
+    PR_URL="$CI_PR_URL"
+  fi
+fi
+
+if [[ -z "$PR_URL" ]]; then
+  echo "PR URL not provided. Supply it with --pr-url or set PR_URL/CI_PR_URL." >&2
   echo "Missing required --pr-url argument." >&2
   exit 1
 fi
 
 if [[ -z "$TAG_NAME" ]]; then
-  echo "Missing required --tag argument." >&2
-  exit 1
+  if tag=$(git describe --tags --exact-match HEAD 2>/dev/null); then
+    TAG_NAME="$tag"
+  else
+    TAG_NAME="(not tagged)"
+  fi
 fi
 
 if ! command -v zip >/dev/null 2>&1; then
@@ -104,6 +114,8 @@ python3 - <<'PY'
 import json
 import os
 import pathlib
+from datetime import datetime, timezone
+from textwrap import dedent
 
 root = pathlib.Path(os.environ['ROOT_DIR'])
 pr_url = os.environ['PR_URL'].strip()
@@ -129,18 +141,36 @@ log_lines = []
 if log_dir.exists():
     for entry in sorted(log_dir.iterdir()):
         if entry.is_file():
-            log_lines.append(f"- {entry.name}")
+            stat = entry.stat()
+            mtime = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc)
+            log_lines.append(
+                f"- {entry.name} — {stat.st_size} bytes — {mtime.isoformat(timespec='seconds')}"
+            )
 log_section = "\n".join(log_lines) if log_lines else "- (logs not generated in this run)"
 
-summary_lines = [
-    "## Summary",
-    "- Align the AMM error descriptors, catalog, and index JSON to a single source of truth.",
-    "- Harden the contract tests to iterate every variant and enforce code/message/status constraints.",
-    "- Refresh packaging automation to emit the required evidence bundles under out/pkg/.",
-]
+delivery_meta = "\n".join(
+    [
+        f"- Branch: `{branch}`",
+        f"- Commit: `{short_sha}`",
+        f"- Tag: `{tag_name}`",
+        f"- PR: {pr_url}",
+        f"- Artifacts bundle: `{artifact_zip}`",
+        f"- Patches bundle: `{patch_zip}`",
+    ]
+)
 
-hardened_lines = ["## Hardened AMM Variants", *error_section.splitlines()]
-testing_lines = ["## Testing & Guardrails", *log_section.splitlines()]
+pr_summary = (
+    "## Summary\n"
+    "- Align the AMM error descriptors, catalog, and index JSON to a single source of truth.\n"
+    "- Harden the contract tests to iterate every variant and enforce code/message/status constraints.\n"
+    "- Refresh packaging automation to emit the required evidence bundles under out/pkg/.\n\n"
+    "## Hardened AMM Variants\n"
+    f"{error_section}\n\n"
+    "## Testing & Guardrails\n"
+    f"{log_section}\n\n"
+    "## Delivery Metadata\n"
+    f"{delivery_meta}\n"
+)
 
 guardrail_items = [
     "- [ ] Guardrail: Runtime descriptors, the YAML catalog, and the JSON index stay aligned on variant/code/message/status.",
@@ -164,29 +194,23 @@ checklist_lines = [
     *deliverable_items,
 ]
 
-pr_body = "\n".join(
-    summary_lines
-    + [""]
-    + hardened_lines
-    + [""]
-    + testing_lines
-    + [""]
-    + checklist_lines
-) + "\n"
+pr_body = "\n".join([pr_summary, *checklist_lines]) + "\n"
 
 pr_path = root / 'out' / 'pr' / 'PR_DESCRIPTION.md'
 pr_path.write_text(pr_body, encoding='utf-8')
 
-jira_text = f"""
-AMM error hardening metadata aligned with runtime descriptors, catalog, and QA assets. Contract tests now cover every variant and packaging emits the evidence ZIPs expected by the remediation brief.
+jira_text = dedent(
+    f"""
+    AMM error hardening metadata aligned with runtime descriptors, catalog, and QA assets. Contract tests now cover every variant and packaging emits the evidence ZIPs expected by the remediation brief.
 
-Branch: {branch}
-Tag: {tag_name}
-Commit: {short_sha}
-PR: {pr_url}
-Artifacts ZIP: {artifact_zip}
-Patches ZIP: {patch_zip}
-""".strip() + "\n"
+    Branch: {branch}
+    Tag: {tag_name}
+    Commit: {short_sha}
+    PR: {pr_url}
+    Artifacts ZIP: {artifact_zip}
+    Patches ZIP: {patch_zip}
+    """
+).strip() + "\n"
 
 jira_path = root / 'out' / 'jira' / 'JIRA_COMMENT.txt'
 jira_path.write_text(jira_text, encoding='utf-8')
