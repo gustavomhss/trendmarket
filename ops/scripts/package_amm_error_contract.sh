@@ -43,6 +43,16 @@ if [[ -z "$BASE_REF" ]]; then
   exit 1
 fi
 
+if [[ -z "$PR_URL" ]]; then
+  echo "Missing required --pr-url argument." >&2
+  exit 1
+fi
+
+if [[ -z "$TAG_NAME" ]]; then
+  echo "Missing required --tag argument." >&2
+  exit 1
+fi
+
 if ! command -v zip >/dev/null 2>&1; then
   echo "zip command not found; please install it to package the artifacts." >&2
   exit 1
@@ -97,8 +107,8 @@ import pathlib
 from textwrap import dedent
 
 root = pathlib.Path(os.environ['ROOT_DIR'])
-pr_url = os.environ.get('PR_URL', '').strip()
-tag_name = os.environ.get('TAG_NAME', '').strip()
+pr_url = os.environ['PR_URL'].strip()
+tag_name = os.environ['TAG_NAME'].strip()
 branch = os.environ['BRANCH_NAME']
 short_sha = os.environ['SHORT_SHA']
 artifact_zip = os.environ['ARTIFACT_ZIP']
@@ -138,12 +148,6 @@ pr_summary = dedent(f"""
 
 pr_path = root / 'out' / 'pr' / 'PR_DESCRIPTION.md'
 pr_path.write_text(pr_summary + "\n", encoding='utf-8')
-
-if not pr_url:
-    pr_url = "PR not yet created at packaging time."
-
-if not tag_name:
-    tag_name = "Tag not created yet."
 
 jira_text = dedent(f"""
     AMM error hardening metadata aligned with runtime descriptors, catalog, and QA assets. Contract tests now cover every variant and packaging emits the evidence ZIPs expected by the remediation brief.
