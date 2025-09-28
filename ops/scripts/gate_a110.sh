@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Dependencies: Python 3.11+ with PyYAML available for YAML parsing
+# (falls back to the built-in json module when PyYAML is absent).
 set -euo pipefail
 
 usage() {
@@ -63,6 +65,11 @@ from collections import defaultdict
 from pathlib import Path
 import sys
 
+try:
+    import yaml  # type: ignore
+except ModuleNotFoundError:  # pragma: no cover - optional dependency
+    yaml = None  # type: ignore[assignment]
+
 errors = []
 watchers_path = Path('ops/watchers/core.yaml')
 hooks_path = Path('ops/hooks/a110.yml')
@@ -86,8 +93,32 @@ def load_json(path: Path) -> dict:
         sys.exit(1)
 
 
-watchers_data = load_json(watchers_path)
-hooks_data = load_json(hooks_path)
+def load_manifest(path: Path) -> dict:
+    if yaml is not None:
+        try:
+            with path.open() as fh:
+                data = yaml.safe_load(fh)
+        except yaml.YAMLError as exc:  # pragma: no cover - depends on yaml availability
+            print(f"[A110][ERROR] failed to parse {path}: {exc}", file=sys.stderr)
+            sys.exit(1)
+
+        if data is None:
+            return {}
+
+        if not isinstance(data, dict):
+            print(
+                f"[A110][ERROR] failed to parse {path}: expected a mapping, got {type(data).__name__}",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+        return data
+
+    return load_json(path)
+
+
+watchers_data = load_manifest(watchers_path)
+hooks_data = load_manifest(hooks_path)
 
 expected_domains = ["DEC", "PM", "DATA", "ML", "FE", "SEC/PRIV", "PLAT", "INT"]
 domains = watchers_data.get("domains", {})
