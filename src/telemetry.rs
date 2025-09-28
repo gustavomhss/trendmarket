@@ -1,4 +1,5 @@
 use anyhow::Result;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 use opentelemetry::{
@@ -22,12 +23,23 @@ pub struct Telemetry {
     pub meter: Meter,
     pub swap_latency_ms: Histogram<f64>,
     pub invariant_error_rel: Histogram<f64>,
+    shutdown_called: AtomicBool,
 }
 
 impl Telemetry {
     pub fn shutdown(&self) {
+        if self.shutdown_called.swap(true, Ordering::AcqRel) {
+            return;
+        }
+
         let _ = self.meter_provider.force_flush();
         let _ = self.tracer_provider.shutdown();
+    }
+}
+
+impl Drop for Telemetry {
+    fn drop(&mut self) {
+        self.shutdown();
     }
 }
 
@@ -118,6 +130,7 @@ pub fn init(service_name: &str) -> Result<Telemetry> {
         meter,
         swap_latency_ms,
         invariant_error_rel,
+        shutdown_called: AtomicBool::new(false),
     })
 }
 
