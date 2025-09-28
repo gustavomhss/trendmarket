@@ -83,6 +83,19 @@ def main() -> None:
     if missing_meta:
         raise SystemExit(f"catalog meta missing required keys: {sorted(missing_meta)}")
 
+    try:
+        version_value = int(meta["version"])
+    except ValueError as exc:  # pragma: no cover - defensive guard
+        raise SystemExit(
+            f"catalog meta version must be an integer, found {meta['version']!r}"
+        ) from exc
+
+    normalized_meta: dict[str, Any] = {
+        "domain": meta["domain"],
+        "prefix": meta["prefix"],
+        "version": version_value,
+    }
+
     entries = extract_entries(catalog_text)
     if not entries:
         raise SystemExit("no error entries found in catalog")
@@ -96,7 +109,9 @@ def main() -> None:
         try:
             http_status = int(entry["http_status"])
         except ValueError as exc:  # pragma: no cover - defensive guard
-            raise SystemExit(f"http_status must be an integer for {entry['variant']}") from exc
+            raise SystemExit(
+                f"http_status must be an integer for {entry['variant']}"
+            ) from exc
         normalized_errors.append(
             {
                 "variant": entry["variant"],
@@ -106,7 +121,7 @@ def main() -> None:
             }
         )
 
-    payload = {"meta": meta, "errors": normalized_errors}
+    payload = {"meta": normalized_meta, "errors": normalized_errors}
     OUTPUT.write_text(
         json.dumps(payload, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",
@@ -114,4 +129,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+   

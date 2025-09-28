@@ -1,0 +1,19 @@
+   Compiling serde_core v1.0.222
+   Compiling serde v1.0.222
+    Checking regex-syntax v0.8.6
+    Checking bitflags v2.9.4
+    Checking tower-http v0.6.6
+    Checking regex-automata v0.4.10
+    Checking serde_json v1.0.145
+    Checking matchers v0.2.0
+    Checking tracing-subscriber v0.3.20
+    Checking serde_urlencoded v0.7.1
+    Checking url v2.5.7
+    Checking opentelemetry_sdk v0.29.0
+    Checking reqwest v0.12.23
+    Checking opentelemetry-http v0.29.0
+    Checking opentelemetry-proto v0.29.0
+    Checking tracing-opentelemetry v0.30.0
+    Checking opentelemetry-otlp v0.29.0
+    Checking credit-engine-core v0.1.0 (/workspace/trendmarket)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 7.68s
