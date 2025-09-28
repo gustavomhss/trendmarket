@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 CATALOG = ROOT / "errors" / "catalog_amm.yaml"
@@ -15,6 +16,32 @@ def _strip_quotes(value: str) -> str:
     if value.startswith("\"") and value.endswith("\""):
         return value[1:-1]
     return value
+
+
+def parse_meta(text: str) -> dict[str, str]:
+    meta: dict[str, str] = {}
+    in_meta = False
+    for raw_line in text.splitlines():
+        stripped = raw_line.strip()
+        if not stripped:
+            continue
+        if stripped.startswith("#"):
+            continue
+        if stripped == "meta:":
+            in_meta = True
+            continue
+        if stripped == "errors:":
+            break
+        if not in_meta:
+            continue
+        if not raw_line.startswith("  "):
+            in_meta = False
+            continue
+        if ":" not in stripped:
+            continue
+        key, value = stripped.split(":", 1)
+        meta[key.strip()] = _strip_quotes(value)
+    return meta
 
 
 def extract_entries(text: str) -> list[dict[str, str]]:
@@ -51,17 +78,37 @@ def extract_entries(text: str) -> list[dict[str, str]]:
 
 def main() -> None:
     catalog_text = CATALOG.read_text(encoding="utf-8")
+    meta = parse_meta(catalog_text)
+    missing_meta = {key for key in ("domain", "prefix", "version") if key not in meta}
+    if missing_meta:
+        raise SystemExit(f"catalog meta missing required keys: {sorted(missing_meta)}")
+
     entries = extract_entries(catalog_text)
-    index = [
-        {
-            "variant": entry["variant"],
-            "code": entry["code"],
-            "default_message": entry["default_message"],
-        }
-        for entry in entries
-    ]
+    if not entries:
+        raise SystemExit("no error entries found in catalog")
+
+    normalized_errors: list[dict[str, Any]] = []
+    for entry in entries:
+        required_keys = {"variant", "code", "default_message", "http_status"}
+        missing = required_keys - entry.keys()
+        if missing:
+            raise SystemExit(f"entry {entry} missing keys {sorted(missing)}")
+        try:
+            http_status = int(entry["http_status"])
+        except ValueError as exc:  # pragma: no cover - defensive guard
+            raise SystemExit(f"http_status must be an integer for {entry['variant']}") from exc
+        normalized_errors.append(
+            {
+                "variant": entry["variant"],
+                "code": entry["code"],
+                "message": entry["default_message"],
+                "http_status": http_status,
+            }
+        )
+
+    payload = {"meta": meta, "errors": normalized_errors}
     OUTPUT.write_text(
-        json.dumps(index, indent=2, ensure_ascii=False) + "\n",
+        json.dumps(payload, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",
     )
 

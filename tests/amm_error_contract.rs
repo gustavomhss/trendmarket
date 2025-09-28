@@ -1,170 +1,143 @@
 use std::collections::{BTreeMap, BTreeSet};
-use std::fs;
-use std::path::Path;
 
-use credit_engine_core::amm::errors::AmmError;
+use credit_engine_core::amm::errors::{AmmError, AmmErrorDescriptor, AMM_ERROR_DESCRIPTORS};
+use once_cell::sync::Lazy;
+use regex::Regex;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-struct CatalogEntry {
-    error_code: String,
-    user_message: String,
-    http_status: u16,
-}
+#[path = "catalog_utils.rs"]
+mod catalog_utils;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-struct RustCatalogEntry {
-    error_code: &'static str,
-    user_message: &'static str,
-    http_status: u16,
-}
+static CODE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"^CE-AMM-\d{4}$").unwrap());
+const ALLOWED_HTTP_STATUSES: &[u16] = &[400, 403, 404, 409, 500, 502, 503];
 
-fn entry_for(error: AmmError) -> (&'static str, RustCatalogEntry) {
-    match error {
-        AmmError::ZeroAmount => (
-            "ZeroAmount",
-            RustCatalogEntry {
-                error_code: "CE-AMM-0001",
-                user_message: "Input amount must be greater than zero.",
-                http_status: 400,
-            },
-        ),
-        AmmError::ZeroReserve => (
-            "ZeroReserve",
-            RustCatalogEntry {
-                error_code: "CE-AMM-0002",
-                user_message: "Reserves must stay above zero.",
-                http_status: 400,
-            },
-        ),
-        AmmError::MinReserveBreached => (
-            "MinReserveBreached",
-            RustCatalogEntry {
-                error_code: "CE-AMM-0003",
-                user_message: "Operation would breach the minimum reserve.",
-                http_status: 409,
-            },
-        ),
-        AmmError::Overflow => (
-            "Overflow",
-            RustCatalogEntry {
-                error_code: "CE-AMM-0004",
-                user_message: "Numerical overflow or underflow detected.",
-                http_status: 500,
-            },
-        ),
-        AmmError::InputTooSmall => (
-            "InputTooSmall",
-            RustCatalogEntry {
-                error_code: "CE-AMM-0005",
-                user_message: "Effective input amount is too small.",
-                http_status: 422,
-            },
-        ),
-        AmmError::InvalidFee => (
-            "InvalidFee",
-            RustCatalogEntry {
-                error_code: "CE-AMM-0006",
-                user_message: "Fee ppm must be at most 1,000,000.",
-                http_status: 400,
-            },
-        ),
-    }
-}
-
-fn rust_catalog() -> BTreeMap<String, RustCatalogEntry> {
-    use AmmError::*;
-
-    [
-        ZeroAmount,
-        ZeroReserve,
-        MinReserveBreached,
-        Overflow,
-        InputTooSmall,
-        InvalidFee,
-    ]
-    .into_iter()
-    .map(entry_for)
-    .map(|(name, entry)| (name.to_string(), entry))
-    .collect()
-}
-
-fn load_catalog_from_yaml() -> BTreeMap<String, CatalogEntry> {
-    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("ops/errors/catalog_amm.yaml");
-    let content = fs::read_to_string(&path)
-        .unwrap_or_else(|err| panic!("não foi possível ler {path:?}: {err}"));
-
-    parse_catalog(&content)
-}
-
-/// Parser YAML minimalista suficiente para o formato {variant, code, default_message, http_status}.
-fn parse_catalog(contents: &str) -> BTreeMap<String, CatalogEntry> {
-    use serde::Deserialize;
-
-    #[derive(Debug, Deserialize)]
-    struct Root {
-        errors: Vec<Inner>,
-    }
-
-    #[derive(Debug, Deserialize)]
-    struct Inner {
-        variant: String,
-        code: String,
-        default_message: String,
-        http_status: u16,
-    }
-
-    let parsed: Root =
-        serde_yaml::from_str(contents).expect("falha ao parsear ops/errors/catalog_amm.yaml");
-
-    let mut catalog = BTreeMap::new();
-    for entry in parsed.errors {
-        let previous = catalog.insert(
-            entry.variant.clone(),
-            CatalogEntry {
-                error_code: entry.code,
-                user_message: entry.default_message,
-                http_status: entry.http_status,
-            },
-        );
-        if previous.is_some() {
-            panic!("variant duplicado no catálogo YAML: {}", entry.variant);
-        }
-    }
-
-    catalog
+fn descriptors_by_variant() -> BTreeMap<String, &'static AmmErrorDescriptor> {
+    AMM_ERROR_DESCRIPTORS
+        .iter()
+        .map(|descriptor| (descriptor.variant.variant_name().to_string(), descriptor))
+        .collect()
 }
 
 #[test]
-fn amm_error_catalog_matches_yaml() {
-    let rust_catalog = rust_catalog();
-    let yaml_catalog = load_catalog_from_yaml();
+fn amm_error_runtime_metadata_is_exhaustive() {
+    let catalog = catalog_utils::load_catalog();
 
-    let rust_variants: BTreeSet<_> = rust_catalog.keys().cloned().collect();
-    let yaml_variants: BTreeSet<_> = yaml_catalog.keys().cloned().collect();
+    assert_eq!(catalog.meta.domain, "AMM", "domínio inválido no catálogo");
+    assert_eq!(
+        catalog.meta.prefix, "CE-AMM",
+        "prefixo inválido no catálogo"
+    );
+    assert_eq!(catalog.meta.version, 1, "versão inválida no catálogo");
+
+    let yaml_map: BTreeMap<_, _> = catalog
+        .errors
+        .iter()
+        .map(|entry| (entry.variant.clone(), entry.clone()))
+        .collect();
+    assert_eq!(
+        yaml_map.len(),
+        catalog.errors.len(),
+        "variants duplicados no catálogo"
+    );
+
+    let descriptors = descriptors_by_variant();
+    assert_eq!(descriptors.len(), AMM_ERROR_DESCRIPTORS.len());
+    assert_eq!(
+        descriptors.len(),
+        AmmError::ALL_VARIANTS.len(),
+        "descriptors e ALL_VARIANTS divergem"
+    );
+
+    let yaml_variants: BTreeSet<_> = yaml_map.keys().cloned().collect();
+    let rust_variants: BTreeSet<_> = AmmError::ALL_VARIANTS
+        .iter()
+        .map(|variant| variant.variant_name().to_string())
+        .collect();
 
     assert_eq!(
         rust_variants, yaml_variants,
-        "catálogo YAML e mapeamento Rust divergem nos variants"
+        "catálogo YAML e enum AmmError não estão em sincronia"
     );
 
-    for (variant, rust_entry) in &rust_catalog {
-        let yaml_entry = yaml_catalog
-            .get(variant)
-            .unwrap_or_else(|| panic!("variant {variant} ausente do catálogo YAML"));
+    for variant in AmmError::ALL_VARIANTS {
+        let variant_name = variant.variant_name();
+        let entry = yaml_map
+            .get(variant_name)
+            .unwrap_or_else(|| panic!("variant {variant_name} ausente do catálogo"));
+
+        let descriptor = descriptors
+            .get(variant_name)
+            .unwrap_or_else(|| panic!("descriptor ausente para {variant_name}"));
+
+        let code = variant.error_code();
+        let message = variant.user_message();
+        let status = variant.http_status();
+
+        assert!(
+            CODE_REGEX.is_match(code),
+            "código inválido {code} para variant {variant_name}"
+        );
+        assert!(
+            ALLOWED_HTTP_STATUSES.contains(&status),
+            "http_status {status} fora do contrato para variant {variant_name}"
+        );
+        assert!(
+            !message.trim().is_empty(),
+            "mensagem vazia para variant {variant_name}"
+        );
+        assert_eq!(
+            message.trim(),
+            message,
+            "mensagem contém espaços supérfluos para variant {variant_name}"
+        );
+        assert!(
+            message.ends_with('.'),
+            "mensagem deve terminar com ponto para variant {variant_name}"
+        );
+        assert!(
+            !message.contains('\n'),
+            "mensagem deve ser single-line para variant {variant_name}"
+        );
 
         assert_eq!(
-            rust_entry.error_code,
-            yaml_entry.error_code.as_str(),
-            "error_code divergente para variant {variant}"
+            entry.code, code,
+            "catálogo divergente para variant {variant_name}"
         );
         assert_eq!(
-            rust_entry.user_message,
-            yaml_entry.user_message.as_str(),
-            "user_message divergente para variant {variant}"
+            entry.message, message,
+            "mensagem divergente para variant {variant_name}"
         );
         assert_eq!(
-            rust_entry.http_status, yaml_entry.http_status,
-            "http_status divergente para variant {variant}"
+            entry.http_status, status,
+            "http_status divergente para variant {variant_name}"
+        );
+
+        assert_eq!(
+            descriptor.code, code,
+            "descriptor divergente (code) para {variant_name}"
+        );
+        assert_eq!(
+            descriptor.message, message,
+            "descriptor divergente (message) para {variant_name}"
+        );
+        assert_eq!(
+            descriptor.http_status, status,
+            "descriptor divergente (http_status) para {variant_name}"
         );
     }
+}
+
+#[test]
+fn catalog_does_not_have_extra_entries() {
+    let catalog = catalog_utils::load_catalog();
+    let descriptor_variants: BTreeSet<_> = descriptors_by_variant().keys().cloned().collect();
+    let catalog_variants: BTreeSet<_> = catalog
+        .errors
+        .iter()
+        .map(|entry| entry.variant.clone())
+        .collect();
+
+    assert_eq!(
+        descriptor_variants, catalog_variants,
+        "o catálogo YAML contém variantes extras ou faltantes"
+    );
 }

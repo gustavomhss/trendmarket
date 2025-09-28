@@ -1,7 +1,7 @@
 meta:
-  domain: "credit-engine.amm"
-  prefix: "CE-AMM"
-  version: "1.0.0"
+  domain: AMM
+  prefix: CE-AMM
+  version: 1
 
 errors:
   - variant: ZeroAmount
@@ -27,7 +27,7 @@ errors:
   - variant: InputTooSmall
     code: "CE-AMM-0005"
     default_message: "Effective input amount is too small."
-    http_status: 422
+    http_status: 400
 
   - variant: InvalidFee
     code: "CE-AMM-0006"

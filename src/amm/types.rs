@@ -1,6 +1,8 @@
 //! Tipos básicos do AMM (escala fixa) + U256 para intermediários.
 //! Depende do ADR-0001.
 
+#![allow(clippy::manual_div_ceil, clippy::assign_op_pattern)]
+
 use uint::construct_uint;
 construct_uint! {
     /// Inteiro de 256 bits para contas intermediárias seguras.
