@@ -39,11 +39,11 @@ pub fn u256_to_u128_checked(v: U256) -> Result<Wad, AmmError> {
 /// Divisão com arredondamento *nearest (ties-to-even)* em U256 → U256
 pub fn div_nearest_even_u256(n: U256, d: U256) -> Result<U256, AmmError> {
     if d.is_zero() { return Err(AmmError::Overflow); }
-    let q = n / d;        // quociente
-    let r = n % d;        // resto
-    let two_r = r << 1;   // 2*r
-    if two_r < d { return Ok(q); }
-    if two_r > d { return Ok(q + U256::from(1u8)); }
+    let q = n / d;       // quociente
+    let r = n % d;       // resto
+    let d_minus_r = d - r; // evita overflow ao comparar 2*r com d
+    if r < d_minus_r { return Ok(q); }
+    if r > d_minus_r { return Ok(q + U256::from(1u8)); }
     // empate: arredonda para o par
     if (q & U256::from(1u8)) == U256::from(1u8) { Ok(q + U256::from(1u8)) } else { Ok(q) }
 }
@@ -104,5 +104,32 @@ mod tests {
         // 3/2 = 1.5 -> empata, 1 é ímpar -> sobe para 2
         let q = div_nearest_even_u256(three, two).unwrap();
         assert_eq!(q, U256::from(2u8));
+    }
+
+    #[test]
+    fn t_u256_div_nearest_even_extreme_values() {
+        let one = U256::from(1u8);
+        let max = U256::MAX;
+
+        // resto quase igual ao divisor (max-1), precisa arredondar para cima sem overflow
+        let almost_max = max - one;
+        let rounded_up = div_nearest_even_u256(almost_max, max).unwrap();
+        assert_eq!(rounded_up, one);
+
+        // divisor par perto do limite para testar empates/borda
+        let even_divisor = max - one; // 2^256 - 2
+        let half = even_divisor >> 1;
+
+        // empate com quociente par -> mantém valor
+        let tie_even = div_nearest_even_u256(half, even_divisor).unwrap();
+        assert_eq!(tie_even, U256::zero());
+
+        // logo abaixo da metade -> arredonda para baixo
+        let below_half = div_nearest_even_u256(half - one, even_divisor).unwrap();
+        assert_eq!(below_half, U256::zero());
+
+        // logo acima da metade -> arredonda para cima
+        let above_half = div_nearest_even_u256(half + one, even_divisor).unwrap();
+        assert_eq!(above_half, one);
     }
 }
