@@ -19,3 +19,15 @@
 - guardrail_no_bail_in_okor.log
 - guardrail_no_code.log
 - validate_structures.log
+
+## Checklist
+### Guardrails
+- [ ] Guardrail: Runtime descriptors, the YAML catalog, and the JSON index stay aligned on variant/code/message/status.
+- [ ] Guardrail: Guardrail probes confirm no bail-in to OKOR and no raw CE-AMM codes leak to surfaces.
+- [ ] Guardrail: Contract tests enforce allowed HTTP statuses and message formatting for every AMM error variant.
+
+### Deliverables
+- [ ] Deliverable: ops/errors/catalog_amm.yaml published as the canonical catalog.
+- [ ] Deliverable: ops/reports/amm_error_index.json regenerated for downstream dashboards.
+- [ ] Deliverable: tests/amm_error_contract.rs and out/inventory/amm_errors_inventory.csv refreshed from descriptors.
+- [ ] Deliverable: Evidence bundles zipped under out/pkg/ with logs, PR brief, and Jira comment.

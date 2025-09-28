@@ -123,21 +123,50 @@ if log_dir.exists():
             log_lines.append(f"- {entry.name}")
 log_section = "\n".join(log_lines) if log_lines else "- (logs not generated in this run)"
 
-pr_summary = dedent(f"""
-    ## Summary
-    - Align the AMM error descriptors, catalog, and index JSON to a single source of truth.
-    - Harden the contract tests to iterate every variant and enforce code/message/status constraints.
-    - Refresh packaging automation to emit the required evidence bundles under out/pkg/.
+summary_lines = [
+    "## Summary",
+    "- Align the AMM error descriptors, catalog, and index JSON to a single source of truth.",
+    "- Harden the contract tests to iterate every variant and enforce code/message/status constraints.",
+    "- Refresh packaging automation to emit the required evidence bundles under out/pkg/.",
+]
 
-    ## Hardened AMM Variants
-    {error_section}
+hardened_lines = ["## Hardened AMM Variants", *error_section.splitlines()]
+testing_lines = ["## Testing & Guardrails", *log_section.splitlines()]
 
-    ## Testing & Guardrails
-    {log_section}
-    """).strip() + "\n"
+guardrail_items = [
+    "- [ ] Guardrail: Runtime descriptors, the YAML catalog, and the JSON index stay aligned on variant/code/message/status.",
+    "- [ ] Guardrail: Guardrail probes confirm no bail-in to OKOR and no raw CE-AMM codes leak to surfaces.",
+    "- [ ] Guardrail: Contract tests enforce allowed HTTP statuses and message formatting for every AMM error variant.",
+]
+
+deliverable_items = [
+    "- [ ] Deliverable: ops/errors/catalog_amm.yaml published as the canonical catalog.",
+    "- [ ] Deliverable: ops/reports/amm_error_index.json regenerated for downstream dashboards.",
+    "- [ ] Deliverable: tests/amm_error_contract.rs and out/inventory/amm_errors_inventory.csv refreshed from descriptors.",
+    "- [ ] Deliverable: Evidence bundles zipped under out/pkg/ with logs, PR brief, and Jira comment.",
+]
+
+checklist_lines = [
+    "## Checklist",
+    "### Guardrails",
+    *guardrail_items,
+    "",
+    "### Deliverables",
+    *deliverable_items,
+]
+
+pr_body = "\n".join(
+    summary_lines
+    + [""]
+    + hardened_lines
+    + [""]
+    + testing_lines
+    + [""]
+    + checklist_lines
+) + "\n"
 
 pr_path = root / 'out' / 'pr' / 'PR_DESCRIPTION.md'
-pr_path.write_text(pr_summary + "\n", encoding='utf-8')
+pr_path.write_text(pr_body, encoding='utf-8')
 
 if not pr_url:
     pr_url = "PR not yet created at packaging time."
