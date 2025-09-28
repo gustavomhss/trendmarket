@@ -8,6 +8,7 @@ pub enum AmmError {
     MinReserveBreached,
     Overflow,
     InputTooSmall,
+    InvalidFee,
 }
 
 impl fmt::Display for AmmError {
@@ -19,6 +20,7 @@ impl fmt::Display for AmmError {
             MinReserveBreached => "reserva ficaria abaixo do mínimo",
             Overflow => "overflow/underflow numérico",
             InputTooSmall => "input efetivo após taxa é 0",
+            InvalidFee => "fee_ppm deve ser ≤ 1e6",
         };
         write!(f, "{}", s)
     }
