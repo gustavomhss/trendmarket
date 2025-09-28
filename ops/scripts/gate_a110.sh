@@ -239,11 +239,20 @@ print("[A110] Gate check passed: watchers, hooks e runbooks consistentes.")
 PY
 
 if [[ -n $timeout_secs ]]; then
-  if ! command -v timeout >/dev/null 2>&1; then
-    echo "[A110][ERROR] --timeout requested but 'timeout' command is not available" >&2
+  timeout_cmd=""
+  for candidate in timeout gtimeout; do
+    if command -v "$candidate" >/dev/null 2>&1; then
+      timeout_cmd="$candidate"
+      break
+    fi
+  done
+
+  if [[ -z $timeout_cmd ]]; then
+    echo "[A110][ERROR] --timeout requested but neither 'timeout' nor 'gtimeout' command is available" >&2
     exit 1
   fi
-  timeout "$timeout_secs" python "$script_path"
+
+  "$timeout_cmd" "$timeout_secs" python "$script_path"
 else
   python "$script_path"
 fi
