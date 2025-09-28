@@ -11,13 +11,13 @@ O contrato é consumido por **UI, API e superfícies de observabilidade** e **de
    - Adicione a nova variante no enum `AmmError` em [`src/amm/errors.rs`](../../src/amm/errors.rs).  
    - Mantenha o enum **sem payload** (somente variantes simples).  
 
-2. **Atribua a metadata do contrato**  
-   - Estenda o array `AmmError::ALL_VARIANTS` com a nova variante.  
-   - Forneça mapeamentos em:  
-     - `error_code()` → siga o padrão `CE-AMM-XXXX` (único, nunca reutilizado).  
-     - `user_message()` → frases curtas, neutras, em inglês, terminando com ponto.  
-     - `http_status()` → código HTTP correspondente.  
-     - `variant_name()` → nome legível da variante.  
+2. **Atribua a metadata do contrato**
+   - O macro `amm_error_contract!` deve receber a nova variante e todos os campos.
+   - Forneça mapeamentos em:
+     - `error_code()` → siga o padrão `CE-AMM-XXXX` (único, nunca reutilizado).
+     - `user_message()` → frases curtas, neutras, em inglês, terminando com ponto.
+     - `http_status()` → código HTTP correspondente (400/403/404/409/500/502/503).
+     - `variant_name()` → nome legível da variante.
 
 3. **Atualize o catálogo YAML**  
    - Edite [`ops/errors/catalog_amm.yaml`](catalog_amm.yaml) adicionando a nova entrada com os campos:  
@@ -27,8 +27,8 @@ O contrato é consumido por **UI, API e superfícies de observabilidade** e **de
    - Execute o script [`ops/scripts/generate_amm_error_index.py`](../scripts/generate_amm_error_index.py).  
    - Ele consome o catálogo YAML e reescreve [`ops/reports/amm_error_index.json`](../reports/amm_error_index.json), usado em painéis de observabilidade.  
 
-5. **Atualize os testes**  
-   - Inclua a nova variante no teste [`tests/amm_error_catalog.rs`](../../tests/amm_error_catalog.rs) garantindo que `expected_catalog()` e `variant_count::<AmmError>()` estejam corretos.  
+5. **Atualize os testes**
+   - Ajuste [`tests/amm_error_contract.rs`](../../tests/amm_error_contract.rs) para que o conjunto retornado por `AmmError::descriptors()` e o catálogo YAML permaneçam sincronizados.
 
 6. **Documente a evidência**  
    - Rode `ops/scripts/package_amm_error_contract.sh` para regenerar os bundles (`logs`, `patches`, `artifacts`).  
