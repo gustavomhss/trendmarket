@@ -5,20 +5,53 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import pathlib
 import sys
 from datetime import datetime, timezone
-from typing import Any, Dict
+from typing import Any, Callable, Dict
 
 
-def _load_json(path: pathlib.Path) -> Dict[str, Any]:
+def _load_yaml_parser() -> Callable[[str], Any] | None:
+    spec = importlib.util.find_spec("yaml")
+    if spec is None:
+        return None
+
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)  # type: ignore[attr-defined]
+    return module.safe_load  # type: ignore[return-value]
+
+
+_YAML_PARSER = _load_yaml_parser()
+
+
+def _parse_content(text: str) -> Any:
+    yaml_error: Exception | None = None
+    if _YAML_PARSER is not None:
+        try:
+            return _YAML_PARSER(text)
+        except Exception as exc:  # pragma: no cover - safe fallback
+            yaml_error = exc
+
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError as exc:
+        if yaml_error is not None:
+            raise RuntimeError(
+                f"Unable to parse artefact as YAML ({yaml_error}) or JSON"
+            ) from exc
+        raise RuntimeError(f"Invalid JSON: {exc}") from exc
+
+
+def _load_document(path: pathlib.Path) -> Dict[str, Any]:
     if not path.exists():
         raise FileNotFoundError(f"Required artefact not found: {path}")
-    try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as exc:
-        raise RuntimeError(f"Invalid JSON at {path}: {exc}") from exc
+    payload = _parse_content(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise RuntimeError(f"Artefact at {path} must be a mapping")
+    return payload
 
 
 def _digest(content: Dict[str, Any]) -> str:
@@ -27,8 +60,8 @@ def _digest(content: Dict[str, Any]) -> str:
 
 
 def aggregate(watchers_path: pathlib.Path, hooks_path: pathlib.Path) -> Dict[str, Any]:
-    watchers = _load_json(watchers_path)
-    hooks = _load_json(hooks_path)
+    watchers = _load_document(watchers_path)
+    hooks = _load_document(hooks_path)
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "watchers_artifact": str(watchers_path),
