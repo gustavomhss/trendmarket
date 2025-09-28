@@ -1,7 +1,7 @@
    Compiling serde_core v1.0.222
    Compiling serde v1.0.222
-    Checking regex-syntax v0.8.6
     Checking bitflags v2.9.4
+    Checking regex-syntax v0.8.6
     Checking tower-http v0.6.6
     Checking regex-automata v0.4.10
     Checking serde_json v1.0.145
@@ -16,4 +16,4 @@
     Checking tracing-opentelemetry v0.30.0
     Checking opentelemetry-otlp v0.29.0
     Checking credit-engine-core v0.1.0 (/workspace/trendmarket)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 7.68s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 7.66s
