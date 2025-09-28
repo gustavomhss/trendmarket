@@ -22,5 +22,6 @@ async fn main() -> Result<()> {
             .record(0.001_f64, &[KeyValue::new("op", "swap")]);
     }
 
+    tel.shutdown();
     Ok(())
 }
