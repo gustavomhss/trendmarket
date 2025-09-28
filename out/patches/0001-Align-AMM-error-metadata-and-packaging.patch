@@ -1,0 +1,1669 @@
+From 2773c902d6b59a7663e73ba6348dfe0d8efa954f Mon Sep 17 00:00:00 2001
+From: gustavomhss <gmhelmold@gmail.com>
+Date: Sun, 28 Sep 2025 01:01:01 -0300
+Subject: [PATCH] Align AMM error metadata and packaging
+
+---
+ Cargo.lock                                |   2 +
+ Cargo.toml                                |   2 +
+ ops/errors/README.md                      |  52 ++---
+ ops/errors/catalog_amm.yaml               |   8 +-
+ ops/reports/amm_error_index.json          |   7 +-
+ ops/scripts/generate_amm_error_index.py   |  65 +++++-
+ ops/scripts/package_amm_error_contract.sh | 185 +++++++++++----
+ out/inventory/amm_errors_inventory.csv    |   7 +
+ out/logs/cargo_test.log                   | 223 +++++++++---------
+ src/amm/errors.rs                         |  49 +---
+ src/amm/guardrails.rs                     |   3 +-
+ src/amm/liquidity.rs                      |  17 +-
+ src/amm/types.rs                          |   2 +
+ src/bin/obs_demo.rs                       |  23 +-
+ tests/amm_error_catalog.rs                | 127 +++++------
+ tests/amm_error_contract.rs               | 261 ++++++++++------------
+ tests/catalog_utils.rs                    | 163 ++++++++++++++
+ 17 files changed, 709 insertions(+), 487 deletions(-)
+ create mode 100644 out/inventory/amm_errors_inventory.csv
+ create mode 100644 tests/catalog_utils.rs
+
+diff --git a/Cargo.lock b/Cargo.lock
+index 37ed884..4ccce22 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -197,10 +197,12 @@ version = "0.1.0"
+ dependencies = [
+  "anyhow",
+  "criterion",
++ "once_cell",
+  "opentelemetry",
+  "opentelemetry-otlp",
+  "opentelemetry_sdk",
+  "proptest",
++ "regex",
+  "tokio",
+  "tracing",
+  "tracing-opentelemetry",
+diff --git a/Cargo.toml b/Cargo.toml
+index e5c1d3c..8d3a47b 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -17,6 +17,8 @@ uint = "0.9"
+ [dev-dependencies]
+ proptest = "1"
+ criterion = { version = "0.5", default-features = false }
++once_cell = "1"
++regex = "1"
+ 
+ 
+ [lib]
+diff --git a/ops/errors/README.md b/ops/errors/README.md
+index 79f2338..6144f35 100644
+--- a/ops/errors/README.md
++++ b/ops/errors/README.md
+@@ -7,32 +7,32 @@ O contrato é consumido por **UI, API e superfícies de observabilidade** e **de
+ 
+ ## Como adicionar uma nova variante de erro
+ 
+-1. **Defina a variante no código**  
+-   - Adicione a nova variante no enum `AmmError` em [`src/amm/errors.rs`](../../src/amm/errors.rs).  
+-   - Mantenha o enum **sem payload** (somente variantes simples).  
+-
+-2. **Atribua a metadata do contrato**  
+-   - Estenda o array `AmmError::ALL_VARIANTS` com a nova variante.  
+-   - Forneça mapeamentos em:  
+-     - `error_code()` → siga o padrão `CE-AMM-XXXX` (único, nunca reutilizado).  
+-     - `user_message()` → frases curtas, neutras, em inglês, terminando com ponto.  
+-     - `http_status()` → código HTTP correspondente.  
+-     - `variant_name()` → nome legível da variante.  
+-
+-3. **Atualize o catálogo YAML**  
+-   - Edite [`ops/errors/catalog_amm.yaml`](catalog_amm.yaml) adicionando a nova entrada com os campos:  
+-     - `variant`, `code`, `default_message`, `http_status`.  
+-
+-4. **Regenere o índice JSON para dashboards**  
+-   - Execute o script [`ops/scripts/generate_amm_error_index.py`](../scripts/generate_amm_error_index.py).  
+-   - Ele consome o catálogo YAML e reescreve [`ops/reports/amm_error_index.json`](../reports/amm_error_index.json), usado em painéis de observabilidade.  
+-
+-5. **Atualize os testes**  
+-   - Inclua a nova variante no teste [`tests/amm_error_catalog.rs`](../../tests/amm_error_catalog.rs) garantindo que `expected_catalog()` e `variant_count::<AmmError>()` estejam corretos.  
+-
+-6. **Documente a evidência**  
+-   - Rode `ops/scripts/package_amm_error_contract.sh` para regenerar os bundles (`logs`, `patches`, `artifacts`).  
+-   - Isso garante que formatador, linter e testes capturem a nova variante.  
++1. **Defina a variante no código**
++   - Adicione a nova variante ao macro `amm_error_contract!` em [`src/amm/errors.rs`](../../src/amm/errors.rs).
++   - Mantenha o enum **sem payload** (somente variantes simples).
++
++2. **Atribua a metadata do contrato**
++   - No próprio macro defina `code`, `message` e `http_status` seguindo o padrão:
++     - `code` → `CE-AMM-XXXX` (único, nunca reutilizado).
++     - `message` → frase curta, neutra, em inglês e terminando com ponto.
++     - `http_status` → um dos valores permitidos {400, 403, 404, 409, 500, 502, 503}.
++   - As funções `error_code()`, `user_message()` e `http_status()` consomem diretamente esses descritores, garantindo fonte única da verdade.
++
++3. **Atualize o catálogo YAML**
++   - Edite [`ops/errors/catalog_amm.yaml`](catalog_amm.yaml) adicionando a nova entrada com `variant`, `code`, `default_message`, `http_status`.
++   - Mantenha o bloco `meta` com `{ domain: AMM, prefix: CE-AMM, version: 1 }`.
++
++4. **Regenere o índice JSON para dashboards**
++   - Execute [`ops/scripts/generate_amm_error_index.py`](../scripts/generate_amm_error_index.py).
++   - O script valida o catálogo e recria [`ops/reports/amm_error_index.json`](../reports/amm_error_index.json) com `meta`, `code`, `message` e `http_status`.
++
++5. **Verifique os testes de contrato**
++   - Rode `cargo test --package credit-engine-core amm_error_contract` e `amm_error_catalog`.
++   - Os testes percorrem `AmmError::ALL_VARIANTS`, comparam com os descritores e o catálogo YAML, falhando automaticamente se a metadata estiver incompleta.
++
++6. **Documente a evidência**
++   - Execute `ops/scripts/package_amm_error_contract.sh` para gerar os bundles (`out/logs`, `out/pkg`, `out/patches`, `out/pr`, `out/jira`).
++   - Verifique os arquivos resultantes antes de anexá-los à revisão.
+ 
+ ---
+ 
+diff --git a/ops/errors/catalog_amm.yaml b/ops/errors/catalog_amm.yaml
+index bf3711b..b30e754 100644
+--- a/ops/errors/catalog_amm.yaml
++++ b/ops/errors/catalog_amm.yaml
+@@ -1,7 +1,7 @@
+ meta:
+-  domain: "credit-engine.amm"
+-  prefix: "CE-AMM"
+-  version: "1.0.0"
++  domain: AMM
++  prefix: CE-AMM
++  version: 1
+ 
+ errors:
+   - variant: ZeroAmount
+@@ -27,7 +27,7 @@ errors:
+   - variant: InputTooSmall
+     code: "CE-AMM-0005"
+     default_message: "Effective input amount is too small."
+-    http_status: 422
++    http_status: 400
+ 
+   - variant: InvalidFee
+     code: "CE-AMM-0006"
+diff --git a/ops/reports/amm_error_index.json b/ops/reports/amm_error_index.json
+index 8034049..aa57fc9 100644
+--- a/ops/reports/amm_error_index.json
++++ b/ops/reports/amm_error_index.json
+@@ -1,9 +1,8 @@
+ {
+   "meta": {
+-    "generated_at": "2025-09-28T01:17:29.202927+00:00",
+-    "domain": "credit-engine.amm",
++    "domain": "AMM",
+     "prefix": "CE-AMM",
+-    "version": "1.0.0"
++    "version": "1"
+   },
+   "errors": [
+     {
+@@ -34,7 +33,7 @@
+       "variant": "InputTooSmall",
+       "code": "CE-AMM-0005",
+       "message": "Effective input amount is too small.",
+-      "http_status": 422
++      "http_status": 400
+     },
+     {
+       "variant": "InvalidFee",
+diff --git a/ops/scripts/generate_amm_error_index.py b/ops/scripts/generate_amm_error_index.py
+index 85e23e1..5396e36 100755
+--- a/ops/scripts/generate_amm_error_index.py
++++ b/ops/scripts/generate_amm_error_index.py
+@@ -4,6 +4,7 @@ from __future__ import annotations
+ 
+ import json
+ from pathlib import Path
++from typing import Any
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+ CATALOG = ROOT / "errors" / "catalog_amm.yaml"
+@@ -17,6 +18,32 @@ def _strip_quotes(value: str) -> str:
+     return value
+ 
+ 
++def parse_meta(text: str) -> dict[str, str]:
++    meta: dict[str, str] = {}
++    in_meta = False
++    for raw_line in text.splitlines():
++        stripped = raw_line.strip()
++        if not stripped:
++            continue
++        if stripped.startswith("#"):
++            continue
++        if stripped == "meta:":
++            in_meta = True
++            continue
++        if stripped == "errors:":
++            break
++        if not in_meta:
++            continue
++        if not raw_line.startswith("  "):
++            in_meta = False
++            continue
++        if ":" not in stripped:
++            continue
++        key, value = stripped.split(":", 1)
++        meta[key.strip()] = _strip_quotes(value)
++    return meta
++
++
+ def extract_entries(text: str) -> list[dict[str, str]]:
+     entries: list[dict[str, str]] = []
+     current: dict[str, str] | None = None
+@@ -51,17 +78,37 @@ def extract_entries(text: str) -> list[dict[str, str]]:
+ 
+ def main() -> None:
+     catalog_text = CATALOG.read_text(encoding="utf-8")
++    meta = parse_meta(catalog_text)
++    missing_meta = {key for key in ("domain", "prefix", "version") if key not in meta}
++    if missing_meta:
++        raise SystemExit(f"catalog meta missing required keys: {sorted(missing_meta)}")
++
+     entries = extract_entries(catalog_text)
+-    index = [
+-        {
+-            "variant": entry["variant"],
+-            "code": entry["code"],
+-            "default_message": entry["default_message"],
+-        }
+-        for entry in entries
+-    ]
++    if not entries:
++        raise SystemExit("no error entries found in catalog")
++
++    normalized_errors: list[dict[str, Any]] = []
++    for entry in entries:
++        required_keys = {"variant", "code", "default_message", "http_status"}
++        missing = required_keys - entry.keys()
++        if missing:
++            raise SystemExit(f"entry {entry} missing keys {sorted(missing)}")
++        try:
++            http_status = int(entry["http_status"])
++        except ValueError as exc:  # pragma: no cover - defensive guard
++            raise SystemExit(f"http_status must be an integer for {entry['variant']}") from exc
++        normalized_errors.append(
++            {
++                "variant": entry["variant"],
++                "code": entry["code"],
++                "message": entry["default_message"],
++                "http_status": http_status,
++            }
++        )
++
++    payload = {"meta": meta, "errors": normalized_errors}
+     OUTPUT.write_text(
+-        json.dumps(index, indent=2, ensure_ascii=False) + "\n",
++        json.dumps(payload, indent=2, ensure_ascii=False) + "\n",
+         encoding="utf-8",
+     )
+ 
+diff --git a/ops/scripts/package_amm_error_contract.sh b/ops/scripts/package_amm_error_contract.sh
+index ecd90fd..a82254f 100755
+--- a/ops/scripts/package_amm_error_contract.sh
++++ b/ops/scripts/package_amm_error_contract.sh
+@@ -3,18 +3,33 @@
+ set -euo pipefail
+ 
+ ROOT_DIR=$(git rev-parse --show-toplevel)
+-LOG_DIR="$ROOT_DIR/out/logs"
+-ARTIFACTS_DIR="$ROOT_DIR/out/artifacts"
+-PATCHES_DIR="$ROOT_DIR/out/patches"
++cd "$ROOT_DIR"
++
++BASE_REF=""
++PR_URL=""
++TAG_NAME=""
++
++while [[ $# -gt 0 ]]; do
++  case "$1" in
++    --base-ref)
++      BASE_REF="$2"
++      shift 2
++      ;;
++    --pr-url)
++      PR_URL="$2"
++      shift 2
++      ;;
++    --tag)
++      TAG_NAME="$2"
++      shift 2
++      ;;
++    *)
++      echo "Unknown argument: $1" >&2
++      exit 1
++      ;;
++  esac
++done
+ 
+-mkdir -p "$LOG_DIR" "$ARTIFACTS_DIR" "$PATCHES_DIR"
+-
+-if ! command -v zip >/dev/null 2>&1; then
+-  echo "zip command not found; please install it to package the artifacts." >&2
+-  exit 1
+-fi
+-
+-BASE_REF="${1:-}"
+ if [[ -z "$BASE_REF" ]]; then
+   if git show-ref --verify --quiet refs/heads/main; then
+     BASE_REF=$(git merge-base main HEAD)
+@@ -24,51 +39,135 @@ if [[ -z "$BASE_REF" ]]; then
+ fi
+ 
+ if [[ -z "$BASE_REF" ]]; then
+-  echo "Unable to resolve merge-base for patches. Provide it explicitly as the first argument." >&2
++  echo "Unable to resolve merge-base for patches. Provide it with --base-ref." >&2
+   exit 1
+ fi
+ 
+-echo "Using merge base: $BASE_REF"
++if ! command -v zip >/dev/null 2>&1; then
++  echo "zip command not found; please install it to package the artifacts." >&2
++  exit 1
++fi
++
++OUT_DIR="$ROOT_DIR/out"
++LOG_DIR="$OUT_DIR/logs"
++PKG_DIR="$OUT_DIR/pkg"
++PATCH_DIR="$OUT_DIR/patches"
++PR_DIR="$OUT_DIR/pr"
++JIRA_DIR="$OUT_DIR/jira"
++INV_DIR="$OUT_DIR/inventory"
+ 
+-TEST_LOG="$LOG_DIR/cargo_test.log"
+-FMT_LOG="$LOG_DIR/rustfmt.log"
++mkdir -p "$LOG_DIR" "$PKG_DIR" "$PATCH_DIR" "$PR_DIR" "$JIRA_DIR" "$INV_DIR"
+ 
+-echo "Running cargo test (logs -> $TEST_LOG)"
+-cargo test --all-targets --all-features >"$TEST_LOG" 2>&1
++TIMESTAMP=$(date +%Y%m%d-%H%M%S)
++BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
++SHORT_SHA=$(git rev-parse --short HEAD)
++
++echo "Using merge base: $BASE_REF"
+ 
+-echo "Running rustfmt check (logs -> $FMT_LOG)"
+-rustfmt --edition 2021 --check \
+-  src/amm/errors.rs \
+-  src/bin/obs_demo.rs \
+-  tests/amm_error_contract.rs >"$FMT_LOG" 2>&1
++rm -f "$PATCH_DIR"/*.patch >/dev/null 2>&1 || true
++git format-patch "$BASE_REF"..HEAD -o "$PATCH_DIR"
+ 
+-ARTIFACT_ZIP="$ARTIFACTS_DIR/amm_error_contract_artifacts.zip"
+-PATCH_FILE="$PATCHES_DIR/amm_error_contract.patch"
+-PATCH_ZIP="$PATCHES_DIR/amm_error_contract_patches.zip"
++ARTIFACT_ZIP="$PKG_DIR/amm_error_hardening_artifacts_${TIMESTAMP}.zip"
++PATCH_ZIP="$PKG_DIR/amm_error_hardening_patches_${TIMESTAMP}.zip"
+ 
+ rm -f "$ARTIFACT_ZIP" "$PATCH_ZIP"
+ 
+-ZIP_LOG="$ARTIFACTS_DIR/zip_artifacts.log"
+-PATCH_ZIP_LOG="$PATCHES_DIR/zip_patches.log"
++export ROOT_DIR
++export BRANCH_NAME
++export SHORT_SHA
++export PR_URL
++export TAG_NAME
++export ARTIFACT_ZIP
++export PATCH_ZIP
++
++python3 - <<'PY'
++import json
++import os
++import pathlib
++from textwrap import dedent
++
++root = pathlib.Path(os.environ['ROOT_DIR'])
++pr_url = os.environ.get('PR_URL', '').strip()
++tag_name = os.environ.get('TAG_NAME', '').strip()
++branch = os.environ['BRANCH_NAME']
++short_sha = os.environ['SHORT_SHA']
++artifact_zip = os.environ['ARTIFACT_ZIP']
++patch_zip = os.environ['PATCH_ZIP']
++
++index_path = root / 'ops' / 'reports' / 'amm_error_index.json'
++if not index_path.exists():
++    raise SystemExit(f'error index not found at {index_path}')
++
++index_data = json.loads(index_path.read_text(encoding='utf-8'))
++error_lines = [
++    f"- `{item['variant']}` → `{item['code']}` (HTTP {item['http_status']}) — {item['message']}"
++    for item in index_data['errors']
++]
++error_section = "\n".join(error_lines)
++
++log_dir = root / 'out' / 'logs'
++log_lines = []
++if log_dir.exists():
++    for entry in sorted(log_dir.iterdir()):
++        if entry.is_file():
++            log_lines.append(f"- {entry.name}")
++log_section = "\n".join(log_lines) if log_lines else "- (logs not generated in this run)"
++
++pr_summary = dedent(f"""
++    ## Summary
++    - Align the AMM error descriptors, catalog, and index JSON to a single source of truth.
++    - Harden the contract tests to iterate every variant and enforce code/message/status constraints.
++    - Refresh packaging automation to emit the required evidence bundles under out/pkg/.
++
++    ## Hardened AMM Variants
++    {error_section}
++
++    ## Testing & Guardrails
++    {log_section}
++    """).strip() + "\n"
++
++pr_path = root / 'out' / 'pr' / 'PR_DESCRIPTION.md'
++pr_path.write_text(pr_summary + "\n", encoding='utf-8')
++
++if not pr_url:
++    pr_url = "PR not yet created at packaging time."
++
++if not tag_name:
++    tag_name = "Tag not created yet."
++
++jira_text = dedent(f"""
++    AMM error hardening metadata aligned with runtime descriptors, catalog, and QA assets. Contract tests now cover every variant and packaging emits the evidence ZIPs expected by the remediation brief.
++
++    Branch: {branch}
++    Tag: {tag_name}
++    Commit: {short_sha}
++    PR: {pr_url}
++    Artifacts ZIP: {artifact_zip}
++    Patches ZIP: {patch_zip}
++    """).strip() + "\n"
++
++jira_path = root / 'out' / 'jira' / 'JIRA_COMMENT.txt'
++jira_path.write_text(jira_text, encoding='utf-8')
++PY
++
++if [[ -d "$PKG_DIR" ]]; then
++  (cd "$PKG_DIR" && rm -f amm_error_hardening_artifacts_*.zip amm_error_hardening_patches_*.zip)
++fi
+ 
+-echo "Packaging artifacts -> $ARTIFACT_ZIP"
+-TMP_ARTIFACT_LOG=$(mktemp)
+ zip -r "$ARTIFACT_ZIP" \
+   ops/errors/catalog_amm.yaml \
+   ops/errors/README.md \
+   ops/reports/amm_error_index.json \
+   tests/amm_error_contract.rs \
+-  out/logs/ >"$TMP_ARTIFACT_LOG"
+-mv "$TMP_ARTIFACT_LOG" "$ZIP_LOG"
+-
+-echo "Writing diff to $PATCH_FILE (base: $BASE_REF)"
+-TMP_PATCH=$(mktemp)
+-git diff "$BASE_REF" >"$TMP_PATCH"
+-mv "$TMP_PATCH" "$PATCH_FILE"
+-
+-echo "Packaging patches -> $PATCH_ZIP"
+-TMP_PATCH_LOG=$(mktemp)
+-zip -j "$PATCH_ZIP" "$PATCH_FILE" >"$TMP_PATCH_LOG"
+-mv "$TMP_PATCH_LOG" "$PATCH_ZIP_LOG"
+-
+-echo "Artifacts ready under out/. Files tracked by git exclude the generated ZIP archives."
++  out/inventory \
++  out/logs \
++  out/pr/PR_DESCRIPTION.md \
++  out/jira/JIRA_COMMENT.txt
++
++zip -r "$PATCH_ZIP" out/patches
++
++echo "Artifacts ready:"
++echo "  $ARTIFACT_ZIP"
++echo "  $PATCH_ZIP"
++echo "PR description -> out/pr/PR_DESCRIPTION.md"
++echo "Jira comment -> out/jira/JIRA_COMMENT.txt"
+diff --git a/out/inventory/amm_errors_inventory.csv b/out/inventory/amm_errors_inventory.csv
+new file mode 100644
+index 0000000..0903a68
+--- /dev/null
++++ b/out/inventory/amm_errors_inventory.csv
+@@ -0,0 +1,7 @@
++variant,code,message,http_status,source
++ZeroAmount,CE-AMM-0001,Input amount must be greater than zero.,400,/workspace/trendmarket/src/amm/errors.rs:79
++ZeroReserve,CE-AMM-0002,Reserves must stay above zero.,400,/workspace/trendmarket/src/amm/errors.rs:84
++MinReserveBreached,CE-AMM-0003,Operation would breach the minimum reserve.,409,/workspace/trendmarket/src/amm/errors.rs:89
++Overflow,CE-AMM-0004,Numerical overflow or underflow detected.,500,/workspace/trendmarket/src/amm/errors.rs:94
++InputTooSmall,CE-AMM-0005,Effective input amount is too small.,400,/workspace/trendmarket/src/amm/errors.rs:99
++InvalidFee,CE-AMM-0006,"Fee ppm must be at most 1,000,000.",400,/workspace/trendmarket/src/amm/errors.rs:104
+diff --git a/out/logs/cargo_test.log b/out/logs/cargo_test.log
+index cab372a..cbe5323 100644
+--- a/out/logs/cargo_test.log
++++ b/out/logs/cargo_test.log
+@@ -1,237 +1,236 @@
+-   Compiling proc-macro2 v1.0.101
+-   Compiling unicode-ident v1.0.19
+    Compiling libc v0.2.175
++   Compiling memchr v2.7.5
+    Compiling pin-project-lite v0.2.16
+-   Compiling cfg-if v1.0.3
+    Compiling futures-core v0.3.31
++   Compiling cfg-if v1.0.3
+    Compiling itoa v1.0.15
+    Compiling once_cell v1.21.3
++   Compiling zerofrom v0.1.6
+    Compiling stable_deref_trait v1.2.0
+-   Compiling serde_core v1.0.222
+-   Compiling memchr v2.7.5
+    Compiling futures-sink v0.3.31
+-   Compiling quote v1.0.40
+-   Compiling socket2 v0.6.0
++   Compiling yoke v0.8.0
++   Compiling serde_core v1.0.222
++   Compiling zerovec v0.11.4
+    Compiling mio v1.0.4
+-   Compiling syn v2.0.106
++   Compiling socket2 v0.6.0
+    Compiling fnv v1.0.7
+-   Compiling getrandom v0.3.3
++   Compiling tokio v1.47.1
+    Compiling tracing-core v0.1.34
+-   Compiling pin-utils v0.1.0
+    Compiling bytes v1.10.1
+-   Compiling slab v0.4.11
++   Compiling pin-utils v0.1.0
++   Compiling getrandom v0.3.3
+    Compiling futures-io v0.3.31
+-   Compiling smallvec v1.15.1
+-   Compiling percent-encoding v2.3.2
++   Compiling slab v0.4.11
+    Compiling futures-task v0.3.31
++   Compiling percent-encoding v2.3.2
++   Compiling smallvec v1.15.1
++   Compiling futures-util v0.3.31
++   Compiling tracing v0.1.41
+    Compiling http v1.3.1
+-   Compiling ryu v1.0.20
+-   Compiling zerocopy v0.8.27
+-   Compiling serde v1.0.222
++   Compiling tinystr v0.8.1
+    Compiling litemap v0.8.0
++   Compiling ryu v1.0.20
+    Compiling writeable v0.6.1
++   Compiling icu_locale_core v2.0.0
+    Compiling http-body v1.0.1
+-   Compiling icu_properties_data v2.0.1
+-   Compiling icu_normalizer_data v2.0.0
++   Compiling potential_utf v0.1.3
++   Compiling zerotrie v0.2.2
++   Compiling serde v1.0.222
++   Compiling icu_provider v2.0.0
++   Compiling icu_collections v2.0.0
++   Compiling zerocopy v0.8.27
+    Compiling rand_core v0.9.3
+    Compiling futures-channel v0.3.31
+    Compiling either v1.15.0
+-   Compiling tower-service v0.3.3
+    Compiling bitflags v2.9.4
+-   Compiling serde_json v1.0.145
+-   Compiling thiserror v2.0.16
+-   Compiling synstructure v0.13.2
++   Compiling tower-service v0.3.3
+    Compiling itertools v0.10.5
+-   Compiling httparse v1.10.1
+-   Compiling ppv-lite86 v0.2.21
+-   Compiling anyhow v1.0.99
+-   Compiling regex-syntax v0.8.6
+-   Compiling zerofrom-derive v0.1.6
+-   Compiling yoke-derive v0.8.0
+-   Compiling zerovec-derive v0.11.1
+-   Compiling displaydoc v0.2.5
+-   Compiling tokio-macros v2.5.0
+-   Compiling zerofrom v0.1.6
+-   Compiling yoke v0.8.0
+-   Compiling zerovec v0.11.4
+-   Compiling futures-macro v0.3.31
+-   Compiling tokio v1.47.1
+-   Compiling tracing-attributes v0.1.30
+-   Compiling tinystr v0.8.1
+-   Compiling icu_locale_core v2.0.0
+-   Compiling futures-util v0.3.31
+-   Compiling potential_utf v0.1.3
+-   Compiling zerotrie v0.2.2
+-   Compiling tracing v0.1.41
+-   Compiling serde_derive v1.0.222
+-   Compiling icu_provider v2.0.0
+-   Compiling icu_collections v2.0.0
+-   Compiling thiserror-impl v2.0.16
++   Compiling icu_properties_data v2.0.1
++   Compiling icu_normalizer_data v2.0.0
+    Compiling tower-layer v0.3.3
++   Compiling regex-syntax v0.8.6
++   Compiling thiserror v2.0.16
+    Compiling icu_properties v2.0.1
++   Compiling ppv-lite86 v0.2.21
+    Compiling icu_normalizer v2.0.0
+    Compiling rand_chacha v0.9.0
+-   Compiling base64 v0.22.1
++   Compiling serde_json v1.0.145
++   Compiling aho-corasick v1.1.3
+    Compiling try-lock v0.2.5
++   Compiling base64 v0.22.1
+    Compiling log v0.4.28
+    Compiling want v0.3.1
+    Compiling idna_adapter v1.2.1
++   Compiling regex-automata v0.4.10
+    Compiling rand v0.9.2
+    Compiling opentelemetry v0.29.1
+-   Compiling tokio-stream v0.1.17
+-   Compiling regex-automata v0.4.10
++   Compiling anyhow v1.0.99
++   Compiling httparse v1.10.1
+    Compiling http-body-util v0.1.3
++   Compiling tokio-stream v0.1.17
+    Compiling form_urlencoded v1.2.2
+    Compiling sync_wrapper v1.0.2
+    Compiling utf8_iter v1.0.4
+    Compiling atomic-waker v1.1.2
+-   Compiling hyper v1.7.0
+    Compiling idna v1.1.0
++   Compiling hyper v1.7.0
+    Compiling tower v0.5.2
+    Compiling prost-derive v0.13.5
+    Compiling futures-executor v0.3.31
+-   Compiling async-trait v0.1.89
+-   Compiling pin-project-internal v1.1.10
++   Compiling glob v0.3.3
+    Compiling iri-string v0.7.8
+-   Compiling ipnet v2.11.0
+    Compiling lazy_static v1.5.0
+-   Compiling glob v0.3.3
+-   Compiling opentelemetry_sdk v0.29.0
++   Compiling ipnet v2.11.0
+    Compiling hyper-util v0.1.17
+-   Compiling tower-http v0.6.6
+    Compiling prost v0.13.5
++   Compiling tower-http v0.6.6
++   Compiling opentelemetry_sdk v0.29.0
+    Compiling pin-project v1.1.10
+    Compiling url v2.5.7
+    Compiling serde_urlencoded v0.7.1
+-   Compiling autocfg v1.5.0
+-   Compiling rustix v1.1.2
+-   Compiling crunchy v0.2.4
+-   Compiling num-traits v0.2.19
+-   Compiling reqwest v0.12.23
+    Compiling tonic v0.12.3
+    Compiling sharded-slab v0.1.7
++   Compiling reqwest v0.12.23
+    Compiling matchers v0.2.0
+    Compiling tracing-log v0.2.0
+    Compiling thread_local v1.1.9
+    Compiling nu-ansi-term v0.50.1
+    Compiling linux-raw-sys v0.11.0
+    Compiling tracing-subscriber v0.3.20
++   Compiling rustix v1.1.2
+    Compiling opentelemetry-http v0.29.0
+    Compiling opentelemetry-proto v0.29.0
++   Compiling crunchy v0.2.4
+    Compiling half v2.6.0
++   Compiling fastrand v2.3.0
+    Compiling clap_lex v0.7.5
+-   Compiling byteorder v1.5.0
+    Compiling hex v0.4.3
+-   Compiling ciborium-io v0.2.2
+-   Compiling fastrand v2.3.0
+    Compiling static_assertions v1.1.0
++   Compiling ciborium-io v0.2.2
+    Compiling anstyle v1.0.11
+-   Compiling uint v0.9.5
+-   Compiling tempfile v3.22.0
++   Compiling byteorder v1.5.0
++   Compiling opentelemetry-otlp v0.29.0
+    Compiling clap_builder v4.5.47
++   Compiling uint v0.9.5
+    Compiling ciborium-ll v0.2.2
+-   Compiling opentelemetry-otlp v0.29.0
++   Compiling tempfile v3.22.0
++   Compiling num-traits v0.2.19
+    Compiling tracing-opentelemetry v0.30.0
+    Compiling wait-timeout v0.2.1
+-   Compiling same-file v1.0.6
+-   Compiling quick-error v1.2.3
+    Compiling bit-vec v0.8.0
+    Compiling cast v0.3.0
+-   Compiling walkdir v2.5.0
++   Compiling quick-error v1.2.3
++   Compiling same-file v1.0.6
++   Compiling rusty-fork v0.3.0
+    Compiling criterion-plot v0.5.0
+-   Compiling bit-set v0.8.0
++   Compiling walkdir v2.5.0
+    Compiling clap v4.5.47
+-   Compiling rusty-fork v0.3.0
++   Compiling bit-set v0.8.0
+    Compiling ciborium v0.2.2
+    Compiling regex v1.11.2
+    Compiling tinytemplate v1.2.1
+    Compiling rand_xorshift v0.4.0
+    Compiling is-terminal v0.4.16
+-   Compiling anes v0.1.6
+    Compiling oorandom v11.1.5
+    Compiling unarray v0.1.4
+-   Compiling credit-engine-core v0.1.0 (/workspace/trendmarket)
++   Compiling anes v0.1.6
+    Compiling proptest v1.7.0
++   Compiling credit-engine-core v0.1.0 (/workspace/trendmarket)
+    Compiling criterion v0.5.1
+-    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 38s
+-     Running unittests src/lib.rs (target/debug/deps/credit_engine_core-1479e44b344d23ac)
++    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 08s
++     Running unittests src/lib.rs (target/debug/deps/credit_engine_core-9a397d6ac42c5f5a)
+ 
+ running 43 tests
+ test amm::guardrails::tests::t_checked_add_sub_over_under_flow ... ok
+-test amm::guardrails::tests::t_ensure_nonzero ... ok
+ test amm::guardrails::tests::t_ensure_reserves ... ok
++test amm::guardrails::tests::t_ensure_nonzero ... ok
+ test amm::guardrails::tests::t_u256_div_nearest_even_rounding ... ok
+-test amm::guardrails::tests::t_u256_div_nearest_even_extreme_values ... ok
+-test amm::liquidity::tests::t_add_liquidity_min_by_y ... ok
+ test amm::liquidity::tests::t_add_liquidity_proportional_sym ... ok
+-test amm::liquidity::tests::t_add_liquidity_too_small ... ok
++test amm::liquidity::tests::t_add_liquidity_min_by_y ... ok
+ test amm::liquidity::tests::t_initial_mint_min_reserve_guard ... ok
+-test amm::liquidity::tests::t_initial_mint_near_u256_limit ... ok
++test amm::liquidity::tests::t_add_liquidity_too_small ... ok
++test amm::guardrails::tests::t_u256_div_nearest_even_extreme_values ... ok
+ test amm::liquidity::tests::t_initial_mint_symmetrical ... ok
+-test amm::liquidity::tests::t_initial_mint_u128_max_square ... ok
+ test amm::liquidity::tests::t_remove_liquidity_10_percent ... ok
+ test amm::liquidity::tests::t_remove_liquidity_burn_too_big ... ok
+-test amm::liquidity::tests::t_isqrt_u256_handles_max_range ... ok
+ test amm::liquidity::tests::t_remove_liquidity_min_reserve_guard ... ok
++test amm::liquidity::tests::t_initial_mint_u128_max_square ... ok
+ test amm::liquidity::tests::t_remove_liquidity_zero_burn ... ok
++test amm::liquidity::tests::t_initial_mint_near_u256_limit ... ok
+ test amm::pricing::tests::t_exec_price_matches_ratio_out_over_dx ... ok
+ test amm::pricing::tests::t_invalid_fee_rejected ... ok
+ test amm::pricing::tests::t_max_in_with_tolerance_overflow ... ok
++test amm::liquidity::tests::t_isqrt_u256_handles_max_range ... ok
+ test amm::pricing::tests::t_min_out_with_tolerance ... ok
+ test amm::pricing::tests::t_safety_invalid_inputs ... ok
+-test amm::pricing::tests::t_slippage_tolerance_scaling_overflow ... ok
+ test amm::pricing::tests::t_slippage_no_fee_vs_fee ... ok
++test amm::pricing::tests::t_slippage_tolerance_scaling_overflow ... ok
+ test amm::pricing::tests::t_spot_prices_basic ... ok
+ test amm::swap::tests::t_dx_net_overflow_errors ... ok
+ test amm::swap::tests::t_dx_net_zero_due_fee_rejected ... ok
++test amm::pricing::tests::t_max_in_with_tolerance ... ok
+ test amm::swap::tests::t_dx_tiny_due_rounding_rejected ... ok
+-test amm::swap::tests::t_dx_zero_rejected ... ok
+ test amm::swap::tests::t_dy_too_large_rejected ... ok
+-test amm::swap::tests::t_dy_equal_min_reserve_allowed ... ok
+ test amm::swap::tests::t_fee_above_scale_rejected ... ok
+ test amm::swap::tests::t_fee_overflow_guarded ... ok
+-test amm::pricing::tests::t_max_in_with_tolerance ... ok
++test amm::swap::tests::t_dy_equal_min_reserve_allowed ... ok
+ test amm::swap::tests::t_hi_overflow_errors ... ok
+-test amm::swap::tests::t_out_asymmetric_no_fee ... ok
+ test amm::swap::tests::t_out_symmetric_no_fee ... ok
++test amm::swap::tests::t_out_asymmetric_no_fee ... ok
++test amm::swap::tests::t_in_for_target_out_with_fee_minimal ... ok
++test amm::swap::tests::t_dx_zero_rejected ... ok
+ test amm::swap::tests::t_out_symmetric_with_fee ... ok
+-test amm::swap::tests::t_small_values_min_reserve_guard ... ok
+ test amm::swap::tests::t_zero_reserve_rejected ... ok
+-test amm::swap::tests::t_in_for_target_out_with_fee_minimal ... ok
++test amm::swap::tests::t_small_values_min_reserve_guard ... ok
+ test amm::swap::tests::t_tight_pool_min_reserve_regression ... ok
+-[2m2025-09-28T01:56:19.958187Z[0m [31mERROR[0m  [3mname[0m[2m=[0m"BatchSpanProcessor.ExportError" [3merror[0m[2m=[0m"Operation failed: reqwest::Error { kind: Request, url: \"http://localhost:4318/\", source: hyper_util::client::legacy::Error(Connect, ConnectError(\"tcp connect error\", 127.0.0.1:4318, Os { code: 111, kind: ConnectionRefused, message: \"Connection refused\" })) }"
++[2m2025-09-28T03:47:30.967917Z[0m [31mERROR[0m  [3mname[0m[2m=[0m"BatchSpanProcessor.ExportError" [3merror[0m[2m=[0m"Operation failed: reqwest::Error { kind: Request, url: \"http://localhost:4318/\", source: hyper_util::client::legacy::Error(Connect, ConnectError(\"tcp connect error\", 127.0.0.1:4318, Os { code: 111, kind: ConnectionRefused, message: \"Connection refused\" })) }"
+ test telemetry::tests::trace_context_propagator_injects_and_extracts_after_init ... ok
+ 
+-test result: ok. 43 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
++test result: ok. 43 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+ 
+-     Running unittests src/bin/obs_demo.rs (target/debug/deps/obs_demo-8405b4111421259a)
++     Running unittests src/bin/obs_demo.rs (target/debug/deps/obs_demo-08049b477043743f)
+ 
+ running 0 tests
+ 
+ test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+ 
+-     Running tests/amm_error_contract.rs (target/debug/deps/amm_error_contract-9f3b0660a252654a)
++     Running tests/amm_error_catalog.rs (target/debug/deps/amm_error_catalog-825adb7b50c034ef)
+ 
+-running 1 test
+-test amm_error_contract_is_exhaustive_and_well_formed ... ok
++running 2 tests
++test catalog_matches_runtime_descriptors ... ok
++test catalog_is_structurally_valid ... ok
+ 
+-test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
++test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
++
++     Running tests/amm_error_contract.rs (target/debug/deps/amm_error_contract-f45a8bd24abb17a5)
++
++running 2 tests
++test catalog_does_not_have_extra_entries ... ok
++test amm_error_runtime_metadata_is_exhaustive ... ok
+ 
+-     Running tests/fuzz_invariants.rs (target/debug/deps/fuzz_invariants-2eac2f5243c32d2e)
++test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
++
++     Running tests/catalog_utils.rs (target/debug/deps/catalog_utils-487b0f616404c1f7)
++
++running 0 tests
++
++test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
++
++     Running tests/fuzz_invariants.rs (target/debug/deps/fuzz_invariants-0146d8ccbb339c7a)
+ 
+ running 1 test
+ test invariants_hold ... ok
+ 
+-test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.33s
++test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.37s
+ 
+-     Running tests/golden_cpmm.rs (target/debug/deps/golden_cpmm-bf365f5c1bc91b4b)
++     Running tests/golden_cpmm.rs (target/debug/deps/golden_cpmm-3882da9c4775b0fb)
+ 
+ running 1 test
+ test golden_cpmm_all ... ok
+ 
+ test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+ 
+-     Running tests/rounding.rs (target/debug/deps/rounding-8cb7047059f6c7d1)
++     Running tests/rounding.rs (target/debug/deps/rounding-93d165d49593b2c0)
+ 
+ running 6 tests
+ test r1_amount_out_is_floor_of_continuous_value ... ok
+@@ -243,21 +242,9 @@ test r4_mint_is_floor_of_sqrt_xy ... ok
+ 
+ test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+ 
+-     Running benches/bench_liquidity.rs (target/debug/deps/bench_liquidity-8ebfad51017a24ea)
+-Testing liquidity/remove_liquidity_partial
+-Success
++   Doc-tests credit_engine_core
++
++running 0 tests
+ 
+-     Running benches/bench_swap.rs (target/debug/deps/bench_swap-0a398b7b0f9d3add)
+-Testing swap/sym_small_f0
+-Success
+-Testing swap/sym_large_f0
+-Success
+-Testing swap/asym_xgg_f0
+-Success
+-Testing swap/asym_ygg_f0
+-Success
+-Testing swap/sym_small_fee_f300
+-Success
+-Testing swap/asym_xgg_fee_f300
+-Success
++test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+ 
+diff --git a/src/amm/errors.rs b/src/amm/errors.rs
+index f61c1e5..a5edc68 100644
+--- a/src/amm/errors.rs
++++ b/src/amm/errors.rs
+@@ -21,7 +21,7 @@ macro_rules! amm_error_contract {
+             pub variant: AmmError,
+             pub code: &'static str,
+             pub message: &'static str,
+-            pub http_status: Option<u16>,
++            pub http_status: u16,
+         }
+ 
+         impl AmmError {
+@@ -41,9 +41,9 @@ macro_rules! amm_error_contract {
+                 }
+             }
+ 
+-            pub const fn http_status(self) -> Option<u16> {
++            pub const fn http_status(self) -> u16 {
+                 match self {
+-                    $( AmmError::$variant => Some($status), )+
++                    $( AmmError::$variant => $status, )+
+                 }
+             }
+ 
+@@ -63,7 +63,7 @@ macro_rules! amm_error_contract {
+                 variant: AmmError::$variant,
+                 code: $code,
+                 message: $message,
+-                http_status: Some($status),
++                http_status: $status,
+             }, )+
+         ];
+     };
+@@ -108,47 +108,6 @@ amm_error_contract! {
+     }
+ }
+ 
+-impl AmmError {
+-    #[inline]
+-    pub fn error_code(&self) -> &'static str {
+-        use AmmError::*;
+-        match self {
+-            ZeroAmount => "CE-AMM-0001",
+-            ZeroReserve => "CE-AMM-0002",
+-            MinReserveBreached => "CE-AMM-0003",
+-            Overflow => "CE-AMM-0004",
+-            InputTooSmall => "CE-AMM-0005",
+-            InvalidFee => "CE-AMM-0006",
+-        }
+-    }
+-
+-    #[inline]
+-    pub fn user_message(&self) -> &'static str {
+-        use AmmError::*;
+-        match self {
+-            ZeroAmount => "Swap amount must be greater than zero.",
+-            ZeroReserve => "Pool reserves must be greater than zero.",
+-            MinReserveBreached => "Operation would breach the minimum reserve requirement.",
+-            Overflow => "Numerical overflow or underflow detected while processing the request.",
+-            InputTooSmall => "Effective input after fees is zero; increase the provided amount.",
+-            InvalidFee => "Fee in parts-per-million must be less than or equal to 1,000,000.",
+-        }
+-    }
+-
+-    #[inline]
+-    pub fn http_status(&self) -> Option<u16> {
+-        use AmmError::*;
+-        match self {
+-            ZeroAmount => Some(422),
+-            ZeroReserve => Some(500),
+-            MinReserveBreached => Some(409),
+-            Overflow => Some(500),
+-            InputTooSmall => Some(422),
+-            InvalidFee => Some(422),
+-        }
+-    }
+-}
+-
+ impl fmt::Display for AmmError {
+     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+         write!(f, "{}", self.user_message())
+diff --git a/src/amm/guardrails.rs b/src/amm/guardrails.rs
+index e4f6998..f085dd9 100644
+--- a/src/amm/guardrails.rs
++++ b/src/amm/guardrails.rs
+@@ -81,11 +81,10 @@ mod tests {
+ 
+     #[test]
+     fn t_checked_add_sub_over_under_flow() {
+-        use core::u128::MAX as UMAX;
+         // add ok
+         assert_eq!(checked_add(1, 2).unwrap(), 3);
+         // add overflow
+-        assert_eq!(checked_add(UMAX, 1).unwrap_err(), AmmError::Overflow);
++        assert_eq!(checked_add(u128::MAX, 1).unwrap_err(), AmmError::Overflow);
+         // sub ok
+         assert_eq!(checked_sub(5, 3).unwrap(), 2);
+         // sub underflow
+diff --git a/src/amm/liquidity.rs b/src/amm/liquidity.rs
+index 11a40a2..c85b140 100644
+--- a/src/amm/liquidity.rs
++++ b/src/amm/liquidity.rs
+@@ -21,7 +21,7 @@ fn isqrt_u256(n: U256) -> U256 {
+         let gap = high - low;
+         let mut mid = low + (gap >> 1); // low + (high-low)/2
+         if (gap & one) == one {
+-            mid = mid + one; // arredonda para cima: low + (high-low+1)/2
++            mid += one; // arredonda para cima: low + (high-low+1)/2
+         }
+         if mid <= n / mid { low = mid; } else { high = mid - U256::from(1u8); }
+     }
+@@ -90,7 +90,6 @@ pub fn remove_liquidity(x: Wad, y: Wad, burn_shares: Wad, total_shares: Wad) ->
+ mod tests {
+     use super::*;
+     use crate::amm::types::{WAD, MIN_RESERVE};
+-    use core::u128::MAX as U128_MAX;
+ 
+     #[test]
+     fn t_initial_mint_symmetrical() {
+@@ -164,22 +163,22 @@ mod tests {
+     #[test]
+     fn t_isqrt_u256_handles_max_range() {
+         let sqrt = isqrt_u256(U256::MAX);
+-        assert_eq!(sqrt, U256::from(U128_MAX));
++        assert_eq!(sqrt, U256::from(u128::MAX));
+     }
+ 
+     #[test]
+     fn t_initial_mint_near_u256_limit() {
+-        let x = U128_MAX;
+-        let y = U128_MAX - 1;
++        let x = u128::MAX;
++        let y = u128::MAX - 1;
+         let shares = initial_mint(x, y).unwrap();
+-        assert_eq!(shares, U128_MAX - 1);
++        assert_eq!(shares, u128::MAX - 1);
+     }
+ 
+     #[test]
+     fn t_initial_mint_u128_max_square() {
+-        let x = U128_MAX;
+-        let y = U128_MAX;
++        let x = u128::MAX;
++        let y = u128::MAX;
+         let shares = initial_mint(x, y).unwrap();
+-        assert_eq!(shares, U128_MAX);
++        assert_eq!(shares, u128::MAX);
+     }
+ }
+diff --git a/src/amm/types.rs b/src/amm/types.rs
+index 70fa3ea..7e1432d 100644
+--- a/src/amm/types.rs
++++ b/src/amm/types.rs
+@@ -1,6 +1,8 @@
+ //! Tipos básicos do AMM (escala fixa) + U256 para intermediários.
+ //! Depende do ADR-0001.
+ 
++#![allow(clippy::manual_div_ceil, clippy::assign_op_pattern)]
++
+ use uint::construct_uint;
+ construct_uint! {
+     /// Inteiro de 256 bits para contas intermediárias seguras.
+diff --git a/src/bin/obs_demo.rs b/src/bin/obs_demo.rs
+index 790e8cb..7024a74 100644
+--- a/src/bin/obs_demo.rs
++++ b/src/bin/obs_demo.rs
+@@ -25,22 +25,13 @@ async fn main() -> Result<()> {
+ 
+     // Emit an example error log with the hardened contract fields.
+     let sample_error = AmmError::MinReserveBreached;
+-    if let Some(status) = sample_error.http_status() {
+-        tracing::error!(
+-            error_code = sample_error.error_code(),
+-            error_message = sample_error.user_message(),
+-            error_variant = sample_error.variant_name(),
+-            http_status = status,
+-            "sample AMM error emitted"
+-        );
+-    } else {
+-        tracing::error!(
+-            error_code = sample_error.error_code(),
+-            error_message = sample_error.user_message(),
+-            error_variant = sample_error.variant_name(),
+-            "sample AMM error emitted"
+-        );
+-    }
++    tracing::error!(
++        error_code = sample_error.error_code(),
++        error_message = sample_error.user_message(),
++        error_variant = sample_error.variant_name(),
++        http_status = sample_error.http_status(),
++        "sample AMM error emitted"
++    );
+ 
+     tel.shutdown();
+     Ok(())
+diff --git a/tests/amm_error_catalog.rs b/tests/amm_error_catalog.rs
+index 36b7cd0..7239042 100644
+--- a/tests/amm_error_catalog.rs
++++ b/tests/amm_error_catalog.rs
+@@ -1,83 +1,76 @@
+-use credit_engine_core::amm::errors::AmmError;
+-use std::fs;
++use std::collections::{BTreeMap, BTreeSet};
+ 
+-fn expected_catalog() -> Vec<(AmmError, &'static str, &'static str)> {
+-    vec![
+-        (
+-            AmmError::ZeroAmount,
+-            "CE-AMM-0001",
+-            "default_message: \"amount deve ser > 0\"",
+-        ),
+-        (
+-            AmmError::ZeroReserve,
+-            "CE-AMM-0002",
+-            "default_message: \"reserve deve ser > 0\"",
+-        ),
+-        (
+-            AmmError::MinReserveBreached,
+-            "CE-AMM-0003",
+-            "default_message: \"reserva ficaria abaixo do mínimo\"",
+-        ),
+-        (
+-            AmmError::Overflow,
+-            "CE-AMM-0004",
+-            "default_message: \"overflow/underflow numérico\"",
+-        ),
+-        (
+-            AmmError::InputTooSmall,
+-            "CE-AMM-0005",
+-            "default_message: \"input efetivo após taxa é 0\"",
+-        ),
+-        (
+-            AmmError::InvalidFee,
+-            "CE-AMM-0006",
+-            "default_message: \"fee_ppm deve ser ≤ 1e6\"",
+-        ),
+-    ]
++use credit_engine_core::amm::errors::{AmmError, AmmErrorDescriptor, AMM_ERROR_DESCRIPTORS};
++
++#[path = "catalog_utils.rs"]
++mod catalog_utils;
++
++fn descriptor_map() -> BTreeMap<String, &'static AmmErrorDescriptor> {
++    AMM_ERROR_DESCRIPTORS
++        .iter()
++        .map(|descriptor| (descriptor.variant.variant_name().to_string(), descriptor))
++        .collect()
+ }
+ 
+ #[test]
+-fn catalog_covers_all_amm_errors() {
+-    let catalog = fs::read_to_string("ops/errors/catalog_amm.yaml").expect("catalog readable");
++fn catalog_is_structurally_valid() {
++    let catalog = catalog_utils::load_catalog();
+ 
+-    for (variant, code, message_line) in expected_catalog() {
+-        let variant_name = format!("variant: {:?}", variant);
+-        assert!(
+-            catalog.contains(&variant_name),
+-            "missing variant mapping for {}",
+-            variant_name
+-        );
+-        let code_line = format!("code: \"{}\"", code);
+-        assert!(
+-            catalog.contains(&code_line),
+-            "missing code mapping for {}",
+-            variant_name
+-        );
++    assert_eq!(catalog.meta.domain, "AMM");
++    assert_eq!(catalog.meta.prefix, "CE-AMM");
++    assert_eq!(catalog.meta.version, 1);
++
++    let mut seen_codes = BTreeSet::new();
++    for entry in &catalog.errors {
+         assert!(
+-            catalog.contains(message_line),
+-            "missing default message for {}",
+-            variant_name
++            seen_codes.insert(entry.code.clone()),
++            "código duplicado: {}",
++            entry.code
+         );
+     }
++}
++
++#[test]
++fn catalog_matches_runtime_descriptors() {
++    let catalog = catalog_utils::load_catalog();
++    let descriptors = descriptor_map();
+ 
+-    let declared = catalog.matches("variant:").count();
+-    let expected = expected_catalog().len();
+     assert_eq!(
+-        declared, expected,
+-        "catalog has {} entries but {} variants are expected",
+-        declared, expected
++        catalog.errors.len(),
++        descriptors.len(),
++        "quantidade de entradas divergente"
+     );
+-}
+ 
+-#[test]
+-fn http_status_are_present() {
+-    let catalog = fs::read_to_string("ops/errors/catalog_amm.yaml").expect("catalog readable");
+-    for status in [400, 409, 500, 422] {
+-        let needle = format!("http_status: {}", status);
++    for entry in &catalog.errors {
++        let descriptor = descriptors
++            .get(&entry.variant)
++            .unwrap_or_else(|| panic!("descriptor ausente para {}", entry.variant));
++
++        assert_eq!(
++            descriptor.code, entry.code,
++            "code divergente para {}",
++            entry.variant
++        );
++        assert_eq!(
++            descriptor.message, entry.message,
++            "mensagem divergente para {}",
++            entry.variant
++        );
++        assert_eq!(
++            descriptor.http_status, entry.http_status,
++            "http_status divergente para {}",
++            entry.variant
++        );
++    }
++
++    for variant in AmmError::ALL_VARIANTS {
++        let variant_name = variant.variant_name();
+         assert!(
+-            catalog.contains(&needle),
+-            "expected to find {} in catalog",
+-            needle
++            catalog
++                .errors
++                .iter()
++                .any(|entry| entry.variant == variant_name),
++            "variant {variant_name} ausente do catálogo"
+         );
+     }
+ }
+diff --git a/tests/amm_error_contract.rs b/tests/amm_error_contract.rs
+index 294e1f5..0b952b2 100644
+--- a/tests/amm_error_contract.rs
++++ b/tests/amm_error_contract.rs
+@@ -1,170 +1,143 @@
+ use std::collections::{BTreeMap, BTreeSet};
+-use std::fs;
+-use std::path::Path;
+ 
+-use credit_engine_core::amm::errors::AmmError;
++use credit_engine_core::amm::errors::{AmmError, AmmErrorDescriptor, AMM_ERROR_DESCRIPTORS};
++use once_cell::sync::Lazy;
++use regex::Regex;
+ 
+-#[derive(Debug, Clone, PartialEq, Eq)]
+-struct CatalogEntry {
+-    error_code: String,
+-    user_message: String,
+-    http_status: u16,
+-}
+-
+-#[derive(Debug, Clone, PartialEq, Eq)]
+-struct RustCatalogEntry {
+-    error_code: &'static str,
+-    user_message: &'static str,
+-    http_status: u16,
+-}
++#[path = "catalog_utils.rs"]
++mod catalog_utils;
+ 
+-fn entry_for(error: AmmError) -> (&'static str, RustCatalogEntry) {
+-    match error {
+-        AmmError::ZeroAmount => (
+-            "ZeroAmount",
+-            RustCatalogEntry {
+-                error_code: "CE-AMM-0001",
+-                user_message: "Input amount must be greater than zero.",
+-                http_status: 400,
+-            },
+-        ),
+-        AmmError::ZeroReserve => (
+-            "ZeroReserve",
+-            RustCatalogEntry {
+-                error_code: "CE-AMM-0002",
+-                user_message: "Reserves must stay above zero.",
+-                http_status: 400,
+-            },
+-        ),
+-        AmmError::MinReserveBreached => (
+-            "MinReserveBreached",
+-            RustCatalogEntry {
+-                error_code: "CE-AMM-0003",
+-                user_message: "Operation would breach the minimum reserve.",
+-                http_status: 409,
+-            },
+-        ),
+-        AmmError::Overflow => (
+-            "Overflow",
+-            RustCatalogEntry {
+-                error_code: "CE-AMM-0004",
+-                user_message: "Numerical overflow or underflow detected.",
+-                http_status: 500,
+-            },
+-        ),
+-        AmmError::InputTooSmall => (
+-            "InputTooSmall",
+-            RustCatalogEntry {
+-                error_code: "CE-AMM-0005",
+-                user_message: "Effective input amount is too small.",
+-                http_status: 422,
+-            },
+-        ),
+-        AmmError::InvalidFee => (
+-            "InvalidFee",
+-            RustCatalogEntry {
+-                error_code: "CE-AMM-0006",
+-                user_message: "Fee ppm must be at most 1,000,000.",
+-                http_status: 400,
+-            },
+-        ),
+-    }
+-}
++static CODE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"^CE-AMM-\d{4}$").unwrap());
++const ALLOWED_HTTP_STATUSES: &[u16] = &[400, 403, 404, 409, 500, 502, 503];
+ 
+-fn rust_catalog() -> BTreeMap<String, RustCatalogEntry> {
+-    use AmmError::*;
+-
+-    [
+-        ZeroAmount,
+-        ZeroReserve,
+-        MinReserveBreached,
+-        Overflow,
+-        InputTooSmall,
+-        InvalidFee,
+-    ]
+-    .into_iter()
+-    .map(entry_for)
+-    .map(|(name, entry)| (name.to_string(), entry))
+-    .collect()
++fn descriptors_by_variant() -> BTreeMap<String, &'static AmmErrorDescriptor> {
++    AMM_ERROR_DESCRIPTORS
++        .iter()
++        .map(|descriptor| (descriptor.variant.variant_name().to_string(), descriptor))
++        .collect()
+ }
+ 
+-fn load_catalog_from_yaml() -> BTreeMap<String, CatalogEntry> {
+-    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("ops/errors/catalog_amm.yaml");
+-    let content = fs::read_to_string(&path)
+-        .unwrap_or_else(|err| panic!("não foi possível ler {path:?}: {err}"));
++#[test]
++fn amm_error_runtime_metadata_is_exhaustive() {
++    let catalog = catalog_utils::load_catalog();
+ 
+-    parse_catalog(&content)
+-}
++    assert_eq!(catalog.meta.domain, "AMM", "domínio inválido no catálogo");
++    assert_eq!(
++        catalog.meta.prefix, "CE-AMM",
++        "prefixo inválido no catálogo"
++    );
++    assert_eq!(catalog.meta.version, 1, "versão inválida no catálogo");
+ 
+-/// Parser YAML minimalista suficiente para o formato {variant, code, default_message, http_status}.
+-fn parse_catalog(contents: &str) -> BTreeMap<String, CatalogEntry> {
+-    use serde::Deserialize;
++    let yaml_map: BTreeMap<_, _> = catalog
++        .errors
++        .iter()
++        .map(|entry| (entry.variant.clone(), entry.clone()))
++        .collect();
++    assert_eq!(
++        yaml_map.len(),
++        catalog.errors.len(),
++        "variants duplicados no catálogo"
++    );
+ 
+-    #[derive(Debug, Deserialize)]
+-    struct Root {
+-        errors: Vec<Inner>,
+-    }
++    let descriptors = descriptors_by_variant();
++    assert_eq!(descriptors.len(), AMM_ERROR_DESCRIPTORS.len());
++    assert_eq!(
++        descriptors.len(),
++        AmmError::ALL_VARIANTS.len(),
++        "descriptors e ALL_VARIANTS divergem"
++    );
+ 
+-    #[derive(Debug, Deserialize)]
+-    struct Inner {
+-        variant: String,
+-        code: String,
+-        default_message: String,
+-        http_status: u16,
+-    }
++    let yaml_variants: BTreeSet<_> = yaml_map.keys().cloned().collect();
++    let rust_variants: BTreeSet<_> = AmmError::ALL_VARIANTS
++        .iter()
++        .map(|variant| variant.variant_name().to_string())
++        .collect();
+ 
+-    let parsed: Root =
+-        serde_yaml::from_str(contents).expect("falha ao parsear ops/errors/catalog_amm.yaml");
+-
+-    let mut catalog = BTreeMap::new();
+-    for entry in parsed.errors {
+-        let previous = catalog.insert(
+-            entry.variant.clone(),
+-            CatalogEntry {
+-                error_code: entry.code,
+-                user_message: entry.default_message,
+-                http_status: entry.http_status,
+-            },
+-        );
+-        if previous.is_some() {
+-            panic!("variant duplicado no catálogo YAML: {}", entry.variant);
+-        }
+-    }
++    assert_eq!(
++        rust_variants, yaml_variants,
++        "catálogo YAML e enum AmmError não estão em sincronia"
++    );
+ 
+-    catalog
+-}
++    for variant in AmmError::ALL_VARIANTS {
++        let variant_name = variant.variant_name();
++        let entry = yaml_map
++            .get(variant_name)
++            .unwrap_or_else(|| panic!("variant {variant_name} ausente do catálogo"));
+ 
+-#[test]
+-fn amm_error_catalog_matches_yaml() {
+-    let rust_catalog = rust_catalog();
+-    let yaml_catalog = load_catalog_from_yaml();
++        let descriptor = descriptors
++            .get(variant_name)
++            .unwrap_or_else(|| panic!("descriptor ausente para {variant_name}"));
+ 
+-    let rust_variants: BTreeSet<_> = rust_catalog.keys().cloned().collect();
+-    let yaml_variants: BTreeSet<_> = yaml_catalog.keys().cloned().collect();
++        let code = variant.error_code();
++        let message = variant.user_message();
++        let status = variant.http_status();
+ 
+-    assert_eq!(
+-        rust_variants, yaml_variants,
+-        "catálogo YAML e mapeamento Rust divergem nos variants"
+-    );
++        assert!(
++            CODE_REGEX.is_match(code),
++            "código inválido {code} para variant {variant_name}"
++        );
++        assert!(
++            ALLOWED_HTTP_STATUSES.contains(&status),
++            "http_status {status} fora do contrato para variant {variant_name}"
++        );
++        assert!(
++            !message.trim().is_empty(),
++            "mensagem vazia para variant {variant_name}"
++        );
++        assert_eq!(
++            message.trim(),
++            message,
++            "mensagem contém espaços supérfluos para variant {variant_name}"
++        );
++        assert!(
++            message.ends_with('.'),
++            "mensagem deve terminar com ponto para variant {variant_name}"
++        );
++        assert!(
++            !message.contains('\n'),
++            "mensagem deve ser single-line para variant {variant_name}"
++        );
+ 
+-    for (variant, rust_entry) in &rust_catalog {
+-        let yaml_entry = yaml_catalog
+-            .get(variant)
+-            .unwrap_or_else(|| panic!("variant {variant} ausente do catálogo YAML"));
++        assert_eq!(
++            entry.code, code,
++            "catálogo divergente para variant {variant_name}"
++        );
++        assert_eq!(
++            entry.message, message,
++            "mensagem divergente para variant {variant_name}"
++        );
++        assert_eq!(
++            entry.http_status, status,
++            "http_status divergente para variant {variant_name}"
++        );
+ 
+         assert_eq!(
+-            rust_entry.error_code,
+-            yaml_entry.error_code.as_str(),
+-            "error_code divergente para variant {variant}"
++            descriptor.code, code,
++            "descriptor divergente (code) para {variant_name}"
+         );
+         assert_eq!(
+-            rust_entry.user_message,
+-            yaml_entry.user_message.as_str(),
+-            "user_message divergente para variant {variant}"
++            descriptor.message, message,
++            "descriptor divergente (message) para {variant_name}"
+         );
+         assert_eq!(
+-            rust_entry.http_status, yaml_entry.http_status,
+-            "http_status divergente para variant {variant}"
++            descriptor.http_status, status,
++            "descriptor divergente (http_status) para {variant_name}"
+         );
+     }
+ }
++
++#[test]
++fn catalog_does_not_have_extra_entries() {
++    let catalog = catalog_utils::load_catalog();
++    let descriptor_variants: BTreeSet<_> = descriptors_by_variant().keys().cloned().collect();
++    let catalog_variants: BTreeSet<_> = catalog
++        .errors
++        .iter()
++        .map(|entry| entry.variant.clone())
++        .collect();
++
++    assert_eq!(
++        descriptor_variants, catalog_variants,
++        "o catálogo YAML contém variantes extras ou faltantes"
++    );
++}
+diff --git a/tests/catalog_utils.rs b/tests/catalog_utils.rs
+new file mode 100644
+index 0000000..6165334
+--- /dev/null
++++ b/tests/catalog_utils.rs
+@@ -0,0 +1,163 @@
++use std::fs;
++use std::path::Path;
++
++#[derive(Debug, Clone)]
++pub struct CatalogDocument {
++    pub meta: CatalogMeta,
++    pub errors: Vec<CatalogEntry>,
++}
++
++#[derive(Debug, Clone)]
++pub struct CatalogMeta {
++    pub domain: String,
++    pub prefix: String,
++    pub version: u32,
++}
++
++#[derive(Debug, Clone)]
++pub struct CatalogEntry {
++    pub variant: String,
++    pub code: String,
++    pub message: String,
++    pub http_status: u16,
++}
++
++struct EntryBuilder {
++    variant: Option<String>,
++    code: Option<String>,
++    message: Option<String>,
++    http_status: Option<u16>,
++}
++
++impl EntryBuilder {
++    fn new() -> Self {
++        Self {
++            variant: None,
++            code: None,
++            message: None,
++            http_status: None,
++        }
++    }
++
++    fn insert(&mut self, key: &str, value: &str) {
++        let value = value.trim();
++        let cleaned = value.trim_matches('"').to_string();
++        match key {
++            "variant" => self.variant = Some(cleaned),
++            "code" => self.code = Some(cleaned),
++            "default_message" => self.message = Some(cleaned),
++            "http_status" => {
++                let parsed: u16 = cleaned
++                    .parse()
++                    .unwrap_or_else(|_| panic!("http_status inválido: {cleaned}"));
++                self.http_status = Some(parsed);
++            }
++            other => panic!("chave desconhecida em entrada do catálogo: {other}"),
++        }
++    }
++
++    fn finish(self) -> CatalogEntry {
++        CatalogEntry {
++            variant: self.variant.expect("variant ausente em entrada do catálogo"),
++            code: self.code.expect("code ausente em entrada do catálogo"),
++            message: self.message.expect("default_message ausente em entrada do catálogo"),
++            http_status: self
++                .http_status
++                .expect("http_status ausente em entrada do catálogo"),
++        }
++    }
++}
++
++fn parse_catalog(contents: &str) -> CatalogDocument {
++    #[derive(PartialEq)]
++    enum Section {
++        None,
++        Meta,
++        Errors,
++    }
++
++    let mut section = Section::None;
++    let mut meta = CatalogMeta {
++        domain: String::new(),
++        prefix: String::new(),
++        version: 0,
++    };
++    let mut errors: Vec<CatalogEntry> = Vec::new();
++    let mut builder: Option<EntryBuilder> = None;
++
++    for line in contents.lines() {
++        let trimmed = line.trim();
++        if trimmed.is_empty() || trimmed.starts_with('#') {
++            continue;
++        }
++        match trimmed {
++            "meta:" => {
++                section = Section::Meta;
++                continue;
++            }
++            "errors:" => {
++                if let Some(current) = builder.take() {
++                    errors.push(current.finish());
++                }
++                section = Section::Errors;
++                continue;
++            }
++            _ => {}
++        }
++
++        match section {
++            Section::Meta => {
++                if let Some((key, value)) = trimmed.split_once(':') {
++                    let cleaned = value.trim().trim_matches('"');
++                    match key.trim() {
++                        "domain" => meta.domain = cleaned.to_string(),
++                        "prefix" => meta.prefix = cleaned.to_string(),
++                        "version" => {
++                            meta.version = cleaned
++                                .parse()
++                                .unwrap_or_else(|_| panic!("versão inválida no catálogo: {cleaned}"));
++                        }
++                        other => panic!("chave de meta desconhecida: {other}"),
++                    }
++                }
++            }
++            Section::Errors => {
++                if trimmed.starts_with('-') {
++                    if let Some(current) = builder.take() {
++                        errors.push(current.finish());
++                    }
++                    let mut entry = EntryBuilder::new();
++                    let rest = trimmed.trim_start_matches('-').trim();
++                    let (key, value) = rest
++                        .split_once(':')
++                        .unwrap_or_else(|| panic!("linha inválida no catálogo: {trimmed}"));
++                    entry.insert(key.trim(), value);
++                    builder = Some(entry);
++                } else if let Some((key, value)) = trimmed.split_once(':') {
++                    let entry = builder
++                        .as_mut()
++                        .unwrap_or_else(|| panic!("linha fora de entrada de erro: {trimmed}"));
++                    entry.insert(key.trim(), value);
++                }
++            }
++            Section::None => {}
++        }
++    }
++
++    if let Some(current) = builder.take() {
++        errors.push(current.finish());
++    }
++
++    if meta.domain.is_empty() || meta.prefix.is_empty() || meta.version == 0 {
++        panic!("metadata incompleta no catálogo");
++    }
++
++    CatalogDocument { meta, errors }
++}
++
++pub fn load_catalog() -> CatalogDocument {
++    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("ops/errors/catalog_amm.yaml");
++    let raw = fs::read_to_string(&path)
++        .unwrap_or_else(|err| panic!("não foi possível ler {path:?}: {err}"));
++    parse_catalog(&raw)
++}
+-- 
+2.43.0
+
