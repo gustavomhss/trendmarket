@@ -3,110 +3,106 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
-ROOT = Path(__file__).resolve().parents[1]
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from config_loader import load_config
+
+ROOT = SCRIPT_DIR.parent
 CATALOG = ROOT / "errors" / "catalog_amm.yaml"
 OUTPUT = ROOT / "reports" / "amm_error_index.json"
 
-
-def _strip_quotes(value: str) -> str:
-    value = value.strip()
-    if value.startswith("\"") and value.endswith("\""):
-        return value[1:-1]
-    return value
+REQUIRED_META_KEYS = {"domain", "prefix", "version"}
+REQUIRED_ENTRY_KEYS = {"variant", "code", "default_message", "http_status"}
 
 
-def parse_meta(text: str) -> dict[str, str]:
-    meta: dict[str, str] = {}
-    in_meta = False
-    for raw_line in text.splitlines():
-        stripped = raw_line.strip()
-        if not stripped:
-            continue
-        if stripped.startswith("#"):
-            continue
-        if stripped == "meta:":
-            in_meta = True
-            continue
-        if stripped == "errors:":
-            break
-        if not in_meta:
-            continue
-        if not raw_line.startswith("  "):
-            in_meta = False
-            continue
-        if ":" not in stripped:
-            continue
-        key, value = stripped.split(":", 1)
-        meta[key.strip()] = _strip_quotes(value)
-    return meta
-
-
-def extract_entries(text: str) -> list[dict[str, str]]:
-    entries: list[dict[str, str]] = []
-    current: dict[str, str] | None = None
-    in_errors = False
-    for raw_line in text.splitlines():
-        if not raw_line.strip():
-            continue
-        if raw_line.startswith("errors:"):
-            in_errors = True
-            continue
-        if not in_errors:
-            continue
-        if raw_line.startswith("  - "):
-            if current:
-                entries.append(current)
-            current = {}
-            line = raw_line.strip()
-            key, value = line[len("- "):].split(":", 1)
-            current[key.strip()] = _strip_quotes(value)
-            continue
-        if current is None:
-            continue
-        line = raw_line.strip()
-        if ":" not in line:
-            continue
-        key, value = line.split(":", 1)
-        current[key.strip()] = _strip_quotes(value)
-    if current:
-        entries.append(current)
-    return entries
-
-
-def main() -> None:
+def _load_catalog() -> dict[str, Any]:
     catalog_text = CATALOG.read_text(encoding="utf-8")
-    meta = parse_meta(catalog_text)
-    missing_meta = {key for key in ("domain", "prefix", "version") if key not in meta}
-    if missing_meta:
-        raise SystemExit(f"catalog meta missing required keys: {sorted(missing_meta)}")
+    data = load_config(catalog_text)
+    if not isinstance(data, dict):
+        raise SystemExit("catalog must be a YAML mapping")
+    return data
 
-    entries = extract_entries(catalog_text)
-    if not entries:
-        raise SystemExit("no error entries found in catalog")
+
+def _normalize_meta(meta: Any) -> dict[str, Any]:
+    if not isinstance(meta, dict):
+        raise SystemExit("catalog meta section must be a mapping")
+
+    missing_meta = REQUIRED_META_KEYS - meta.keys()
+    if missing_meta:
+        raise SystemExit(
+            f"catalog meta missing required keys: {sorted(missing_meta)}"
+        )
+
+    normalized = dict(meta)
+    try:
+        normalized["version"] = int(meta["version"])
+    except (TypeError, ValueError) as exc:  # pragma: no cover - defensive guard
+        raise SystemExit(
+            f"catalog meta version must be an integer, found {meta['version']!r}"
+        ) from exc
+
+    return normalized
+
+
+def _normalize_errors(errors: Any) -> list[dict[str, Any]]:
+    if not isinstance(errors, list) or not errors:
+        raise SystemExit("catalog errors section must be a non-empty list")
 
     normalized_errors: list[dict[str, Any]] = []
-    for entry in entries:
-        required_keys = {"variant", "code", "default_message", "http_status"}
-        missing = required_keys - entry.keys()
+    for index, entry in enumerate(errors, start=1):
+        if not isinstance(entry, dict):
+            raise SystemExit(
+                f"catalog errors entry #{index} must be a mapping, found {type(entry).__name__}"
+            )
+        missing = REQUIRED_ENTRY_KEYS - entry.keys()
         if missing:
-            raise SystemExit(f"entry {entry} missing keys {sorted(missing)}")
+            raise SystemExit(
+                "catalog errors entry #"
+                f"{index} missing required keys {sorted(missing)}"
+            )
+
+        http_status_raw = entry["http_status"]
+        if isinstance(http_status_raw, bool):
+            # bool is a subclass of int; treat as invalid to avoid accidental truthy values.
+            raise SystemExit(
+                f"catalog errors entry #{index} has invalid boolean http_status"
+            )
         try:
-            http_status = int(entry["http_status"])
-        except ValueError as exc:  # pragma: no cover - defensive guard
-            raise SystemExit(f"http_status must be an integer for {entry['variant']}") from exc
+            http_status = int(http_status_raw)
+        except (TypeError, ValueError) as exc:  # pragma: no cover - defensive guard
+            raise SystemExit(
+                f"catalog errors entry #{index} has non-integer http_status {http_status_raw!r}"
+            ) from exc
+
         normalized_errors.append(
             {
-                "variant": entry["variant"],
-                "code": entry["code"],
-                "message": entry["default_message"],
+                "variant": str(entry["variant"]),
+                "code": str(entry["code"]),
+                "message": str(entry["default_message"]),
                 "http_status": http_status,
             }
         )
 
-    payload = {"meta": meta, "errors": normalized_errors}
+    return normalized_errors
+
+
+def main() -> None:
+    catalog = _load_catalog()
+    if "meta" not in catalog:
+        raise SystemExit("catalog missing meta section")
+    if "errors" not in catalog:
+        raise SystemExit("catalog missing errors section")
+
+    meta = _normalize_meta(catalog["meta"])
+    errors = _normalize_errors(catalog["errors"])
+
+    payload = {"meta": meta, "errors": errors}
     OUTPUT.write_text(
         json.dumps(payload, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",
