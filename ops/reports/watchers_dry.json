@@ -1,14 +1,12 @@
 {
-  "generated_at": "2025-09-27T22:22:29.893619+00:00",
+  "generated_at": "2025-09-27T22:25:40.819492+00:00",
   "source": "watchers/core.yaml",
   "total_watchers": 26,
   "watchers": [
     {
       "description": "Acompanha lag CDC p95 contra o contrato de dados.",
       "domain": "DATA",
-      "domains": [
-        "DATA"
-      ],
+      "domains": ["DATA"],
       "hook_id": "cdc-lag-hot-degrade",
       "id": "cdc_lag_watch",
       "kpi": "cdc.lag.p95",
@@ -18,9 +16,7 @@
     {
       "description": "Quebra de contrato de dados A106/A87/A89.",
       "domain": "DATA",
-      "domains": [
-        "DATA"
-      ],
+      "domains": ["DATA"],
       "hook_id": "data-contract-breach-guard",
       "id": "data_contract_break_watch",
       "kpi": "data.contract.break",
@@ -30,9 +26,7 @@
     {
       "description": "Flag de falhas de testes dbt críticos.",
       "domain": "DATA",
-      "domains": [
-        "DATA"
-      ],
+      "domains": ["DATA"],
       "hook_id": "dbt-test-rollback",
       "id": "dbt_test_failure_watch",
       "kpi": "dbt.tests.failure_rate",
@@ -42,9 +36,7 @@
     {
       "description": "Garante cobertura de documentação mínima das pipelines.",
       "domain": "DATA",
-      "domains": [
-        "DATA"
-      ],
+      "domains": ["DATA"],
       "hook_id": "doc-coverage-gap",
       "id": "doc_coverage_watch",
       "kpi": "data.doc.coverage",
@@ -54,9 +46,7 @@
     {
       "description": "Detecta incompatibilidades no schema registry.",
       "domain": "DATA",
-      "domains": [
-        "DATA"
-      ],
+      "domains": ["DATA"],
       "hook_id": "schema-drift-blocker",
       "id": "schema_registry_drift_watch",
       "kpi": "schema.drift_detected",
@@ -66,9 +56,7 @@
     {
       "description": "Garante que a latência DEC permaneça dentro dos limites antes de alterar rotas.",
       "domain": "DEC",
-      "domains": [
-        "DEC"
-      ],
+      "domains": ["DEC"],
       "hook_id": "dec-latency-degrade",
       "id": "metrics_decision_hook_gap_watch",
       "kpi": "dec.latency.p95",
@@ -78,10 +66,7 @@
     {
       "description": "Detecta drift estatístico relevante para decisões de crédito.",
       "domain": "DEC",
-      "domains": [
-        "DEC",
-        "ML"
-      ],
+      "domains": ["DEC", "ML"],
       "hook_id": "dec-latency-degrade",
       "id": "model_drift_watch",
       "kpi": "model.psi",
@@ -91,11 +76,7 @@
     {
       "description": "Monitora burn rate do SLO cross-domain.",
       "domain": "DEC",
-      "domains": [
-        "DEC",
-        "PM",
-        "PLAT"
-      ],
+      "domains": ["DEC", "PM", "PLAT"],
       "hook_id": "slo-burn-rate-guard",
       "id": "slo_budget_breach_watch",
       "kpi": "slo.burn_rate",
@@ -105,10 +86,7 @@
     {
       "description": "Previne quebras de contrato de APIs públicas/internas.",
       "domain": "FE",
-      "domains": [
-        "FE",
-        "INT"
-      ],
+      "domains": ["FE", "INT"],
       "hook_id": "api-contract-block",
       "id": "api_breaking_change_watch",
       "kpi": "api.contract.breaking_changes",
@@ -118,9 +96,7 @@
     {
       "description": "Observa regressões de Core Web Vitals (INP p75).",
       "domain": "FE",
-      "domains": [
-        "FE"
-      ],
+      "domains": ["FE"],
       "hook_id": "fe-cwv-regression",
       "id": "web_cwv_regression_watch",
       "kpi": "web.cwv.inp_p75",
@@ -130,9 +106,7 @@
     {
       "description": "Flag para TTL incorreto em caches compartilhados.",
       "domain": "INT",
-      "domains": [
-        "INT"
-      ],
+      "domains": ["INT"],
       "hook_id": "cache-ttl-block",
       "id": "cache_ttl_misuse_watch",
       "kpi": "integration.cache_ttl_violation_pct",
@@ -142,9 +116,7 @@
     {
       "description": "Garante que o cutoff CLS payin seja seguido sem atraso.",
       "domain": "INT",
-      "domains": [
-        "INT"
-      ],
+      "domains": ["INT"],
       "hook_id": "cls-payin-cutover",
       "id": "cls_payin_cutoff_watch",
       "kpi": "integration.cls_payin_cutoff_delay_ms",
@@ -154,9 +126,7 @@
     {
       "description": "Detecta falhas de SRM em experimentos e testes AA.",
       "domain": "ML",
-      "domains": [
-        "ML"
-      ],
+      "domains": ["ML"],
       "hook_id": "experiment-srm-guardrail",
       "id": "ab_srm_watch",
       "kpi": "experiment.srm_pvalue",
@@ -166,10 +136,7 @@
     {
       "description": "Bloqueia regressão de vulnerabilidades críticas em imagens.",
       "domain": "ML",
-      "domains": [
-        "ML",
-        "SEC/PRIV"
-      ],
+      "domains": ["ML", "SEC/PRIV"],
       "hook_id": "image-vuln-regression-block",
       "id": "image_vuln_regression_watch",
       "kpi": "image.critical_vuln_count",
@@ -179,9 +146,7 @@
     {
       "description": "Aponta runtimes em fim de vida para evitar builds inseguras.",
       "domain": "ML",
-      "domains": [
-        "ML"
-      ],
+      "domains": ["ML"],
       "hook_id": "runtime-eol-governance",
       "id": "runtime_eol_watch",
       "kpi": "runtime.support_gap_days",
@@ -191,9 +156,7 @@
     {
       "description": "Detecta tempestades de alertas indicando ruído ou incidentes generalizados.",
       "domain": "PLAT",
-      "domains": [
-        "PLAT"
-      ],
+      "domains": ["PLAT"],
       "hook_id": "alert-storm-suppressor",
       "id": "alert_storm_watch",
       "kpi": "alerts.per_minute",
@@ -203,9 +166,7 @@
     {
       "description": "Monitora desalinhamento de riscos com OKRs estratégicos.",
       "domain": "PLAT",
-      "domains": [
-        "PLAT"
-      ],
+      "domains": ["PLAT"],
       "hook_id": "okr-alignment-escalation",
       "id": "okr_risk_alignment_watch",
       "kpi": "okr.risk_alignment_score",
@@ -215,9 +176,7 @@
     {
       "description": "Garante que políticas operacionais/compliance permaneçam sem violações.",
       "domain": "PLAT",
-      "domains": [
-        "PLAT"
-      ],
+      "domains": ["PLAT"],
       "hook_id": "policy-violation-freeze",
       "id": "policy_violation_watch",
       "kpi": "policy.violation_detected",
@@ -227,9 +186,7 @@
     {
       "description": "Monitora taxa de amostragem do tracing distribuído.",
       "domain": "PLAT",
-      "domains": [
-        "PLAT"
-      ],
+      "domains": ["PLAT"],
       "hook_id": "tracing-sampling-freeze",
       "id": "tracing_sampling_watch",
       "kpi": "tracing.sampling_rate",
@@ -239,9 +196,7 @@
     {
       "description": "Fiscaliza invariantes KKT e convexidade nos leilões.",
       "domain": "PM",
-      "domains": [
-        "PM"
-      ],
+      "domains": ["PM"],
       "hook_id": "auction-invariant-pause",
       "id": "auction_invariant_breach_watch",
       "kpi": "auction.kkt_violation_pct",
@@ -251,9 +206,7 @@
     {
       "description": "Compara delta FX com benchmark para evitar arbitragem.",
       "domain": "PM",
-      "domains": [
-        "PM"
-      ],
+      "domains": ["PM"],
       "hook_id": "fx-delta-benchmark-guard",
       "id": "fx_delta_benchmark_watch",
       "kpi": "fx.delta_vs_benchmark_bps",
@@ -263,9 +216,7 @@
     {
       "description": "Detecta divergência de preço entre oráculos e referência.",
       "domain": "PM",
-      "domains": [
-        "PM"
-      ],
+      "domains": ["PM"],
       "hook_id": "pm-oracle-staleness",
       "id": "oracle_divergence_watch",
       "kpi": "oracle.divergence_bps",
@@ -275,9 +226,7 @@
     {
       "description": "Bloqueia releases com vulnerabilidades críticas em dependências.",
       "domain": "SEC/PRIV",
-      "domains": [
-        "SEC/PRIV"
-      ],
+      "domains": ["SEC/PRIV"],
       "hook_id": "dep-vuln-freeze",
       "id": "dep_vuln_watch",
       "kpi": "security.deps.critical_vulns",
@@ -287,9 +236,7 @@
     {
       "description": "Garante que o budget de privacidade diferencial não estoure.",
       "domain": "SEC/PRIV",
-      "domains": [
-        "SEC/PRIV"
-      ],
+      "domains": ["SEC/PRIV"],
       "hook_id": "dp-budget-freeze",
       "id": "dp_budget_breach_watch",
       "kpi": "privacy.dp_budget_multiplier",
@@ -299,9 +246,7 @@
     {
       "description": "Sinaliza falha em gates formais (A108/segurança).",
       "domain": "SEC/PRIV",
-      "domains": [
-        "SEC/PRIV"
-      ],
+      "domains": ["SEC/PRIV"],
       "hook_id": "formal-verification-freeze",
       "id": "formal_verification_gate_watch",
       "kpi": "formal.verification.failure",
@@ -311,9 +256,7 @@
     {
       "description": "Enforce rotação de chaves/segredos do IdP.",
       "domain": "SEC/PRIV",
-      "domains": [
-        "SEC/PRIV"
-      ],
+      "domains": ["SEC/PRIV"],
       "hook_id": "idp-keys-rotation",
       "id": "idp_keys_rotation_watch",
       "kpi": "security.idp.keys_age_days",

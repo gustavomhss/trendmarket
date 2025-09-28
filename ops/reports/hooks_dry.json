@@ -1,7 +1,7 @@
 {
-  "generated_at": "2025-09-27T22:22:28.129089+00:00",
-  "source": "/workspace/trendmarket/ops/hooks/a110_hooks.json",
-  "total_hooks": 26,
+  "generated_at": "2025-09-27T22:26:51.457983+00:00",
+  "source": "ops/hooks/a110.yml",
+  "total_hooks": 30,
   "hooks": [
     {
       "hook": "dec-latency-gap",
@@ -345,12 +345,12 @@
       "threshold": 1,
       "window": "5m",
       "action": "freeze_release",
-      "owner": "compliance@trendmarket",
+      "owner": "sre+compliance@trendmarket",
       "rollback": true,
       "evidence": [
         "playbook:docs/runbooks/plat_observability.md#policy-violation"
       ],
-      "hash": "4e7f0764fede446f682f071040640800fd3eca363f3a3b5b90f960ffe6589c84"
+      "hash": "b8c29f62932a5f334a4a26a9c22af9c3dbeb7e789f3f1d8136a54cb7fd6a4d94"
     }
   ]
 }
