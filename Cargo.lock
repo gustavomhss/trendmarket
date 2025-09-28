@@ -197,10 +197,12 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "criterion",
+ "once_cell",
  "opentelemetry",
  "opentelemetry-otlp",
  "opentelemetry_sdk",
  "proptest",
+ "regex",
  "tokio",
  "tracing",
  "tracing-opentelemetry",

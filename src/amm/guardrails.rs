@@ -81,11 +81,10 @@ mod tests {
 
     #[test]
     fn t_checked_add_sub_over_under_flow() {
-        use core::u128::MAX as UMAX;
         // add ok
         assert_eq!(checked_add(1, 2).unwrap(), 3);
         // add overflow
-        assert_eq!(checked_add(UMAX, 1).unwrap_err(), AmmError::Overflow);
+        assert_eq!(checked_add(u128::MAX, 1).unwrap_err(), AmmError::Overflow);
         // sub ok
         assert_eq!(checked_sub(5, 3).unwrap(), 2);
         // sub underflow
