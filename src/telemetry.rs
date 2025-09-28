@@ -1,4 +1,5 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 use opentelemetry::{
@@ -13,8 +14,8 @@ use opentelemetry_sdk::{
     resource::Resource,
     trace::SdkTracerProvider,
 };
-use tracing_subscriber::{layer::SubscriberExt, EnvFilter, Registry};
 use tracing::Level;
+use tracing_subscriber::{layer::SubscriberExt, EnvFilter, Registry};
 
 pub struct Telemetry {
     pub tracer_provider: SdkTracerProvider,
@@ -22,26 +23,40 @@ pub struct Telemetry {
     pub meter: Meter,
     pub swap_latency_ms: Histogram<f64>,
     pub invariant_error_rel: Histogram<f64>,
+    shutdown_called: AtomicBool,
 }
 
 impl Telemetry {
-    pub fn shutdown(&self) -> Result<()> {
-        self
-            .meter_provider
-            .force_flush()
-            .context("failed to flush metrics exporter before shutdown")?;
-        self
-            .tracer_provider
-            .shutdown()
-            .context("failed to shutdown tracer provider")?;
+    pub fn shutdown(&self) {
+        if self.shutdown_called.swap(true, Ordering::AcqRel) {
+            return;
+        }
 
-        Ok(())
+        let _ = self.meter_provider.force_flush();
+        let _ = self.tracer_provider.shutdown();
+    }
+}
+
+impl Drop for Telemetry {
+    fn drop(&mut self) {
+        self.shutdown();
     }
 }
 
 pub fn init(service_name: &str) -> Result<Telemetry> {
     let endpoint = std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT")
         .unwrap_or_else(|_| "http://localhost:4318".to_string());
+    let traces_endpoint =
+        std::env::var("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT").unwrap_or_else(|_| endpoint.clone());
+    let metrics_endpoint =
+        std::env::var("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT").unwrap_or_else(|_| endpoint.clone());
+
+    let default_timeout =
+        env_timeout("OTEL_EXPORTER_OTLP_TIMEOUT").unwrap_or_else(|| Duration::from_secs(10));
+    let traces_timeout =
+        env_timeout("OTEL_EXPORTER_OTLP_TRACES_TIMEOUT").unwrap_or(default_timeout);
+    let metrics_timeout =
+        env_timeout("OTEL_EXPORTER_OTLP_METRICS_TIMEOUT").unwrap_or(default_timeout);
 
     let commit = std::env::var("CE_COMMIT_SHA").unwrap_or_else(|_| "unknown".into());
 
@@ -56,7 +71,8 @@ pub fn init(service_name: &str) -> Result<Telemetry> {
     // ---- Traces (OTLP/HTTP) ----
     let span_exporter = SpanExporter::builder()
         .with_http()
-        .with_endpoint(&endpoint)
+        .with_endpoint(&traces_endpoint)
+        .with_timeout(traces_timeout)
         .build()?;
 
     let tracer_provider = SdkTracerProvider::builder()
@@ -69,7 +85,8 @@ pub fn init(service_name: &str) -> Result<Telemetry> {
     // ---- Métricas (OTLP/HTTP) ----
     let metric_exporter = MetricExporter::builder()
         .with_http()
-        .with_endpoint(&endpoint)
+        .with_endpoint(&metrics_endpoint)
+        .with_timeout(metrics_timeout)
         .build()?;
 
     let reader = PeriodicReader::builder(metric_exporter)
@@ -107,7 +124,25 @@ pub fn init(service_name: &str) -> Result<Telemetry> {
         .with_description("Relative invariant error |Δk/k| per operation")
         .build();
 
-    Ok(Telemetry { tracer_provider, meter_provider, meter, swap_latency_ms, invariant_error_rel })
+    Ok(Telemetry {
+        tracer_provider,
+        meter_provider,
+        meter,
+        swap_latency_ms,
+        invariant_error_rel,
+        shutdown_called: AtomicBool::new(false),
+    })
+}
+
+fn env_timeout(var: &str) -> Option<Duration> {
+    std::env::var(var).ok().and_then(|value| {
+        let trimmed = value.trim();
+        if trimmed.is_empty() {
+            None
+        } else {
+            trimmed.parse::<u64>().ok().map(Duration::from_millis)
+        }
+    })
 }
 
 /// Cria um `Span` INFO com nome **estático** (exigência do tracing) e
@@ -124,4 +159,3 @@ pub fn make_info_span(name: &str, op_id: u32, component: &str) -> tracing::Span 
         component = component
     )
 }
-

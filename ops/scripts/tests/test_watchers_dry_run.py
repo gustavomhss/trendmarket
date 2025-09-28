@@ -1,6 +1,7 @@
 import importlib.util
 import json
 import pathlib
+import textwrap
 
 import pytest
 
@@ -193,4 +194,33 @@ def test_aggregated_schema_allows_domain_overrides(tmp_path, monkeypatch):
     assert watcher["kpi"] == "dec.latency.p95"
     assert watcher["description"] == "DEC override"
     assert watcher["rollback"] == "yes"
+    assert watcher["hook_id"] == "dec-latency-degrade"
+
+
+def test_generate_report_supports_yaml_payload(tmp_path: pathlib.Path):
+    config_path = tmp_path / "core.yaml"
+    config_path.write_text(
+        textwrap.dedent(
+            """
+            domains:
+              DEC:
+                - metrics_decision_hook_gap_watch
+            watchers:
+              metrics_decision_hook_gap_watch:
+                owner: SRE
+                description: Latency guard
+                kpi: dec.latency.p95
+                hooks:
+                  DEC: dec-latency-degrade
+            """
+        ).strip()
+        + "\n",
+        encoding="utf-8",
+    )
+
+    report = watchers_dry_run.generate_report(config_path)
+
+    assert report["total_watchers"] == 1
+    watcher = report["watchers"][0]
+    assert watcher["id"] == "metrics_decision_hook_gap_watch"
     assert watcher["hook_id"] == "dec-latency-degrade"

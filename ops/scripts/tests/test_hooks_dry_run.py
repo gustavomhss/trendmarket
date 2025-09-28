@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import pathlib
+import textwrap
 
 import pytest
 
@@ -82,3 +83,31 @@ def test_generate_report_supports_top_level_list(list_config_path: pathlib.Path)
 
     assert report["total_hooks"] == 2
     assert {entry["hook"] for entry in report["hooks"]} == {"list-alpha", "list-beta"}
+
+
+def test_generate_report_supports_yaml_document(tmp_path: pathlib.Path):
+    config_path = tmp_path / "hooks.yaml"
+    config_path.write_text(
+        textwrap.dedent(
+            """
+            hooks:
+              - hook: yaml-alpha
+                kpi: metric.alpha
+                threshold: 10
+                window: 5m
+                action: noop
+                owner: SRE
+                rollback: yes
+            """
+        ).strip()
+        + "\n",
+        encoding="utf-8",
+    )
+
+    report = hooks_dry_run.generate_report(config_path)
+
+    assert report["total_hooks"] == 1
+    entry = report["hooks"][0]
+    assert entry["hook"] == "yaml-alpha"
+    assert entry["kpi"] == "metric.alpha"
+    assert entry["rollback"] is True
