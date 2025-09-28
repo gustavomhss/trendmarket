@@ -50,6 +50,7 @@ pub fn get_amount_out(x: Wad, y: Wad, dx: Wad, fee_ppm: Ppm) -> Result<Wad, AmmE
 
     // out = floor(y - y*)
     let out = y.checked_sub(y_star).ok_or(AmmError::Overflow)?;
+    if out == 0 { return Err(AmmError::InputTooSmall); }
 
     // y' >= min_reserve
     let y1 = y.checked_sub(out).ok_or(AmmError::Overflow)?;
@@ -101,6 +102,10 @@ pub fn get_amount_in(x: Wad, y: Wad, dy: Wad, fee_ppm: Ppm) -> Result<Wad, AmmEr
                 last_safe_hi = hi;
                 hi = hi.checked_mul(2).ok_or(AmmError::Overflow)?;
             }
+            Err(AmmError::InputTooSmall) => {
+                last_safe_hi = hi;
+                hi = hi.checked_mul(2).ok_or(AmmError::Overflow)?;
+            }
             Err(AmmError::MinReserveBreached) => {
                 break;
             }
@@ -123,6 +128,9 @@ pub fn get_amount_in(x: Wad, y: Wad, dy: Wad, fee_ppm: Ppm) -> Result<Wad, AmmEr
                 } else {
                     lo = mid;
                 }
+            }
+            Err(AmmError::InputTooSmall) => {
+                lo = mid;
             }
             Err(AmmError::MinReserveBreached) | Err(AmmError::Overflow) => {
                 hi = mid;
@@ -260,6 +268,15 @@ mod tests {
     fn t_dx_net_zero_due_fee_rejected() {
         // dx=1 wei e fee>0 ⇒ fee=1 ⇒ dx_net=0
         let err = get_amount_out(5_000_000u128 * WAD, 4_000_000u128 * WAD, 1, FEE3).unwrap_err();
+        assert_eq!(err, AmmError::InputTooSmall);
+    }
+
+    #[test]
+    fn t_dx_tiny_due_rounding_rejected() {
+        // dx_net > 0 mas arredondamento na saída zera o ganho ⇒ deve errar
+        let x = 1_000_000u128 * WAD;
+        let y = 100u128 * WAD;
+        let err = get_amount_out(x, y, 1, FEE0).unwrap_err();
         assert_eq!(err, AmmError::InputTooSmall);
     }
 
