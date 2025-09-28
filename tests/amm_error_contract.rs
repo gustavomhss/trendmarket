@@ -48,17 +48,17 @@ fn amm_error_runtime_metadata_is_exhaustive() {
         let variant_name = variant.variant_name().to_string();
 
         // Garantir presença no catálogo YAML
-        let entry = yaml_map
+        let _entry = yaml_map
             .get(&variant_name)
             .unwrap_or_else(|| panic!("variant {variant_name} ausente do catálogo"));
 
         // Garantir presença nos descriptors
-        let descriptor = descriptors
+        let _descriptor = descriptors
             .get(&variant_name)
             .unwrap_or_else(|| panic!("descriptor ausente para {variant_name}"));
 
         // Garantir presença no snapshot
-        let snapshot = runtime_snapshot
+        let _snapshot = runtime_snapshot
             .get(&variant_name)
             .unwrap_or_else(|| panic!("snapshot ausente para {variant_name}"));
 
