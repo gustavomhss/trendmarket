@@ -3,6 +3,6 @@ AMM error hardening metadata aligned with runtime descriptors, catalog, and QA a
 Branch: work
 Tag: amm-error-hardening-20250928-22f135c
 Commit: 22f135c
-PR: https://github.com/creditengine/trendmarket/pull/1234
+PR: [https://github.com/creditengine/trendmarket/pull/1234](https://github.com/creditengine/trendmarket/pull/1234)
 Artifacts ZIP: /workspace/trendmarket/out/pkg/amm_error_hardening_artifacts_20250928-161006.zip
 Patches ZIP: /workspace/trendmarket/out/pkg/amm_error_hardening_patches_20250928-161006.zip
