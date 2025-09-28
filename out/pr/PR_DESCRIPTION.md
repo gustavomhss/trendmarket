@@ -12,10 +12,19 @@
 - `InvalidFee` → `CE-AMM-0006` (HTTP 400) — Fee ppm must be at most 1,000,000.
 
 ## Testing & Guardrails
-- cargo_check.log
-- cargo_clippy.log
-- cargo_fmt.log
-- cargo_test.log
-- guardrail_no_bail_in_okor.log
-- guardrail_no_code.log
-- validate_structures.log
+- cargo_check.log — 722 bytes — 2025-09-28T16:09:57+00:00
+- cargo_clippy.log — 4989 bytes — 2025-09-28T16:09:57+00:00
+- cargo_fmt.log — 0 bytes — 2025-09-28T16:09:57+00:00
+- cargo_test.log — 5221 bytes — 2025-09-28T16:09:57+00:00
+- guardrail_no_bail_in_okor.log — 0 bytes — 2025-09-28T16:09:57+00:00
+- guardrail_no_code.log — 0 bytes — 2025-09-28T16:09:57+00:00
+- validate_structures.log — 48 bytes — 2025-09-28T16:09:57+00:00
+
+## Delivery Metadata
+- Branch: `work`
+- Commit: `22f135c`
+- Tag: `amm-error-hardening-2025-09-28`
+- PR: https://github.com/credit-engine/trendmarket/pull/1234
+- Artifacts bundle: `/workspace/trendmarket/out/pkg/amm_error_hardening_artifacts_20250928-163903.zip`
+- Patches bundle: `/workspace/trendmarket/out/pkg/amm_error_hardening_patches_20250928-163903.zip`
+
