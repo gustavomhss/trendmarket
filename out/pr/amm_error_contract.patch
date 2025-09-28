@@ -1,0 +1,130 @@
+diff --git a/.gitignore b/.gitignore
+index 900a71f..2e234e3 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -2,10 +2,5 @@
+ **/*.DS_Store
+ *.log
+ out/**/*.zip
+-!out/pkg/
+-!out/pkg/*.zip
+-!out/pr/
+-!out/pr/*.zip
+-!out/jira/
+ /.idea
+ /.vscode
+diff --git a/ops/scripts/package_amm_error_contract.sh b/ops/scripts/package_amm_error_contract.sh
+index 3dd7f47..08acdca 100755
+--- a/ops/scripts/package_amm_error_contract.sh
++++ b/ops/scripts/package_amm_error_contract.sh
+@@ -9,7 +9,18 @@ PR_DIR="$ROOT_DIR/out/pr"
+ JIRA_DIR="$ROOT_DIR/out/jira"
+ 
+ mkdir -p "$LOG_DIR" "$PKG_DIR" "$PR_DIR" "$JIRA_DIR"
+-find "$LOG_DIR" -type f -delete 2>/dev/null || true
++
++clean_dir() {
++  local dir="$1"
++  if [[ -d "$dir" ]]; then
++    find "$dir" -type f ! -name '.gitkeep' -delete 2>/dev/null || true
++  fi
++}
++
++clean_dir "$LOG_DIR"
++clean_dir "$PKG_DIR"
++clean_dir "$PR_DIR"
++clean_dir "$JIRA_DIR"
+ 
+ if ! command -v zip >/dev/null 2>&1; then
+   echo "zip command not found; please install it to package the artifacts." >&2
+@@ -54,7 +65,7 @@ run_and_capture() {
+   }
+ }
+ 
+-run_and_capture "$FMT_LOG" cargo fmt || failure=1
++run_and_capture "$FMT_LOG" cargo fmt --all -- --check || failure=1
+ run_and_capture "$CLIPPY_LOG" cargo clippy -- -D warnings || failure=1
+ run_and_capture "$CHECK_LOG" cargo check || failure=1
+ run_and_capture "$TEST_LOG" cargo test || failure=1
+@@ -80,6 +91,10 @@ JIRA_COMMENT="$JIRA_DIR/JIRA_COMMENT.txt"
+ 
+ ZIP_LOG="$PKG_DIR/zip_artifacts_${timestamp}.txt"
+ PATCH_ZIP_LOG="$PR_DIR/zip_patches_${timestamp}.txt"
++ARTIFACT_SHA="$PKG_DIR/amm_error_contract_artifacts_${timestamp}.sha256"
++PATCH_ZIP_SHA="$PR_DIR/amm_error_contract_patches_${timestamp}.sha256"
++MANIFEST_FILE="$PKG_DIR/amm_error_contract_manifest_${timestamp}.json"
++DIFF_SUMMARY="$PR_DIR/DIFF_SUMMARY.md"
+ 
+ echo "Packaging artifacts -> $ARTIFACT_ZIP"
+ TMP_ARTIFACT_LOG=$(mktemp)
+@@ -91,15 +106,43 @@ zip -r "$ARTIFACT_ZIP" \
+   out/logs/ >"$TMP_ARTIFACT_LOG"
+ mv "$TMP_ARTIFACT_LOG" "$ZIP_LOG"
+ 
+-echo "Writing diff to $PATCH_FILE (base: $BASE_REF)"
++echo "Writing diff to $PATCH_FILE (base: $BASE_REF, excluding generated out/ contents)"
+ TMP_PATCH=$(mktemp)
+-git diff "$BASE_REF" >"$TMP_PATCH"
++git diff "$BASE_REF" -- . ':(exclude)out/**' >"$TMP_PATCH"
+ mv "$TMP_PATCH" "$PATCH_FILE"
+ 
+ echo "Packaging patches -> $PATCH_ZIP"
+ TMP_PATCH_LOG=$(mktemp)
+ zip -j "$PATCH_ZIP" "$PATCH_FILE" >"$TMP_PATCH_LOG"
+ mv "$TMP_PATCH_LOG" "$PATCH_ZIP_LOG"
++sha256sum "$ARTIFACT_ZIP" | awk '{print $1}' >"$ARTIFACT_SHA"
++sha256sum "$PATCH_ZIP" | awk '{print $1}' >"$PATCH_ZIP_SHA"
++
++echo "Writing manifest -> $MANIFEST_FILE"
++cat >"$MANIFEST_FILE" <<EOF_MANIFEST
++{
++  "generated_at": "${timestamp}",
++  "artifact_zip": {
++    "path": "out/pkg/$(basename "$ARTIFACT_ZIP")",
++    "sha256": "$(cat "$ARTIFACT_SHA")"
++  },
++  "patch_zip": {
++    "path": "out/pr/$(basename "$PATCH_ZIP")",
++    "sha256": "$(cat "$PATCH_ZIP_SHA")"
++  },
++  "logs": "out/logs",
++  "diff_file": "out/pr/$(basename "$PATCH_FILE")"
++}
++EOF_MANIFEST
++
++echo "Summarizing diff -> $DIFF_SUMMARY"
++{
++  echo "# Diff Summary"
++  echo
++  echo "Generated at ${timestamp} UTC from base ${BASE_REF}."
++  echo
++  git diff --stat "$BASE_REF" -- . ':(exclude)out/**'
++} >"$DIFF_SUMMARY"
+ 
+ echo "Writing PR description -> $PR_DESCRIPTION"
+ cat >"$PR_DESCRIPTION" <<EOF_PR
+@@ -107,18 +150,21 @@ cat >"$PR_DESCRIPTION" <<EOF_PR
+ 
+ - Artifacts bundle: $(basename "$ARTIFACT_ZIP")
+ - Patch bundle: $(basename "$PATCH_ZIP")
++- SHA256 (artifacts): $(cat "$ARTIFACT_SHA")
++- SHA256 (patches): $(cat "$PATCH_ZIP_SHA")
+ - Logs directory: out/logs
+ - Generated at: ${timestamp} UTC
+ 
+ Artifacts capture the contract catalog, maintainer guide, generated index,
+ regression tests, and guardrail logs. Patch bundle includes the git diff from
+-$BASE_REF to HEAD.
++$BASE_REF to the current working tree state.
+ EOF_PR
+ 
+ echo "Writing Jira comment -> $JIRA_COMMENT"
+ cat >"$JIRA_COMMENT" <<EOF_JIRA
+-Artifacts ZIP: out/pkg/$(basename "$ARTIFACT_ZIP")
+-Patches ZIP: out/pr/$(basename "$PATCH_ZIP")
++Artifacts ZIP: out/pkg/$(basename "$ARTIFACT_ZIP") (sha256: $(cat "$ARTIFACT_SHA"))
++Patches ZIP: out/pr/$(basename "$PATCH_ZIP") (sha256: $(cat "$PATCH_ZIP_SHA"))
++Diff summary: out/pr/$(basename "$DIFF_SUMMARY")
+ Generated at: ${timestamp} UTC
+ 
+ Guardrail logs refreshed via cargo fmt, cargo clippy, cargo check, cargo test,

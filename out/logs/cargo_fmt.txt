@@ -1,0 +1,735 @@
+$ cargo fmt --all -- --check
+Diff in /workspace/trendmarket/benches/bench_liquidity.rs:1:
+[31m-use std::time::Duration;
+(B[m[31m-use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughput};
+(B[m use credit_engine_core::amm::liquidity::remove_liquidity;
+ use credit_engine_core::amm::types::{Wad, WAD};
+[31m-#[inline] fn w(n: u128) -> Wad { n * WAD }
+(B[m[32m+use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughput};
+(B[m[32m+use std::time::Duration;
+(B[m[32m+#[inline]
+(B[m[32m+fn w(n: u128) -> Wad {
+(B[m[32m+    n * WAD
+(B[m[32m+}
+(B[m 
+[31m-
+(B[m fn bench_liquidity(c: &mut Criterion) {
+[31m-let mut g = c.benchmark_group("liquidity");
+(B[m[31m-g.warm_up_time(Duration::from_secs(2));
+(B[m[31m-g.measurement_time(Duration::from_secs(5));
+(B[m[31m-g.sample_size(300);
+(B[m[31m-g.throughput(Throughput::Elements(1));
+(B[m[32m+    let mut g = c.benchmark_group("liquidity");
+(B[m[32m+    g.warm_up_time(Duration::from_secs(2));
+(B[m[32m+    g.measurement_time(Duration::from_secs(5));
+(B[m[32m+    g.sample_size(300);
+(B[m[32m+    g.throughput(Throughput::Elements(1));
+(B[m 
+[32m+    let (x, y) = (w(2_000_000), w(3_000_000));
+(B[m[32m+    let liq_all = w(1_000_000);
+(B[m 
+[31m-let (x, y) = (w(2_000_000), w(3_000_000));
+(B[m[31m-let liq_all = w(1_000_000);
+(B[m[32m+    g.bench_function("remove_liquidity_partial", |b| {
+(B[m[32m+        b.iter(|| {
+(B[m[32m+            let (dx, dy): (Wad, Wad) = remove_liquidity(
+(B[m[32m+                black_box(x),
+(B[m[32m+                black_box(y),
+(B[m[32m+                black_box(liq_all / 2),
+(B[m[32m+                black_box(liq_all),
+(B[m[32m+            )
+(B[m[32m+            .expect("remove ok");
+(B[m[32m+            black_box((dx, dy));
+(B[m[32m+        });
+(B[m[32m+    });
+(B[m 
+[31m-
+(B[m[31m-g.bench_function("remove_liquidity_partial", |b| {
+(B[m[31m-b.iter(|| {
+(B[m[31m-let (dx, dy): (Wad, Wad) = remove_liquidity(
+(B[m[31m-black_box(x), black_box(y), black_box(liq_all/2), black_box(liq_all)
+(B[m[31m-).expect("remove ok");
+(B[m[31m-black_box((dx, dy));
+(B[m[31m-});
+(B[m[31m-});
+(B[m[31m-
+(B[m[31m-
+(B[m[31m-g.finish();
+(B[m[32m+    g.finish();
+(B[m }
+ criterion_group!(benches, bench_liquidity);
+ criterion_main!(benches);
+Diff in /workspace/trendmarket/benches/bench_swap.rs:1:
+[31m-use std::time::Duration;
+(B[m[31m-use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughput};
+(B[m use credit_engine_core::amm::swap::get_amount_out; // se sua função estiver em cpmm, troque swap->cpmm
+ use credit_engine_core::amm::types::{Wad, WAD};
+[32m+use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughput};
+(B[m[32m+use std::time::Duration;
+(B[m 
+[32m+#[inline]
+(B[m[32m+fn w(n: u128) -> Wad {
+(B[m[32m+    n * WAD
+(B[m[32m+}
+(B[m 
+[31m-#[inline] fn w(n: u128) -> Wad { n * WAD }
+(B[m[31m-
+(B[m[31m-
+(B[m fn bench_swap(c: &mut Criterion) {
+[31m-let mut g = c.benchmark_group("swap");
+(B[m[31m-g.warm_up_time(Duration::from_secs(2));
+(B[m[31m-g.measurement_time(Duration::from_secs(5));
+(B[m[31m-g.sample_size(300);
+(B[m[31m-g.throughput(Throughput::Elements(1));
+(B[m[32m+    let mut g = c.benchmark_group("swap");
+(B[m[32m+    g.warm_up_time(Duration::from_secs(2));
+(B[m[32m+    g.measurement_time(Duration::from_secs(5));
+(B[m[32m+    g.sample_size(300);
+(B[m[32m+    g.throughput(Throughput::Elements(1));
+(B[m 
+[32m+    // Casos com rótulo único + taxa
+(B[m[32m+    let cases: [(&str, Wad, Wad, Wad, u32); 6] = [
+(B[m[32m+        ("sym_small", w(1_000_000), w(1_000_000), w(1_000), 0u32),
+(B[m[32m+        (
+(B[m[32m+            "sym_large",
+(B[m[32m+            w(5_000_000_000),
+(B[m[32m+            w(5_000_000_000),
+(B[m[32m+            w(1_000_000),
+(B[m[32m+            0u32,
+(B[m[32m+        ),
+(B[m[32m+        ("asym_xgg", w(1_000_000_000), w(1_000_000), w(1_000), 0u32),
+(B[m[32m+        ("asym_ygg", w(1_000_000), w(1_000_000_000), w(1_000), 0u32),
+(B[m[32m+        (
+(B[m[32m+            "sym_small_fee",
+(B[m[32m+            w(1_000_000),
+(B[m[32m+            w(1_000_000),
+(B[m[32m+            w(1_000),
+(B[m[32m+            300u32,
+(B[m[32m+        ),
+(B[m[32m+        (
+(B[m[32m+            "asym_xgg_fee",
+(B[m[32m+            w(1_000_000_000),
+(B[m[32m+            w(1_000_000),
+(B[m[32m+            w(1_000),
+(B[m[32m+            300u32,
+(B[m[32m+        ),
+(B[m[32m+    ];
+(B[m 
+[31m-// Casos com rótulo único + taxa
+(B[m[31m-let cases: [(&str, Wad, Wad, Wad, u32); 6] = [
+(B[m[31m-("sym_small", w(1_000_000), w(1_000_000), w(1_000), 0u32),
+(B[m[31m-("sym_large", w(5_000_000_000), w(5_000_000_000), w(1_000_000), 0u32),
+(B[m[31m-("asym_xgg", w(1_000_000_000), w(1_000_000), w(1_000), 0u32),
+(B[m[31m-("asym_ygg", w(1_000_000), w(1_000_000_000), w(1_000), 0u32),
+(B[m[31m-("sym_small_fee", w(1_000_000), w(1_000_000), w(1_000), 300u32),
+(B[m[31m-("asym_xgg_fee", w(1_000_000_000), w(1_000_000), w(1_000), 300u32),
+(B[m[31m-];
+(B[m[31m-
+(B[m[31m-
+(B[m[31m-for (label, x, y, dx, fee) in cases {
+(B[m[31m-let name = format!("{}_f{}", label, fee);
+(B[m[31m-g.bench_function(name, |b| {
+(B[m[31m-b.iter(|| {
+(B[m[31m-let dy = get_amount_out(black_box(x), black_box(y), black_box(dx), black_box(fee)).unwrap();
+(B[m[31m-black_box(dy);
+(B[m[31m-});
+(B[m[31m-});
+(B[m[32m+    for (label, x, y, dx, fee) in cases {
+(B[m[32m+        let name = format!("{}_f{}", label, fee);
+(B[m[32m+        g.bench_function(name, |b| {
+(B[m[32m+            b.iter(|| {
+(B[m[32m+                let dy = get_amount_out(black_box(x), black_box(y), black_box(dx), black_box(fee))
+(B[m[32m+                    .unwrap();
+(B[m[32m+                black_box(dy);
+(B[m[32m+            });
+(B[m[32m+        });
+(B[m[32m+    }
+(B[m[32m+    g.finish();
+(B[m }
+[31m-g.finish();
+(B[m[31m-}
+(B[m[31m-
+(B[m 
+ criterion_group!(benches, bench_swap);
+ criterion_main!(benches);
+Diff in /workspace/trendmarket/src/amm/guardrails.rs:2:
+ //! Objetivo: entradas seguras e divisões/multiplicações sem estouro.
+ 
+ use super::errors::AmmError;
+[31m-use super::types::{U256, Wad, MIN_RESERVE};
+(B[m[32m+use super::types::{Wad, MIN_RESERVE, U256};
+(B[m 
+ #[inline]
+ pub fn ensure_nonzero(amount: Wad) -> Result<(), AmmError> {
+Diff in /workspace/trendmarket/src/amm/guardrails.rs:9:
+[31m-    if amount == 0 { Err(AmmError::ZeroAmount) } else { Ok(()) }
+(B[m[32m+    if amount == 0 {
+(B[m[32m+        Err(AmmError::ZeroAmount)
+(B[m[32m+    } else {
+(B[m[32m+        Ok(())
+(B[m[32m+    }
+(B[m }
+ 
+ #[inline]
+Diff in /workspace/trendmarket/src/amm/guardrails.rs:13:
+ pub fn ensure_reserves(x: Wad, y: Wad) -> Result<(), AmmError> {
+[31m-    if x == 0 || y == 0 { return Err(AmmError::ZeroReserve); }
+(B[m[31m-    if x < MIN_RESERVE || y < MIN_RESERVE { return Err(AmmError::MinReserveBreached); }
+(B[m[32m+    if x == 0 || y == 0 {
+(B[m[32m+        return Err(AmmError::ZeroReserve);
+(B[m[32m+    }
+(B[m[32m+    if x < MIN_RESERVE || y < MIN_RESERVE {
+(B[m[32m+        return Err(AmmError::MinReserveBreached);
+(B[m[32m+    }
+(B[m     Ok(())
+ }
+ 
+Diff in /workspace/trendmarket/src/amm/guardrails.rs:33:
+ 
+ #[inline]
+ pub fn u256_to_u128_checked(v: U256) -> Result<Wad, AmmError> {
+[31m-    if v > U256::from(u128::MAX) { Err(AmmError::Overflow) } else { Ok(v.as_u128()) }
+(B[m[32m+    if v > U256::from(u128::MAX) {
+(B[m[32m+        Err(AmmError::Overflow)
+(B[m[32m+    } else {
+(B[m[32m+        Ok(v.as_u128())
+(B[m[32m+    }
+(B[m }
+ 
+ /// Divisão com arredondamento *nearest (ties-to-even)* em U256 → U256
+Diff in /workspace/trendmarket/src/amm/guardrails.rs:40:
+ pub fn div_nearest_even_u256(n: U256, d: U256) -> Result<U256, AmmError> {
+[31m-    if d.is_zero() { return Err(AmmError::Overflow); }
+(B[m[31m-    let q = n / d;       // quociente
+(B[m[31m-    let r = n % d;       // resto
+(B[m[32m+    if d.is_zero() {
+(B[m[32m+        return Err(AmmError::Overflow);
+(B[m[32m+    }
+(B[m[32m+    let q = n / d; // quociente
+(B[m[32m+    let r = n % d; // resto
+(B[m     let d_minus_r = d - r; // evita overflow ao comparar 2*r com d
+[31m-    if r < d_minus_r { return Ok(q); }
+(B[m[31m-    if r > d_minus_r { return Ok(q + U256::from(1u8)); }
+(B[m[32m+    if r < d_minus_r {
+(B[m[32m+        return Ok(q);
+(B[m[32m+    }
+(B[m[32m+    if r > d_minus_r {
+(B[m[32m+        return Ok(q + U256::from(1u8));
+(B[m[32m+    }
+(B[m     // empate: arredonda para o par
+[31m-    if (q & U256::from(1u8)) == U256::from(1u8) { Ok(q + U256::from(1u8)) } else { Ok(q) }
+(B[m[32m+    if (q & U256::from(1u8)) == U256::from(1u8) {
+(B[m[32m+        Ok(q + U256::from(1u8))
+(B[m[32m+    } else {
+(B[m[32m+        Ok(q)
+(B[m[32m+    }
+(B[m }
+ 
+ /// Versão que retorna u128 (com checagem de overflow no downcast)
+Diff in /workspace/trendmarket/src/amm/guardrails.rs:72:
+         // feliz
+         assert!(ensure_reserves(MIN_RESERVE, MIN_RESERVE).is_ok());
+         // zero
+[31m-        assert_eq!(ensure_reserves(0, MIN_RESERVE).unwrap_err(), AmmError::ZeroReserve);
+(B[m[31m-        assert_eq!(ensure_reserves(MIN_RESERVE, 0).unwrap_err(), AmmError::ZeroReserve);
+(B[m[32m+        assert_eq!(
+(B[m[32m+            ensure_reserves(0, MIN_RESERVE).unwrap_err(),
+(B[m[32m+            AmmError::ZeroReserve
+(B[m[32m+        );
+(B[m[32m+        assert_eq!(
+(B[m[32m+            ensure_reserves(MIN_RESERVE, 0).unwrap_err(),
+(B[m[32m+            AmmError::ZeroReserve
+(B[m[32m+        );
+(B[m         // abaixo do mínimo
+[31m-        assert_eq!(ensure_reserves(MIN_RESERVE - 1, MIN_RESERVE).unwrap_err(), AmmError::MinReserveBreached);
+(B[m[31m-        assert_eq!(ensure_reserves(MIN_RESERVE, MIN_RESERVE - 1).unwrap_err(), AmmError::MinReserveBreached);
+(B[m[32m+        assert_eq!(
+(B[m[32m+            ensure_reserves(MIN_RESERVE - 1, MIN_RESERVE).unwrap_err(),
+(B[m[32m+            AmmError::MinReserveBreached
+(B[m[32m+        );
+(B[m[32m+        assert_eq!(
+(B[m[32m+            ensure_reserves(MIN_RESERVE, MIN_RESERVE - 1).unwrap_err(),
+(B[m[32m+            AmmError::MinReserveBreached
+(B[m[32m+        );
+(B[m     }
+ 
+     #[test]
+Diff in /workspace/trendmarket/src/amm/liquidity.rs:6:
+ 
+ use super::errors::AmmError;
+ use super::guardrails::{
+[31m-    checked_add, checked_sub, mul_u128_to_u256, u256_to_u128_checked,
+(B[m[31m-    ensure_nonzero, ensure_reserves,
+(B[m[32m+    checked_add, checked_sub, ensure_nonzero, ensure_reserves, mul_u128_to_u256,
+(B[m[32m+    u256_to_u128_checked,
+(B[m };
+[31m-use super::types::{U256, Wad, MIN_RESERVE};
+(B[m[32m+use super::types::{Wad, MIN_RESERVE, U256};
+(B[m 
+ #[inline]
+ fn isqrt_u256(n: U256) -> U256 {
+Diff in /workspace/trendmarket/src/amm/liquidity.rs:16:
+[31m-    if n.is_zero() { return U256::from(0u8); }
+(B[m[32m+    if n.is_zero() {
+(B[m[32m+        return U256::from(0u8);
+(B[m[32m+    }
+(B[m     let mut low = U256::from(0u8);
+     let mut high = n;
+     let one = U256::from(1u8);
+Diff in /workspace/trendmarket/src/amm/liquidity.rs:23:
+         if (gap & one) == one {
+             mid = mid + one; // arredonda para cima: low + (high-low+1)/2
+         }
+[31m-        if mid <= n / mid { low = mid; } else { high = mid - U256::from(1u8); }
+(B[m[32m+        if mid <= n / mid {
+(B[m[32m+            low = mid;
+(B[m[32m+        } else {
+(B[m[32m+            high = mid - U256::from(1u8);
+(B[m[32m+        }
+(B[m     }
+     low
+ }
+Diff in /workspace/trendmarket/src/amm/liquidity.rs:35:
+     let k = mul_u128_to_u256(x, y);
+     let s = isqrt_u256(k);
+     let shares = u256_to_u128_checked(s)?;
+[31m-    if shares == 0 { return Err(AmmError::InputTooSmall); }
+(B[m[32m+    if shares == 0 {
+(B[m[32m+        return Err(AmmError::InputTooSmall);
+(B[m[32m+    }
+(B[m     Ok(shares)
+ }
+ 
+Diff in /workspace/trendmarket/src/amm/liquidity.rs:45:
+     ensure_reserves(x, y)?;
+     ensure_nonzero(dx)?;
+     ensure_nonzero(dy)?;
+[31m-    if total_shares == 0 { return Err(AmmError::Overflow); }
+(B[m[32m+    if total_shares == 0 {
+(B[m[32m+        return Err(AmmError::Overflow);
+(B[m[32m+    }
+(B[m 
+     let s = U256::from(total_shares);
+     let sx = (U256::from(dx) * s) / U256::from(x); // floor
+Diff in /workspace/trendmarket/src/amm/liquidity.rs:52:
+     let sy = (U256::from(dy) * s) / U256::from(y);
+     let mint = if sx < sy { sx } else { sy };
+     let shares = u256_to_u128_checked(mint)?;
+[31m-    if shares == 0 { return Err(AmmError::InputTooSmall); }
+(B[m[32m+    if shares == 0 {
+(B[m[32m+        return Err(AmmError::InputTooSmall);
+(B[m[32m+    }
+(B[m 
+     // pós-condição: reservas só aumentam
+     let _x1 = checked_add(x, dx)?;
+Diff in /workspace/trendmarket/src/amm/liquidity.rs:63:
+ /// Burn de shares (proporcional). Retorna (amount_x, amount_y) com **floor**.
+ /// Fórmulas: `x_out = floor(x * burn / S)`, idem para `y`.
+ /// Garante que reservas remanescentes `x'`,`y'` ficam >= MIN_RESERVE.
+[31m-pub fn remove_liquidity(x: Wad, y: Wad, burn_shares: Wad, total_shares: Wad) -> Result<(Wad, Wad), AmmError> {
+(B[m[32m+pub fn remove_liquidity(
+(B[m[32m+    x: Wad,
+(B[m[32m+    y: Wad,
+(B[m[32m+    burn_shares: Wad,
+(B[m[32m+    total_shares: Wad,
+(B[m[32m+) -> Result<(Wad, Wad), AmmError> {
+(B[m     ensure_reserves(x, y)?;
+     ensure_nonzero(burn_shares)?;
+[31m-    if total_shares == 0 { return Err(AmmError::Overflow); }
+(B[m[31m-    if burn_shares > total_shares { return Err(AmmError::Overflow); }
+(B[m[32m+    if total_shares == 0 {
+(B[m[32m+        return Err(AmmError::Overflow);
+(B[m[32m+    }
+(B[m[32m+    if burn_shares > total_shares {
+(B[m[32m+        return Err(AmmError::Overflow);
+(B[m[32m+    }
+(B[m 
+     let bx = (U256::from(x) * U256::from(burn_shares)) / U256::from(total_shares);
+     let by = (U256::from(y) * U256::from(burn_shares)) / U256::from(total_shares);
+Diff in /workspace/trendmarket/src/amm/liquidity.rs:77:
+     // não permitir esvaziar abaixo do mínimo
+     let x1 = checked_sub(x, x_out)?;
+     let y1 = checked_sub(y, y_out)?;
+[31m-    if x1 < MIN_RESERVE || y1 < MIN_RESERVE { return Err(AmmError::MinReserveBreached); }
+(B[m[32m+    if x1 < MIN_RESERVE || y1 < MIN_RESERVE {
+(B[m[32m+        return Err(AmmError::MinReserveBreached);
+(B[m[32m+    }
+(B[m 
+[31m-    if x_out == 0 && y_out == 0 { return Err(AmmError::InputTooSmall); }
+(B[m[32m+    if x_out == 0 && y_out == 0 {
+(B[m[32m+        return Err(AmmError::InputTooSmall);
+(B[m[32m+    }
+(B[m     Ok((x_out, y_out))
+ }
+ 
+Diff in /workspace/trendmarket/src/amm/liquidity.rs:89:
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+[31m-    use crate::amm::types::{WAD, MIN_RESERVE};
+(B[m[32m+    use crate::amm::types::{MIN_RESERVE, WAD};
+(B[m     use core::u128::MAX as U128_MAX;
+ 
+     #[test]
+Diff in /workspace/trendmarket/src/amm/liquidity.rs:96:
+     fn t_initial_mint_symmetrical() {
+[31m-        let (x, y) = (1_000_000u128*WAD, 1_000_000u128*WAD);
+(B[m[32m+        let (x, y) = (1_000_000u128 * WAD, 1_000_000u128 * WAD);
+(B[m         let s = initial_mint(x, y).unwrap();
+[31m-        assert_eq!(s, 1_000_000u128*WAD);
+(B[m[32m+        assert_eq!(s, 1_000_000u128 * WAD);
+(B[m     }
+ 
+     #[test]
+Diff in /workspace/trendmarket/src/amm/liquidity.rs:108:
+ 
+     #[test]
+     fn t_add_liquidity_proportional_sym() {
+[31m-        let (x, y, s) = (1_000_000u128*WAD, 1_000_000u128*WAD, 1_000_000u128*WAD);
+(B[m[31m-        let (dx, dy) = (100_000u128*WAD, 100_000u128*WAD);
+(B[m[32m+        let (x, y, s) = (
+(B[m[32m+            1_000_000u128 * WAD,
+(B[m[32m+            1_000_000u128 * WAD,
+(B[m[32m+            1_000_000u128 * WAD,
+(B[m[32m+        );
+(B[m[32m+        let (dx, dy) = (100_000u128 * WAD, 100_000u128 * WAD);
+(B[m         let mint = add_liquidity(x, y, dx, dy, s).unwrap();
+[31m-        assert_eq!(mint, 100_000u128*WAD);
+(B[m[32m+        assert_eq!(mint, 100_000u128 * WAD);
+(B[m     }
+ 
+     #[test]
+Diff in /workspace/trendmarket/src/amm/liquidity.rs:118:
+     fn t_add_liquidity_min_by_y() {
+[31m-        let (x, y, s) = (1_000_000u128*WAD, 1_000_000u128*WAD, 1_000_000u128*WAD);
+(B[m[31m-        let (dx, dy) = (200_000u128*WAD, 100_000u128*WAD); // y limita
+(B[m[32m+        let (x, y, s) = (
+(B[m[32m+            1_000_000u128 * WAD,
+(B[m[32m+            1_000_000u128 * WAD,
+(B[m[32m+            1_000_000u128 * WAD,
+(B[m[32m+        );
+(B[m[32m+        let (dx, dy) = (200_000u128 * WAD, 100_000u128 * WAD); // y limita
+(B[m         let mint = add_liquidity(x, y, dx, dy, s).unwrap();
+[31m-        assert_eq!(mint, 100_000u128*WAD);
+(B[m[32m+        assert_eq!(mint, 100_000u128 * WAD);
+(B[m     }
+ 
+     #[test]
+Diff in /workspace/trendmarket/src/amm/liquidity.rs:126:
+     fn t_add_liquidity_too_small() {
+         // garante floor=0 reduzindo S ligeiramente abaixo de X (proporção ~0)
+[31m-        let (x, y, s) = (1_000_000u128*WAD, 1_000_000u128*WAD, 999_999u128*WAD);
+(B[m[32m+        let (x, y, s) = (1_000_000u128 * WAD, 1_000_000u128 * WAD, 999_999u128 * WAD);
+(B[m         let (dx, dy) = (1u128, 1u128);
+         let err = add_liquidity(x, y, dx, dy, s).unwrap_err();
+         assert_eq!(err, AmmError::InputTooSmall);
+Diff in /workspace/trendmarket/src/amm/liquidity.rs:133:
+ 
+     #[test]
+     fn t_remove_liquidity_10_percent() {
+[31m-        let (x, y, s) = (1_000_000u128*WAD, 1_000_000u128*WAD, 1_000_000u128*WAD);
+(B[m[31m-        let burn = 100_000u128*WAD; // 10%
+(B[m[32m+        let (x, y, s) = (
+(B[m[32m+            1_000_000u128 * WAD,
+(B[m[32m+            1_000_000u128 * WAD,
+(B[m[32m+            1_000_000u128 * WAD,
+(B[m[32m+        );
+(B[m[32m+        let burn = 100_000u128 * WAD; // 10%
+(B[m         let (xo, yo) = remove_liquidity(x, y, burn, s).unwrap();
+[31m-        assert_eq!((xo, yo), (100_000u128*WAD, 100_000u128*WAD));
+(B[m[32m+        assert_eq!((xo, yo), (100_000u128 * WAD, 100_000u128 * WAD));
+(B[m         let (x1, y1) = (x - xo, y - yo);
+         assert!(x1 >= MIN_RESERVE && y1 >= MIN_RESERVE);
+     }
+Diff in /workspace/trendmarket/src/amm/liquidity.rs:143:
+ 
+     #[test]
+     fn t_remove_liquidity_burn_too_big() {
+[31m-        let (x, y, s) = (2_000_000u128*WAD, 2_000_000u128*WAD, 1_000_000u128*WAD);
+(B[m[32m+        let (x, y, s) = (
+(B[m[32m+            2_000_000u128 * WAD,
+(B[m[32m+            2_000_000u128 * WAD,
+(B[m[32m+            1_000_000u128 * WAD,
+(B[m[32m+        );
+(B[m         let err = remove_liquidity(x, y, s + 1, s).unwrap_err();
+         assert_eq!(err, AmmError::Overflow);
+     }
+Diff in /workspace/trendmarket/src/amm/liquidity.rs:150:
+ 
+     #[test]
+     fn t_remove_liquidity_zero_burn() {
+[31m-        let err = remove_liquidity(1_000_000u128*WAD, 1_000_000u128*WAD, 0, 1_000_000u128*WAD).unwrap_err();
+(B[m[32m+        let err = remove_liquidity(
+(B[m[32m+            1_000_000u128 * WAD,
+(B[m[32m+            1_000_000u128 * WAD,
+(B[m[32m+            0,
+(B[m[32m+            1_000_000u128 * WAD,
+(B[m[32m+        )
+(B[m[32m+        .unwrap_err();
+(B[m         assert_eq!(err, AmmError::ZeroAmount);
+     }
+ 
+Diff in /workspace/trendmarket/src/amm/liquidity.rs:157:
+     #[test]
+     fn t_remove_liquidity_min_reserve_guard() {
+[31m-        let (x, y, s) = (MIN_RESERVE + 10, MIN_RESERVE + 10, 1_000_000u128*WAD);
+(B[m[31m-        let err = remove_liquidity(x, y, 999_999u128*WAD, s).unwrap_err();
+(B[m[32m+        let (x, y, s) = (MIN_RESERVE + 10, MIN_RESERVE + 10, 1_000_000u128 * WAD);
+(B[m[32m+        let err = remove_liquidity(x, y, 999_999u128 * WAD, s).unwrap_err();
+(B[m         assert_eq!(err, AmmError::MinReserveBreached);
+     }
+ 
+Diff in /workspace/trendmarket/src/amm/mod.rs:1:
+[31m-pub mod types;         // CRD-7-03
+(B[m[31m-pub mod errors;        // CRD-7-03
+(B[m[31m-pub mod guardrails;    // CRD-7-03
+(B[m[31m-pub mod swap;          // CRD-7-04
+(B[m[31m-pub mod liquidity;     // CRD-7-05
+(B[m[31m-pub mod pricing;       // CRD-7-06
+(B[m[31m-pub mod ref_bigdecimal; // CRD-7-08 (só testes)
+(B[m[32m+pub mod errors; // CRD-7-03
+(B[m[32m+pub mod guardrails; // CRD-7-03
+(B[m[32m+pub mod liquidity; // CRD-7-05
+(B[m[32m+pub mod pricing; // CRD-7-06
+(B[m[32m+pub mod ref_bigdecimal;
+(B[m[32m+pub mod swap; // CRD-7-04
+(B[m[32m+pub mod types; // CRD-7-03 // CRD-7-08 (só testes)
+(B[m 
+Diff in /workspace/trendmarket/src/amm/ref_bigdecimal.rs:1:
+[32m+
+(B[m[32m+
+(B[mDiff in /workspace/trendmarket/src/amm/swap.rs:60:
+ 
+     // out = floor(y - y*)
+     let out = y.checked_sub(y_star).ok_or(AmmError::Overflow)?;
+[31m-    if out == 0 { return Err(AmmError::InputTooSmall); }
+(B[m[32m+    if out == 0 {
+(B[m[32m+        return Err(AmmError::InputTooSmall);
+(B[m[32m+    }
+(B[m 
+     // y' >= min_reserve
+     let y1 = y.checked_sub(out).ok_or(AmmError::Overflow)?;
+Diff in /workspace/trendmarket/src/amm/types.rs:7:
+     pub struct U256(4);
+ }
+ 
+[31m-pub type Wad = u128;   // escala 1e18
+(B[m[31m-pub type Ppm = u32;    // 0..=1_000_000
+(B[m[32m+pub type Wad = u128; // escala 1e18
+(B[m[32m+pub type Ppm = u32; // 0..=1_000_000
+(B[m 
+ pub const WAD: Wad = 1_000_000_000_000_000_000u128; // 1e18
+[31m-pub const PPM_SCALE: Ppm = 1_000_000;                // 1e6 (ppm)
+(B[m[31m-pub const MIN_RESERVE: Wad = WAD;                    // 1 unidade inteira (1e-18 do ativo)
+(B[m[32m+pub const PPM_SCALE: Ppm = 1_000_000; // 1e6 (ppm)
+(B[m[32m+pub const MIN_RESERVE: Wad = WAD; // 1 unidade inteira (1e-18 do ativo)
+(B[m 
+ #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+[31m-pub struct Reserves { pub x: Wad, pub y: Wad }
+(B[m[32m+pub struct Reserves {
+(B[m[32m+    pub x: Wad,
+(B[m[32m+    pub y: Wad,
+(B[m[32m+}
+(B[m impl Reserves {
+[31m-    pub fn new(x: Wad, y: Wad) -> Self { Self { x, y } }
+(B[m[32m+    pub fn new(x: Wad, y: Wad) -> Self {
+(B[m[32m+        Self { x, y }
+(B[m[32m+    }
+(B[m }
+ 
+Diff in /workspace/trendmarket/src/ce_core.rs:1:
+ /* Bridge ce_core — compatível com imports legados */
+ // Este arquivo **define** o conteúdo do módulo `ce_core`.
+[31m-pub mod amm { pub use crate::amm::*; }
+(B[m[31m-pub mod types { pub use crate::amm::types::*; }
+(B[m[32m+pub mod amm {
+(B[m[32m+    pub use crate::amm::*;
+(B[m[32m+}
+(B[m[32m+pub mod types {
+(B[m[32m+    pub use crate::amm::types::*;
+(B[m[32m+}
+(B[m 
+Diff in /workspace/trendmarket/tests/fuzz_invariants.rs:1:
+[31m-use proptest::prelude::*;
+(B[m use credit_engine_core::amm::errors::AmmError;
+ use credit_engine_core::amm::swap::get_amount_out; // se sua função morar em cpmm, troque swap->cpmm
+[31m-use credit_engine_core::amm::types::{Wad, WAD, U256, Ppm};
+(B[m[32m+use credit_engine_core::amm::types::{Ppm, Wad, U256, WAD};
+(B[m[32m+use proptest::prelude::*;
+(B[m 
+[31m-
+(B[m #[inline]
+[31m-fn to_wad(v: u128) -> Wad { v * WAD }
+(B[m[32m+fn to_wad(v: u128) -> Wad {
+(B[m[32m+    v * WAD
+(B[m[32m+}
+(B[m #[inline]
+[31m-fn k(x: Wad, y: Wad) -> U256 { U256::from(x) * U256::from(y) }
+(B[m[31m-
+(B[m[32m+fn k(x: Wad, y: Wad) -> U256 {
+(B[m[32m+    U256::from(x) * U256::from(y)
+(B[m[32m+}
+(B[m 
+ proptest! {
+ #![proptest_config(ProptestConfig { cases: 10_000, .. ProptestConfig::default() })]
+Diff in /workspace/trendmarket/tests/golden_cpmm.rs:1:
+ //! Golden set CPMM (fee=0): |Δk/k| ≤ 1e-9 usando Wad nos inputs e U256 só para k
+ use credit_engine_core::amm::swap::get_amount_out; // se sua função estiver em cpmm, troque swap->cpmm
+[31m-use credit_engine_core::amm::types::{Wad, WAD, U256};
+(B[m[32m+use credit_engine_core::amm::types::{Wad, U256, WAD};
+(B[m 
+[32m+#[inline]
+(B[m[32m+fn w(n: &str) -> Wad {
+(B[m[32m+    n.parse::<u128>().expect("u128") * WAD
+(B[m[32m+}
+(B[m[32m+#[inline]
+(B[m[32m+fn k(x: Wad, y: Wad) -> U256 {
+(B[m[32m+    U256::from(x) * U256::from(y)
+(B[m[32m+}
+(B[m 
+[31m-#[inline] fn w(n: &str) -> Wad { n.parse::<u128>().expect("u128") * WAD }
+(B[m[31m-#[inline] fn k(x: Wad, y: Wad) -> U256 { U256::from(x) * U256::from(y) }
+(B[m[31m-
+(B[m[31m-
+(B[m fn check(name: &str, rx: Wad, ry: Wad, dx: Wad) {
+[31m-let k0 = k(rx, ry);
+(B[m[31m-let dy: Wad = get_amount_out(rx, ry, dx, 0u32).expect("swap ok");
+(B[m[31m-let k1 = k(rx + dx, ry - dy);
+(B[m[31m-let delta = if k1 >= k0 { k1 - k0 } else { k0 - k1 };
+(B[m[31m-let tol = k0 / U256::from(1_000_000_000u64);
+(B[m[31m-assert!(delta <= tol, "{}: |Δk|={} > tol={} (rx={}, ry={}, dx={}, dy={})", name, delta, tol, rx, ry, dx, dy);
+(B[m[32m+    let k0 = k(rx, ry);
+(B[m[32m+    let dy: Wad = get_amount_out(rx, ry, dx, 0u32).expect("swap ok");
+(B[m[32m+    let k1 = k(rx + dx, ry - dy);
+(B[m[32m+    let delta = if k1 >= k0 { k1 - k0 } else { k0 - k1 };
+(B[m[32m+    let tol = k0 / U256::from(1_000_000_000u64);
+(B[m[32m+    assert!(
+(B[m[32m+        delta <= tol,
+(B[m[32m+        "{}: |Δk|={} > tol={} (rx={}, ry={}, dx={}, dy={})",
+(B[m[32m+        name,
+(B[m[32m+        delta,
+(B[m[32m+        tol,
+(B[m[32m+        rx,
+(B[m[32m+        ry,
+(B[m[32m+        dx,
+(B[m[32m+        dy
+(B[m[32m+    );
+(B[m }
+ 
+[31m-
+(B[m #[test]
+ fn golden_cpmm_all() {
+[31m-// 1e18 escala (WAD)
+(B[m[31m-let rx = w("1000000");
+(B[m[31m-let ry = w("1000000");
+(B[m[31m-let dx = w("1000");
+(B[m[31m-check("sym:small", rx, ry, dx);
+(B[m[32m+    // 1e18 escala (WAD)
+(B[m[32m+    let rx = w("1000000");
+(B[m[32m+    let ry = w("1000000");
+(B[m[32m+    let dx = w("1000");
+(B[m[32m+    check("sym:small", rx, ry, dx);
+(B[m 
+[32m+    check("sym:large", w("5000000000"), w("5000000000"), w("1000000"));
+(B[m 
+[31m-check("sym:large", w("5000000000"), w("5000000000"), w("1000000"));
+(B[m[32m+    // assimetria
+(B[m[32m+    check("asym:x>>y", w("1000000000"), w("1000000"), w("1000"));
+(B[m[32m+    check("asym:y>>x", w("1000000"), w("1000000000"), w("1000"));
+(B[m 
+[32m+    // limites
+(B[m[32m+    check("lim:min_dx", w("1000000"), w("1000000"), 1u128); // 1 wei
+(B[m[32m+    check("lim:tiny_vs_big", w("1000"), w("1000000000"), w("1"));
+(B[m 
+[31m-// assimetria
+(B[m[31m-check("asym:x>>y", w("1000000000"), w("1000000"), w("1000"));
+(B[m[31m-check("asym:y>>x", w("1000000"), w("1000000000"), w("1000"));
+(B[m[31m-
+(B[m[31m-
+(B[m[31m-// limites
+(B[m[31m-check("lim:min_dx", w("1000000"), w("1000000"), 1u128); // 1 wei
+(B[m[31m-check("lim:tiny_vs_big", w("1000"), w("1000000000"), w("1"));
+(B[m[31m-
+(B[m[31m-
+(B[m[31m-// sequência add→swap→remove (invariância validada no swap)
+(B[m[31m-let s: Wad = 2u128; // fator de escala (add)
+(B[m[31m-check("seq:add→swap→remove", w("2000000")*s, w("3000000")*s, w("500"));
+(B[m[32m+    // sequência add→swap→remove (invariância validada no swap)
+(B[m[32m+    let s: Wad = 2u128; // fator de escala (add)
+(B[m[32m+    check(
+(B[m[32m+        "seq:add→swap→remove",
+(B[m[32m+        w("2000000") * s,
+(B[m[32m+        w("3000000") * s,
+(B[m[32m+        w("500"),
+(B[m[32m+    );
+(B[m }
+ 
+Diff in /workspace/trendmarket/tests/rounding.rs:1:
+ //! Testes de direção de arredondamento (política única ADR-0001/0002)
+ 
+ use credit_engine_core::amm::errors::AmmError;
+[31m-use credit_engine_core::amm::guardrails::{
+(B[m[31m-    div_nearest_even_u256,
+(B[m[31m-    div_nearest_even_u256_to_u128,
+(B[m[31m-};
+(B[m[32m+use credit_engine_core::amm::guardrails::{div_nearest_even_u256, div_nearest_even_u256_to_u128};
+(B[m use credit_engine_core::amm::liquidity::{initial_mint, remove_liquidity};
+ use credit_engine_core::amm::swap::{get_amount_in, get_amount_out};
+[31m-use credit_engine_core::amm::types::{U256, Ppm, WAD, MIN_RESERVE};
+(B[m[32m+use credit_engine_core::amm::types::{Ppm, MIN_RESERVE, U256, WAD};
+(B[m 
+ const FEE0: Ppm = 0;
+ const FEE3: Ppm = 3000; // 0,30%
+Diff in /workspace/trendmarket/tests/rounding.rs:15:
+ #[test]
+ fn r1_amount_out_is_floor_of_continuous_value() {
+     // reservas bem acima do mínimo
+[31m-    let (x, y, dx) = (1_000_000u128*WAD, 1_000_000u128*WAD, 10_000u128*WAD);
+(B[m[32m+    let (x, y, dx) = (1_000_000u128 * WAD, 1_000_000u128 * WAD, 10_000u128 * WAD);
+(B[m     let out = get_amount_out(x, y, dx, FEE0).unwrap();
+     // y* = (x*y)/x' com nearest-even (U256) → u128
+     let x1 = x + dx; // sem taxa
+Diff in /workspace/trendmarket/tests/rounding.rs:29:
+ 
+ #[test]
+ fn r2_amount_in_is_ceil_minimality() {
+[31m-    let (x, y, dy) = (1_000_000u128*WAD, 1_000_000u128*WAD, 9_870u128*WAD);
+(B[m[32m+    let (x, y, dy) = (1_000_000u128 * WAD, 1_000_000u128 * WAD, 9_870u128 * WAD);
+(B[m     let dx = get_amount_in(x, y, dy, FEE3).unwrap();
+     // com dx-1 não deve alcançar dy
+     if dx > 0 {
+Diff in /workspace/trendmarket/tests/rounding.rs:43:
+ #[test]
+ fn r3_fee_is_ceil_no_undercollection() {
+     // fee mínima diferente de zero deve ser cobrada integralmente
+[31m-    let (x, y, dx) = (1_000_000u128*WAD, 1_000_000u128*WAD, 1u128);
+(B[m[32m+    let (x, y, dx) = (1_000_000u128 * WAD, 1_000_000u128 * WAD, 1u128);
+(B[m     let fee_ppm: Ppm = 1; // 0.0001%
+     let err = get_amount_out(x, y, dx, fee_ppm).unwrap_err();
+     assert_eq!(err, AmmError::InputTooSmall); // dx_net = 0
+Diff in /workspace/trendmarket/tests/rounding.rs:51:
+ 
+ #[test]
+ fn r4_mint_is_floor_of_sqrt_xy() {
+[31m-    let (x, y) = (2_500_000u128*WAD, 2_500_000u128*WAD);
+(B[m[32m+    let (x, y) = (2_500_000u128 * WAD, 2_500_000u128 * WAD);
+(B[m     let s = initial_mint(x, y).unwrap();
+     let k = U256::from(x) * U256::from(y);
+     let s_plus = U256::from(s + 1);
+Diff in /workspace/trendmarket/tests/rounding.rs:61:
+ 
+ #[test]
+ fn r5_burn_amounts_are_floor_of_proportion() {
+[31m-    let (x, y, s) = (1_000_000u128*WAD, 3_000_000u128*WAD, 1_000_000u128*WAD);
+(B[m[31m-    let burn = 123_456u128*WAD; // ~12.3456%
+(B[m[32m+    let (x, y, s) = (
+(B[m[32m+        1_000_000u128 * WAD,
+(B[m[32m+        3_000_000u128 * WAD,
+(B[m[32m+        1_000_000u128 * WAD,
+(B[m[32m+    );
+(B[m[32m+    let burn = 123_456u128 * WAD; // ~12.3456%
+(B[m     let (xo, yo) = remove_liquidity(x, y, burn, s).unwrap();
+     // proporções teóricas (u256) e floors
+     let xo_theo = ((U256::from(x) * U256::from(burn)) / U256::from(s)).as_u128();
+
+[exit-status] 1

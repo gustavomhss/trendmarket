@@ -1,0 +1,12 @@
+$ rg --color never --line-number --glob '*.*' 'TODO'
+.git/hooks/sendemail-validate.sample:22:# Replace the TODO placeholders with appropriate checks according to your
+.git/hooks/sendemail-validate.sample:27:	# TODO: Replace with appropriate checks (e.g. spell checking).
+.git/hooks/sendemail-validate.sample:35:	# TODO: Replace with appropriate checks for this patch
+.git/hooks/sendemail-validate.sample:41:	# TODO: Replace with appropriate checks for the whole series
+scripts/fix_crd_7_10_linklib.sh:20:# remove TODOS os blocos [lib]
+ops/scripts/package_amm_error_contract.sh:50:RG_TODO_LOG="$LOG_DIR/rg_todo_guardrail.txt"
+ops/scripts/package_amm_error_contract.sh:73:echo "Running guardrail ripgrep (logs -> $RG_TODO_LOG, $RG_UNWRAP_LOG)"
+ops/scripts/package_amm_error_contract.sh:75:  echo "$ rg --color never --line-number --glob '*.*' 'TODO'"
+ops/scripts/package_amm_error_contract.sh:76:  rg --color never --line-number --glob '*.*' 'TODO'
+ops/scripts/package_amm_error_contract.sh:77:} >"$RG_TODO_LOG" 2>&1 || failure=1
+ops/scripts/package_amm_error_contract.sh:171:and ripgrep guardrails (TODO + unwrap).

@@ -1,0 +1,63 @@
+$ cargo clippy -- -D warnings
+    Checking credit-engine-core v0.1.0 (/workspace/trendmarket)
+error[E0592]: duplicate definitions with name `error_code`
+   --> src/amm/errors.rs:32:13
+    |
+32  |               pub const fn error_code(self) -> &'static str {
+    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ duplicate definitions for `error_code`
+...
+78  | / amm_error_contract! {
+79  | |     ZeroAmount => {
+80  | |         code: "CE-AMM-0001",
+81  | |         message: "Input amount must be greater than zero.",
+...   |
+109 | | }
+    | |_- in this macro invocation
+...
+113 |       pub fn error_code(&self) -> &'static str {
+    |       ---------------------------------------- other definition for `error_code`
+    |
+    = note: this error originates in the macro `amm_error_contract` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0592]: duplicate definitions with name `user_message`
+   --> src/amm/errors.rs:38:13
+    |
+38  |               pub const fn user_message(self) -> &'static str {
+    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ duplicate definitions for `user_message`
+...
+78  | / amm_error_contract! {
+79  | |     ZeroAmount => {
+80  | |         code: "CE-AMM-0001",
+81  | |         message: "Input amount must be greater than zero.",
+...   |
+109 | | }
+    | |_- in this macro invocation
+...
+126 |       pub fn user_message(&self) -> &'static str {
+    |       ------------------------------------------ other definition for `user_message`
+    |
+    = note: this error originates in the macro `amm_error_contract` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0592]: duplicate definitions with name `http_status`
+   --> src/amm/errors.rs:44:13
+    |
+44  |               pub const fn http_status(self) -> Option<u16> {
+    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ duplicate definitions for `http_status`
+...
+78  | / amm_error_contract! {
+79  | |     ZeroAmount => {
+80  | |         code: "CE-AMM-0001",
+81  | |         message: "Input amount must be greater than zero.",
+...   |
+109 | | }
+    | |_- in this macro invocation
+...
+139 |       pub fn http_status(&self) -> Option<u16> {
+    |       ---------------------------------------- other definition for `http_status`
+    |
+    = note: this error originates in the macro `amm_error_contract` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0592`.
+error: could not compile `credit-engine-core` (lib) due to 3 previous errors
+
+[exit-status] 101
