@@ -1,7 +1,8 @@
 ## Resumo
-- provisionada a topologia mínima dos diretórios de domínio (BE, FE, DATA, ML, SPECS, INFRA, OPS TESTS) com governança de owners/watchers
-- adicionados Makefiles, scripts de bootstrap e lockfiles por domínio para lint/test/build/evidence
-- inventário operacional atualizado (`ops/reports/inventory.json`) com owners, watchers e artefatos versionados
+- Hardened `AmmError` into a stable contract with error codes, user messages, HTTP hints and descriptors, plus structured logging usage.
+- Published the human catalog (`ops/errors/catalog_amm.yaml`), maintainer guide, QA index, and new contract regression test.
+- Replaced tracked ZIP payloads with a reproducible packaging script so artifacts stay reproducible without blocking PR creation.
 
 ## Testes
-- não executados (estrutura inicial, sem código executável)
+- `cargo test`
+- `rustfmt --edition 2021 --check src/amm/errors.rs src/bin/obs_demo.rs tests/amm_error_contract.rs`

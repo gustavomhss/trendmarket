@@ -1,0 +1,8 @@
+Branch: work
+Tag: amm-error-contract-v1 (annotated)
+Short HEAD: resolve tag `amm-error-contract-v1` after merge
+PR: <pending>
+Artifacts ZIP: (generate via `ops/scripts/package_amm_error_contract.sh`) out/artifacts/amm_error_contract_artifacts.zip
+Patches ZIP: (generate via `ops/scripts/package_amm_error_contract.sh`) out/patches/amm_error_contract_patches.zip
+
+Recap: Hardened the AMM error surface with stable CE-AMM codes/messages, logged adoption, a full catalog + maintainer guide, a QA index, regression tests, and archived formatter/test evidence so UI/integrators can rely on the contract.

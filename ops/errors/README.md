@@ -1,21 +1,44 @@
-# Catálogo de erros do AMM
+# AMM Error Contract Guide
 
-Este diretório materializa o mapeamento oficial entre `AmmError` (Rust) e os códigos operacionais do domínio AMM. O catálogo serve tanto para integrações (tratativa de erros, dashboards, alertas) quanto para governança (auditoria, versionamento e SLOs de resposta).
+Este guia documenta como evoluir o contrato de erros do AMM de forma segura.  
+O contrato é consumido por **UI, API e superfícies de observabilidade** e **deve permanecer estável**.
 
-## Como introduzir um novo `AmmError`
+---
 
-1. **Defina o erro na aplicação**: adicione a nova variante em [`src/amm/errors.rs`](../../src/amm/errors.rs) com a mensagem padrão desejada no `Display`.
-2. **Atribua o próximo código**: no arquivo [`catalog_amm.yaml`](catalog_amm.yaml) acrescente uma nova entrada usando o prefixo `CE-AMM` e o próximo número sequencial livre (`CE-AMM-0007`, `CE-AMM-0008`, ...). Preserve `variant`, `code`, `default_message` e `http_status`.
-3. **Atualize os testes de cobertura**: inclua a nova variante na lista `expected_catalog()` do teste [`tests/amm_error_catalog.rs`](../../tests/amm_error_catalog.rs) para garantir que o catálogo continue completo.
-4. **Regenere o índice JSON** (para dashboards): execute o script [`ops/scripts/generate_amm_error_index.py`](../scripts/generate_amm_error_index.py) a partir da raiz do repositório. Ele consome o YAML e reescreve [`ops/reports/amm_error_index.json`](../reports/amm_error_index.json).
-5. **Revise e commite**: garanta que `catalog_amm.yaml`, o teste e o `amm_error_index.json` estejam sincronizados antes de abrir PR.
+## Como adicionar uma nova variante de erro
 
-## Índice JSON para dashboards
+1. **Defina a variante no código**  
+   - Adicione a nova variante no enum `AmmError` em [`src/amm/errors.rs`](../../src/amm/errors.rs).  
+   - Mantenha o enum **sem payload** (somente variantes simples).  
 
-O arquivo [`../reports/amm_error_index.json`](../reports/amm_error_index.json) resume `{variant, code, default_message}` e é usado por painéis de observabilidade. Para atualizá-lo:
+2. **Atribua a metadata do contrato**  
+   - Estenda o array `AmmError::ALL_VARIANTS` com a nova variante.  
+   - Forneça mapeamentos em:  
+     - `error_code()` → siga o padrão `CE-AMM-XXXX` (único, nunca reutilizado).  
+     - `user_message()` → frases curtas, neutras, em inglês, terminando com ponto.  
+     - `http_status()` → código HTTP correspondente.  
+     - `variant_name()` → nome legível da variante.  
+
+3. **Atualize o catálogo YAML**  
+   - Edite [`ops/errors/catalog_amm.yaml`](catalog_amm.yaml) adicionando a nova entrada com os campos:  
+     - `variant`, `code`, `default_message`, `http_status`.  
+
+4. **Regenere o índice JSON para dashboards**  
+   - Execute o script [`ops/scripts/generate_amm_error_index.py`](../scripts/generate_amm_error_index.py).  
+   - Ele consome o catálogo YAML e reescreve [`ops/reports/amm_error_index.json`](../reports/amm_error_index.json), usado em painéis de observabilidade.  
+
+5. **Atualize os testes**  
+   - Inclua a nova variante no teste [`tests/amm_error_catalog.rs`](../../tests/amm_error_catalog.rs) garantindo que `expected_catalog()` e `variant_count::<AmmError>()` estejam corretos.  
+
+6. **Documente a evidência**  
+   - Rode `ops/scripts/package_amm_error_contract.sh` para regenerar os bundles (`logs`, `patches`, `artifacts`).  
+   - Isso garante que formatador, linter e testes capturem a nova variante.  
+
+---
+
+## Validação local
 
 ```bash
-./ops/scripts/generate_amm_error_index.py
-```
-
-O script não depende de bibliotecas externas e reconstrói o JSON com base no catálogo versionado. Incorpore o resultado no mesmo commit do ajuste no YAML para manter os artefatos alinhados.
+cargo fmt
+cargo clippy --all-targets --all-features
+cargo test
