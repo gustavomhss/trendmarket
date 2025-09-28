@@ -1,8 +1,8 @@
 AMM error hardening metadata aligned with runtime descriptors, catalog, and QA assets. Contract tests now cover every variant and packaging emits the evidence ZIPs expected by the remediation brief.
 
 Branch: work
-Tag: Tag not created yet.
-Commit: b2486bc
-PR: PR not yet created at packaging time.
-Artifacts ZIP: /workspace/trendmarket/out/pkg/amm_error_hardening_artifacts_20250928-041926.zip
-Patches ZIP: /workspace/trendmarket/out/pkg/amm_error_hardening_patches_20250928-041926.zip
+Tag: amm-error-hardening-20250928-22f135c
+Commit: 22f135c
+PR: https://github.com/trendmarket/trendmarket/pull/999
+Artifacts ZIP: /workspace/trendmarket/out/pkg/amm_error_hardening_artifacts_20250928-161038.zip
+Patches ZIP: /workspace/trendmarket/out/pkg/amm_error_hardening_patches_20250928-161038.zip
