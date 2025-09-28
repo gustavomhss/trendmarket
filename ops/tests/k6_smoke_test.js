@@ -34,6 +34,15 @@ function assertDefaultQuotePath(base, endpoint) {
 assertDefaultQuotePath(baseUrl, quoteEndpoint);
 const latency = new Trend('decision_latency', true);
 
+function safeJson(response, path) {
+  try {
+    return response.json(path);
+  } catch (error) {
+    console.error(`Failed to parse response JSON for path "${path}": ${error}`);
+    return undefined;
+  }
+}
+
 function buildQuotePayload() {
   return {
     app_id: 'smoke-app-001',
@@ -67,7 +76,7 @@ function requestQuote() {
 
   const ok = check(response, {
     'status is 2xx': (r) => r.status >= 200 && r.status < 300,
-    'has price payload': (r) => !!r.json('price.apr'),
+    'has price payload': (r) => Boolean(safeJson(r, 'price.apr')),
     'latency under p95 budget': (r) => r.timings.duration <= Number(__ENV.K6_LATENCY_BUDGET_MS || 800),
   });
 

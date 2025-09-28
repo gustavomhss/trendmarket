@@ -2,10 +2,11 @@
 """Dry-run validator for watcher coverage across domains."""
 from __future__ import annotations
 
+import importlib.util
 import json
 import sys
 from pathlib import Path
-from typing import Dict, Iterable, List, Set, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Set, Tuple
 
 EXPECTED_DOMAIN_WATCHERS: Dict[str, Set[str]] = {
     "DEC": {
@@ -92,10 +93,24 @@ class WatcherValidationError(RuntimeError):
     """Represents a validation error during watcher loading."""
 
 
+def _load_parser() -> Callable[[str], Any]:
+    spec = importlib.util.find_spec("yaml")
+    if spec is None:
+        return json.loads
+
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)  # type: ignore
+    return module.safe_load  # type: ignore[return-value]
+
+
+_parse_payload = _load_parser()
+
+
 def _load_watchers_file(path: Path) -> Tuple[Dict[str, Set[str]], bool]:
     try:
-        payload = json.loads(path.read_text())
-    except json.JSONDecodeError as exc:  # pragma: no cover - defensive
+        payload = _parse_payload(path.read_text(encoding="utf-8"))
+    except Exception as exc:  # pragma: no cover - defensive
         raise WatcherValidationError(f"{path}: invalid JSON/YAML payload: {exc}")
 
     if not isinstance(payload, dict):

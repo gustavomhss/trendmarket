@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import textwrap
 from pathlib import Path
 
 import pytest
@@ -64,6 +65,57 @@ def test_load_watchers_file_supports_aggregated_payload(tmp_path: Path) -> None:
 
     assert result == {"DEC": {"a", "b"}}
     assert aggregated is True
+
+
+def test_load_watchers_file_supports_yaml_payload(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    payload = textwrap.dedent(
+        """
+        domain: dec
+        watchers:
+          - name: metrics_decision_hook_gap_watch
+            kpi: metric
+            threshold: value
+            window: 5m
+            action: act
+            owner: owner@trendmarket
+            rollback: "yes"
+        """
+    ).lstrip()
+    path = tmp_path / "dec.yaml"
+    path.write_text(payload)
+
+    def fake_yaml_loader(text: str):
+        result = {"watchers": []}
+        current = None
+        for raw_line in text.splitlines():
+            line = raw_line.strip()
+            if not line:
+                continue
+            if line.startswith("domain:"):
+                result["domain"] = line.split(":", 1)[1].strip()
+                continue
+            if line.startswith("watchers:"):
+                continue
+            if line.startswith("- "):
+                current = {}
+                result["watchers"].append(current)
+                key, value = line[2:].split(":", 1)
+                current[key.strip()] = value.strip().strip('"')
+                continue
+            if current is not None and ":" in line:
+                key, value = line.split(":", 1)
+                current[key.strip()] = value.strip().strip('"')
+
+        return result
+
+    monkeypatch.setattr(watchers_dry, "_parse_payload", fake_yaml_loader)
+
+    result, aggregated = watchers_dry._load_watchers_file(path)
+
+    assert result == {"DEC": {"metrics_decision_hook_gap_watch"}}
+    assert aggregated is False
 
 
 def test_load_watchers_file_for_domain_payload(tmp_path: Path) -> None:

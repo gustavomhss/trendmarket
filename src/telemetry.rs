@@ -46,6 +46,17 @@ impl Drop for Telemetry {
 pub fn init(service_name: &str) -> Result<Telemetry> {
     let endpoint = std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT")
         .unwrap_or_else(|_| "http://localhost:4318".to_string());
+    let traces_endpoint =
+        std::env::var("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT").unwrap_or_else(|_| endpoint.clone());
+    let metrics_endpoint =
+        std::env::var("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT").unwrap_or_else(|_| endpoint.clone());
+
+    let default_timeout =
+        env_timeout("OTEL_EXPORTER_OTLP_TIMEOUT").unwrap_or_else(|| Duration::from_secs(10));
+    let traces_timeout =
+        env_timeout("OTEL_EXPORTER_OTLP_TRACES_TIMEOUT").unwrap_or(default_timeout);
+    let metrics_timeout =
+        env_timeout("OTEL_EXPORTER_OTLP_METRICS_TIMEOUT").unwrap_or(default_timeout);
 
     let commit = std::env::var("CE_COMMIT_SHA").unwrap_or_else(|_| "unknown".into());
 
@@ -60,7 +71,8 @@ pub fn init(service_name: &str) -> Result<Telemetry> {
     // ---- Traces (OTLP/HTTP) ----
     let span_exporter = SpanExporter::builder()
         .with_http()
-        .with_endpoint(&endpoint)
+        .with_endpoint(&traces_endpoint)
+        .with_timeout(traces_timeout)
         .build()?;
 
     let tracer_provider = SdkTracerProvider::builder()
@@ -73,7 +85,8 @@ pub fn init(service_name: &str) -> Result<Telemetry> {
     // ---- Métricas (OTLP/HTTP) ----
     let metric_exporter = MetricExporter::builder()
         .with_http()
-        .with_endpoint(&endpoint)
+        .with_endpoint(&metrics_endpoint)
+        .with_timeout(metrics_timeout)
         .build()?;
 
     let reader = PeriodicReader::builder(metric_exporter)
@@ -118,6 +131,17 @@ pub fn init(service_name: &str) -> Result<Telemetry> {
         swap_latency_ms,
         invariant_error_rel,
         shutdown_called: AtomicBool::new(false),
+    })
+}
+
+fn env_timeout(var: &str) -> Option<Duration> {
+    std::env::var(var).ok().and_then(|value| {
+        let trimmed = value.trim();
+        if trimmed.is_empty() {
+            None
+        } else {
+            trimmed.parse::<u64>().ok().map(Duration::from_millis)
+        }
     })
 }
 

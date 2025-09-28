@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import importlib.util
 import hashlib
 import json
 import pathlib
@@ -12,26 +11,19 @@ import sys
 from datetime import datetime, timezone
 from typing import Any, Dict, List
 
+try:
+    from config_loader import load_config
+except ModuleNotFoundError:  # pragma: no cover - fallback when loaded via spec
+    sys.path.append(str(pathlib.Path(__file__).resolve().parent))
+    from config_loader import load_config
+
 REQUIRED_FIELDS = {"hook", "kpi", "threshold", "window", "action", "owner", "rollback"}
-
-
-def _load_parser():
-    spec = importlib.util.find_spec("yaml")
-    if spec is None:
-        return json.loads
-    module = importlib.util.module_from_spec(spec)
-    assert spec.loader is not None  # for mypy/static analyzers
-    spec.loader.exec_module(module)  # type: ignore[assignment]
-    return module.safe_load  # type: ignore[attr-defined]
-
-
-_parse_config = _load_parser()
 
 
 def _load_hooks(path: pathlib.Path) -> List[Dict[str, Any]]:
     if not path.exists():
         raise FileNotFoundError(f"Hook configuration not found: {path}")
-    data = _parse_config(path.read_text(encoding="utf-8"))
+    data = load_config(path.read_text(encoding="utf-8"))
     if isinstance(data, list):
         hooks = data
     elif isinstance(data, dict):
