@@ -1,6 +1,6 @@
 {
-  "generated_at": "2025-09-27T22:25:41.926679+00:00",
-  "source": "/workspace/trendmarket/ops/hooks/a110_hooks.json",
+  "generated_at": "2025-09-27T22:26:51.457983+00:00",
+  "source": "ops/hooks/a110.yml",
   "total_hooks": 26,
   "hooks": [
     {
@@ -344,13 +344,4 @@
       "kpi": "policy.violation_detected",
       "threshold": 1,
       "window": "5m",
-      "action": "freeze_release",
-      "owner": "compliance@trendmarket",
-      "rollback": true,
-      "evidence": [
-        "playbook:docs/runbooks/plat_observability.md#policy-violation"
-      ],
-      "hash": "4e7f0764fede446f682f071040640800fd3eca363f3a3b5b90f960ffe6589c84"
-    }
-  ]
-}
+      "action": "freeze_release
