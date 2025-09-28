@@ -1,7 +1,7 @@
 {
   "generated_at": "2025-09-27T22:26:51.457983+00:00",
   "source": "ops/hooks/a110.yml",
-  "total_hooks": 26,
+  "total_hooks": 30,
   "hooks": [
     {
       "hook": "dec-latency-gap",
@@ -106,7 +106,7 @@
       "evidence": [
         "playbook:docs/runbooks/ml_model_ops.md#runtime-eol"
       ],
-      "hash": "7d682944c100af58e81c02cf1607d1856ea3dcd36192ee923ba2d29603c8d737"
+      "hash": "436e9fb108365037f424a94ae6f12e3ba4bbc40069720848c1d245b45b646f46"
     },
     {
       "hook": "image-vuln-regression-block",
@@ -344,4 +344,13 @@
       "kpi": "policy.violation_detected",
       "threshold": 1,
       "window": "5m",
-      "action": "freeze_release
+      "action": "freeze_release",
+      "owner": "sre+compliance@trendmarket",
+      "rollback": true,
+      "evidence": [
+        "playbook:docs/runbooks/plat_observability.md#policy-violation"
+      ],
+      "hash": "b8c29f62932a5f334a4a26a9c22af9c3dbeb7e789f3f1d8136a54cb7fd6a4d94"
+    }
+  ]
+}

@@ -265,6 +265,19 @@
       "playbook": "docs/runbooks/sec_privacy.md#formal-verification"
     },
     {
+      "hook": "dep-vuln-freeze",
+      "watchers": [
+        "dep_vuln_watch"
+      ],
+      "kpi": "security.deps.critical_vulns",
+      "threshold": 0,
+      "window": "15m",
+      "action": "block_release",
+      "owner": "SEC",
+      "rollback": true,
+      "playbook": "docs/runbooks/sec_privacy.md#dep-vuln"
+    },
+    {
       "hook": "okr-alignment-escalation",
       "watchers": [
         "okr_risk_alignment_watch"

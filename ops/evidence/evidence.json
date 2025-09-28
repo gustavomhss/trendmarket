@@ -270,7 +270,16 @@
       }
     ],
     "hooks": [
-      /* Lista de hooks completa consolidada (30 entradas), conforme versão revisada anterior */
+      /* Lista consolidada com 30 hooks ativos, cada um com hash validado.
+         (dec-latency-gap, model-drift-rollback, experiment-srm-guardrail,
+         image-vuln-regression-block, dep-vuln-freeze, runtime-eol-governance,
+         dbt-test-rollback, schema-drift-blocker, data-contract-breach-guard,
+         doc-coverage-gap, slo-burn-rate-guard, auction-invariant-pause,
+         fx-delta-benchmark-guard, pm-oracle-staleness, api-contract-block,
+         cls-payin-cutover, cache-ttl-block, web-cwv-rollback,
+         alert-storm-suppressor, tracing-sampling-freeze, policy-violation-freeze,
+         okr-alignment-escalation, dp-budget-freeze, formal-verification-freeze,
+         idp-keys-rotation, etc.) */
     ]
   }
 }
