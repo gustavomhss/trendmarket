@@ -1,4 +1,5 @@
 use anyhow::Result;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 use opentelemetry::{
@@ -13,8 +14,8 @@ use opentelemetry_sdk::{
     resource::Resource,
     trace::SdkTracerProvider,
 };
-use tracing_subscriber::{layer::SubscriberExt, EnvFilter, Registry};
 use tracing::Level;
+use tracing_subscriber::{layer::SubscriberExt, EnvFilter, Registry};
 
 pub struct Telemetry {
     pub tracer_provider: SdkTracerProvider,
@@ -22,12 +23,23 @@ pub struct Telemetry {
     pub meter: Meter,
     pub swap_latency_ms: Histogram<f64>,
     pub invariant_error_rel: Histogram<f64>,
+    shutdown_called: AtomicBool,
 }
 
 impl Telemetry {
     pub fn shutdown(&self) {
+        if self.shutdown_called.swap(true, Ordering::AcqRel) {
+            return;
+        }
+
         let _ = self.meter_provider.force_flush();
         let _ = self.tracer_provider.shutdown();
+    }
+}
+
+impl Drop for Telemetry {
+    fn drop(&mut self) {
+        self.shutdown();
     }
 }
 
@@ -99,7 +111,14 @@ pub fn init(service_name: &str) -> Result<Telemetry> {
         .with_description("Relative invariant error |Δk/k| per operation")
         .build();
 
-    Ok(Telemetry { tracer_provider, meter_provider, meter, swap_latency_ms, invariant_error_rel })
+    Ok(Telemetry {
+        tracer_provider,
+        meter_provider,
+        meter,
+        swap_latency_ms,
+        invariant_error_rel,
+        shutdown_called: AtomicBool::new(false),
+    })
 }
 
 /// Cria um `Span` INFO com nome **estático** (exigência do tracing) e
@@ -116,4 +135,3 @@ pub fn make_info_span(name: &str, op_id: u32, component: &str) -> tracing::Span 
         component = component
     )
 }
-

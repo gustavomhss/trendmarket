@@ -16,10 +16,11 @@ async fn main() -> Result<()> {
         tokio::time::sleep(std::time::Duration::from_millis(50)).await;
         let elapsed_ms = t0.elapsed().as_secs_f64() * 1000.0;
 
-        tel.swap_latency_ms.record(elapsed_ms, &[KeyValue::new("op", "swap")]);
-        tel.invariant_error_rel.record(0.001_f64, &[KeyValue::new("op", "swap")]);
+        tel.swap_latency_ms
+            .record(elapsed_ms, &[KeyValue::new("op", "swap")]);
+        tel.invariant_error_rel
+            .record(0.001_f64, &[KeyValue::new("op", "swap")]);
     }
 
-    tel.shutdown();
     Ok(())
 }
