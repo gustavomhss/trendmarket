@@ -11,6 +11,7 @@ use opentelemetry::{
 use opentelemetry_otlp::{MetricExporter, SpanExporter, WithExportConfig};
 use opentelemetry_sdk::{
     metrics::{PeriodicReader, SdkMeterProvider},
+    propagation::TraceContextPropagator,
     resource::Resource,
     trace::SdkTracerProvider,
 };
@@ -99,6 +100,7 @@ pub fn init(service_name: &str) -> Result<Telemetry> {
         .build();
 
     // Globais
+    global::set_text_map_propagator(TraceContextPropagator::new());
     global::set_tracer_provider(tracer_provider.clone());
     global::set_meter_provider(meter_provider.clone());
 
@@ -158,4 +160,62 @@ pub fn make_info_span(name: &str, op_id: u32, component: &str) -> tracing::Span 
         op_id = op_id,
         component = component
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use opentelemetry::{
+        global,
+        propagation::{Extractor, Injector},
+        trace::{TraceContextExt, Tracer},
+        Context,
+    };
+    use std::collections::HashMap;
+
+    #[derive(Default)]
+    struct TestCarrier(HashMap<String, String>);
+
+    impl Injector for TestCarrier {
+        fn set(&mut self, key: &str, value: String) {
+            self.0.insert(key.to_string(), value);
+        }
+    }
+
+    impl Extractor for TestCarrier {
+        fn get(&self, key: &str) -> Option<&str> {
+            self.0.get(key).map(|value| value.as_str())
+        }
+
+        fn keys(&self) -> Vec<&str> {
+            self.0.keys().map(|key| key.as_str()).collect()
+        }
+    }
+
+    #[test]
+    fn trace_context_propagator_injects_and_extracts_after_init() {
+        let telemetry = init("test-service").expect("telemetry init");
+
+        let tracer = global::tracer("test");
+        let span = tracer.start("parent");
+        let cx = Context::current_with_span(span);
+
+        let mut carrier = TestCarrier::default();
+        global::get_text_map_propagator(|propagator| {
+            propagator.inject_context(&cx, &mut carrier);
+        });
+
+        let extracted_cx =
+            global::get_text_map_propagator(|propagator| propagator.extract(&carrier));
+
+        let span_context = cx.span().span_context().clone();
+        let extracted_span_context = extracted_cx.span().span_context().clone();
+
+        assert!(span_context.is_valid());
+        assert_eq!(span_context.trace_id(), extracted_span_context.trace_id());
+        assert_eq!(span_context.span_id(), extracted_span_context.span_id());
+
+        cx.span().end();
+        telemetry.shutdown();
+    }
 }
