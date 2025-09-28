@@ -44,12 +44,12 @@ if [[ -z "$BASE_REF" ]]; then
 fi
 
 if [[ -z "$PR_URL" ]]; then
-  echo "Missing required pull request URL. Supply it with --pr-url." >&2
+  echo "Missing required --pr-url argument." >&2
   exit 1
 fi
 
 if [[ -z "$TAG_NAME" ]]; then
-  echo "Missing required tag name. Supply it with --tag." >&2
+  echo "Missing required --tag argument." >&2
   exit 1
 fi
 
@@ -107,8 +107,8 @@ import pathlib
 from textwrap import dedent
 
 root = pathlib.Path(os.environ['ROOT_DIR'])
-pr_url = os.environ.get('PR_URL', '').strip()
-tag_name = os.environ.get('TAG_NAME', '').strip()
+pr_url = os.environ['PR_URL'].strip()
+tag_name = os.environ['TAG_NAME'].strip()
 branch = os.environ['BRANCH_NAME']
 short_sha = os.environ['SHORT_SHA']
 artifact_zip = os.environ['ARTIFACT_ZIP']
