@@ -1,5 +1,8 @@
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
+
+use credit_engine_core::amm::errors::{AmmErrorDescriptor, AMM_ERROR_DESCRIPTORS};
 
 #[derive(Debug, Clone)]
 pub struct CatalogDocument {
@@ -7,14 +10,14 @@ pub struct CatalogDocument {
     pub errors: Vec<CatalogEntry>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CatalogMeta {
     pub domain: String,
     pub prefix: String,
     pub version: u32,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CatalogEntry {
     pub variant: String,
     pub code: String,
@@ -160,4 +163,36 @@ pub fn load_catalog() -> CatalogDocument {
     let raw = fs::read_to_string(&path)
         .unwrap_or_else(|err| panic!("não foi possível ler {path:?}: {err}"));
     parse_catalog(&raw)
+}
+
+pub fn descriptors_by_variant() -> BTreeMap<String, &'static AmmErrorDescriptor> {
+    AMM_ERROR_DESCRIPTORS
+        .iter()
+        .map(|descriptor| (descriptor.variant.variant_name().to_string(), descriptor))
+        .collect()
+}
+
+pub fn runtime_catalog_snapshot() -> BTreeMap<String, CatalogEntry> {
+    descriptors_by_variant()
+        .into_iter()
+        .map(|(variant, descriptor)| {
+            let entry = CatalogEntry {
+                variant: variant.clone(),
+                code: descriptor.code.to_string(),
+                message: descriptor.message.to_string(),
+                http_status: descriptor.http_status,
+            };
+            (variant, entry)
+        })
+        .collect()
+}
+
+impl CatalogDocument {
+    pub fn entries_by_variant(&self) -> BTreeMap<String, CatalogEntry> {
+        self.errors
+            .iter()
+            .cloned()
+            .map(|entry| (entry.variant.clone(), entry))
+            .collect()
+    }
 }
