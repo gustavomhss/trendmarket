@@ -16,8 +16,13 @@ fn isqrt_u256(n: U256) -> U256 {
     if n.is_zero() { return U256::from(0u8); }
     let mut low = U256::from(0u8);
     let mut high = n;
+    let one = U256::from(1u8);
     while low < high {
-        let mid = (low + high + U256::from(1u8)) >> 1; // ceil((low+high)/2)
+        let gap = high - low;
+        let mut mid = low + (gap >> 1); // low + (high-low)/2
+        if (gap & one) == one {
+            mid = mid + one; // arredonda para cima: low + (high-low+1)/2
+        }
         if mid <= n / mid { low = mid; } else { high = mid - U256::from(1u8); }
     }
     low
@@ -85,6 +90,7 @@ pub fn remove_liquidity(x: Wad, y: Wad, burn_shares: Wad, total_shares: Wad) -> 
 mod tests {
     use super::*;
     use crate::amm::types::{WAD, MIN_RESERVE};
+    use core::u128::MAX as U128_MAX;
 
     #[test]
     fn t_initial_mint_symmetrical() {
@@ -153,5 +159,27 @@ mod tests {
         let (x, y, s) = (MIN_RESERVE + 10, MIN_RESERVE + 10, 1_000_000u128*WAD);
         let err = remove_liquidity(x, y, 999_999u128*WAD, s).unwrap_err();
         assert_eq!(err, AmmError::MinReserveBreached);
+    }
+
+    #[test]
+    fn t_isqrt_u256_handles_max_range() {
+        let sqrt = isqrt_u256(U256::MAX);
+        assert_eq!(sqrt, U256::from(U128_MAX));
+    }
+
+    #[test]
+    fn t_initial_mint_near_u256_limit() {
+        let x = U128_MAX;
+        let y = U128_MAX - 1;
+        let shares = initial_mint(x, y).unwrap();
+        assert_eq!(shares, U128_MAX - 1);
+    }
+
+    #[test]
+    fn t_initial_mint_u128_max_square() {
+        let x = U128_MAX;
+        let y = U128_MAX;
+        let shares = initial_mint(x, y).unwrap();
+        assert_eq!(shares, U128_MAX);
     }
 }
