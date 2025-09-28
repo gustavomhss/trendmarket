@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use opentelemetry::KeyValue;
 use std::time::Instant;
 
@@ -20,6 +20,6 @@ async fn main() -> Result<()> {
         tel.invariant_error_rel.record(0.001_f64, &[KeyValue::new("op", "swap")]);
     }
 
-    tel.shutdown();
+    tel.shutdown().context("failed to shutdown telemetry")?;
     Ok(())
 }

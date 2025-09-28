@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use std::time::Duration;
 
 use opentelemetry::{
@@ -25,9 +25,17 @@ pub struct Telemetry {
 }
 
 impl Telemetry {
-    pub fn shutdown(&self) {
-        let _ = self.meter_provider.force_flush();
-        let _ = self.tracer_provider.shutdown();
+    pub fn shutdown(&self) -> Result<()> {
+        self
+            .meter_provider
+            .force_flush()
+            .context("failed to flush metrics exporter before shutdown")?;
+        self
+            .tracer_provider
+            .shutdown()
+            .context("failed to shutdown tracer provider")?;
+
+        Ok(())
     }
 }
 
