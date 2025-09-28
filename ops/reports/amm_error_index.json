@@ -1,46 +1,11 @@
 {
-  "meta": {
-    "generated_at": "2025-09-28T01:17:29.202927+00:00",
-    "domain": "credit-engine.amm",
-    "prefix": "CE-AMM",
-    "version": "1.0.0"
-  },
+  "meta": { "domain": "AMM", "prefix": "CE-AMM", "version": 1 },
   "errors": [
-    {
-      "variant": "ZeroAmount",
-      "code": "CE-AMM-0001",
-      "message": "Input amount must be greater than zero.",
-      "http_status": 400
-    },
-    {
-      "variant": "ZeroReserve",
-      "code": "CE-AMM-0002",
-      "message": "Reserves must stay above zero.",
-      "http_status": 400
-    },
-    {
-      "variant": "MinReserveBreached",
-      "code": "CE-AMM-0003",
-      "message": "Operation would breach the minimum reserve.",
-      "http_status": 409
-    },
-    {
-      "variant": "Overflow",
-      "code": "CE-AMM-0004",
-      "message": "Numerical overflow or underflow detected.",
-      "http_status": 500
-    },
-    {
-      "variant": "InputTooSmall",
-      "code": "CE-AMM-0005",
-      "message": "Effective input amount is too small.",
-      "http_status": 422
-    },
-    {
-      "variant": "InvalidFee",
-      "code": "CE-AMM-0006",
-      "message": "Fee ppm must be at most 1,000,000.",
-      "http_status": 400
-    }
+    { "variant": "ZeroAmount", "code": "CE-AMM-0001", "message": "Input amount must be greater than zero.", "http_status": 400 },
+    { "variant": "ZeroReserve", "code": "CE-AMM-0002", "message": "Pool reserves must remain above zero.", "http_status": 500 },
+    { "variant": "MinReserveBreached", "code": "CE-AMM-0003", "message": "Operation would breach the minimum reserve.", "http_status": 409 },
+    { "variant": "Overflow", "code": "CE-AMM-0004", "message": "Numerical overflow or underflow detected.", "http_status": 500 },
+    { "variant": "InputTooSmall", "code": "CE-AMM-0005", "message": "Effective input amount is too small.", "http_status": 400 },
+    { "variant": "InvalidFee", "code": "CE-AMM-0006", "message": "Fee in parts-per-million must not exceed 1,000,000.", "http_status": 400 }
   ]
 }

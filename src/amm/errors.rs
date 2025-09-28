@@ -21,7 +21,7 @@ macro_rules! amm_error_contract {
             pub variant: AmmError,
             pub code: &'static str,
             pub message: &'static str,
-            pub http_status: Option<u16>,
+            pub http_status: u16,
         }
 
         impl AmmError {
@@ -41,9 +41,9 @@ macro_rules! amm_error_contract {
                 }
             }
 
-            pub const fn http_status(self) -> Option<u16> {
+            pub const fn http_status(self) -> u16 {
                 match self {
-                    $( AmmError::$variant => Some($status), )+
+                    $( AmmError::$variant => $status, )+
                 }
             }
 
@@ -63,7 +63,7 @@ macro_rules! amm_error_contract {
                 variant: AmmError::$variant,
                 code: $code,
                 message: $message,
-                http_status: Some($status),
+                http_status: $status,
             }, )+
         ];
     };
@@ -83,8 +83,8 @@ amm_error_contract! {
     },
     ZeroReserve => {
         code: "CE-AMM-0002",
-        message: "Reserves must stay above zero.",
-        http_status: 400
+        message: "Pool reserves must remain above zero.",
+        http_status: 500
     },
     MinReserveBreached => {
         code: "CE-AMM-0003",
@@ -103,49 +103,8 @@ amm_error_contract! {
     },
     InvalidFee => {
         code: "CE-AMM-0006",
-        message: "Fee ppm must be at most 1,000,000.",
+        message: "Fee in parts-per-million must not exceed 1,000,000.",
         http_status: 400
-    }
-}
-
-impl AmmError {
-    #[inline]
-    pub fn error_code(&self) -> &'static str {
-        use AmmError::*;
-        match self {
-            ZeroAmount => "CE-AMM-0001",
-            ZeroReserve => "CE-AMM-0002",
-            MinReserveBreached => "CE-AMM-0003",
-            Overflow => "CE-AMM-0004",
-            InputTooSmall => "CE-AMM-0005",
-            InvalidFee => "CE-AMM-0006",
-        }
-    }
-
-    #[inline]
-    pub fn user_message(&self) -> &'static str {
-        use AmmError::*;
-        match self {
-            ZeroAmount => "Swap amount must be greater than zero.",
-            ZeroReserve => "Pool reserves must be greater than zero.",
-            MinReserveBreached => "Operation would breach the minimum reserve requirement.",
-            Overflow => "Numerical overflow or underflow detected while processing the request.",
-            InputTooSmall => "Effective input after fees is zero; increase the provided amount.",
-            InvalidFee => "Fee in parts-per-million must be less than or equal to 1,000,000.",
-        }
-    }
-
-    #[inline]
-    pub fn http_status(&self) -> Option<u16> {
-        use AmmError::*;
-        match self {
-            ZeroAmount => Some(422),
-            ZeroReserve => Some(500),
-            MinReserveBreached => Some(409),
-            Overflow => Some(500),
-            InputTooSmall => Some(422),
-            InvalidFee => Some(422),
-        }
     }
 }
 
