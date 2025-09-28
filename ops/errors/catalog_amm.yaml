@@ -1,24 +1,35 @@
-ZeroAmount:
-  error_code: CE_AMM_0001
-  user_message: "amount deve ser > 0"
-  http_status: 422
-ZeroReserve:
-  error_code: CE_AMM_0002
-  user_message: "reserve deve ser > 0"
-  http_status: 422
-MinReserveBreached:
-  error_code: CE_AMM_0003
-  user_message: "reserva ficaria abaixo do mínimo"
-  http_status: 422
-Overflow:
-  error_code: CE_AMM_0004
-  user_message: "overflow/underflow numérico"
-  http_status: 500
-InputTooSmall:
-  error_code: CE_AMM_0005
-  user_message: "input efetivo após taxa é 0"
-  http_status: 422
-InvalidFee:
-  error_code: CE_AMM_0006
-  user_message: "fee_ppm deve ser ≤ 1e6"
-  http_status: 422
+meta:
+  domain: "credit-engine.amm"
+  prefix: "CE-AMM"
+  version: "1.0.0"
+
+errors:
+  - variant: ZeroAmount
+    code: "CE-AMM-0001"
+    default_message: "amount deve ser > 0"
+    http_status: 422
+
+  - variant: ZeroReserve
+    code: "CE-AMM-0002"
+    default_message: "reserve deve ser > 0"
+    http_status: 422
+
+  - variant: MinReserveBreached
+    code: "CE-AMM-0003"
+    default_message: "reserva ficaria abaixo do mínimo"
+    http_status: 422
+
+  - variant: Overflow
+    code: "CE-AMM-0004"
+    default_message: "overflow/underflow numérico"
+    http_status: 500
+
+  - variant: InputTooSmall
+    code: "CE-AMM-0005"
+    default_message: "input efetivo após taxa é 0"
+    http_status: 422
+
+  - variant: InvalidFee
+    code: "CE-AMM-0006"
+    default_message: "fee_ppm deve ser ≤ 1e6"
+    http_status: 422
