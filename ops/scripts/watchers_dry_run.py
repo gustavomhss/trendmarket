@@ -5,12 +5,17 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import importlib.util
 import json
 import pathlib
 import sys
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Mapping, MutableMapping
+
+try:
+    from config_loader import load_config
+except ModuleNotFoundError:  # pragma: no cover - fallback when loaded via spec
+    sys.path.append(str(pathlib.Path(__file__).resolve().parent))
+    from config_loader import load_config
 
 CORE_FILENAME = "core.yaml"
 
@@ -19,19 +24,90 @@ OPTIONAL_FIELDS = ("kpi", "threshold", "window", "action", "rollback")
 
 # cache interno para hooks
 _HOOK_METADATA_CACHE: dict[str, dict[str, Any]] | None = None
+_HOOK_BINDINGS_CACHE: dict[tuple[str, str], str] | None = None
 
 
-def _load_parser():
-    spec = importlib.util.find_spec("yaml")
-    if spec is None:
-        return json.loads
-    module = importlib.util.module_from_spec(spec)
-    assert spec.loader is not None
-    spec.loader.exec_module(module)  # type: ignore
-    return module.safe_load  # type: ignore
+def _core_directory() -> pathlib.Path:
+    return pathlib.Path(__file__).resolve().parents[1]
 
 
-_parse_config = _load_parser()
+def _ensure_metadata_cache() -> dict[str, dict[str, Any]]:
+    global _HOOK_METADATA_CACHE
+    if _HOOK_METADATA_CACHE is not None:
+        return _HOOK_METADATA_CACHE
+
+    metadata: dict[str, dict[str, Any]] = {}
+
+    core_path = _core_directory() / "watchers" / CORE_FILENAME
+    if core_path.exists():
+        data = load_config(core_path.read_text(encoding="utf-8"))
+        if isinstance(data, Mapping):
+            watchers_section = data.get("watchers")
+            if isinstance(watchers_section, Mapping):
+                for watcher_id, payload in watchers_section.items():
+                    if not isinstance(payload, MutableMapping):
+                        continue
+                    entry = metadata.setdefault(str(watcher_id), {})
+                    if "description" in payload:
+                        entry.setdefault("description", payload["description"])
+
+    hooks_path = _core_directory() / "hooks" / "a110.yml"
+    if hooks_path.exists():
+        hooks_config = load_config(hooks_path.read_text(encoding="utf-8"))
+        hooks_list = None
+        if isinstance(hooks_config, Mapping):
+            hooks_list = hooks_config.get("hooks")
+        if isinstance(hooks_list, list):
+            for hook_payload in hooks_list:
+                if not isinstance(hook_payload, Mapping):
+                    continue
+                watchers_field = hook_payload.get("watchers")
+                if not isinstance(watchers_field, list):
+                    continue
+                for watcher_raw in watchers_field:
+                    if not isinstance(watcher_raw, str):
+                        continue
+                    watcher_id = watcher_raw.strip()
+                    if not watcher_id:
+                        continue
+                    entry = metadata.setdefault(watcher_id, {})
+                    for field in ("owner", "kpi", "threshold", "window", "action", "rollback"):
+                        if field in hook_payload and hook_payload[field] is not None:
+                            entry.setdefault(field, hook_payload[field])
+
+    _HOOK_METADATA_CACHE = metadata
+    return _HOOK_METADATA_CACHE
+
+
+def _ensure_bindings_cache() -> dict[tuple[str, str], str]:
+    global _HOOK_BINDINGS_CACHE
+    if _HOOK_BINDINGS_CACHE is not None:
+        return _HOOK_BINDINGS_CACHE
+
+    core_path = _core_directory() / "watchers" / CORE_FILENAME
+    bindings: dict[tuple[str, str], str] = {}
+    if core_path.exists():
+        data = load_config(core_path.read_text(encoding="utf-8"))
+        if isinstance(data, Mapping):
+            watchers_section = data.get("watchers")
+            if isinstance(watchers_section, Mapping):
+                for watcher_id, payload in watchers_section.items():
+                    if not isinstance(payload, Mapping):
+                        continue
+                    hooks_map = payload.get("hooks")
+                    if not isinstance(hooks_map, Mapping):
+                        continue
+                    for domain_key, hook_value in hooks_map.items():
+                        if not isinstance(domain_key, str) or not isinstance(hook_value, str):
+                            continue
+                        domain = domain_key.strip().upper()
+                        hook = hook_value.strip()
+                        if domain and hook:
+                            bindings[(domain, str(watcher_id))] = hook
+
+    _HOOK_BINDINGS_CACHE = bindings
+    return _HOOK_BINDINGS_CACHE
+_HOOK_BINDINGS_CACHE: dict[tuple[str, str], str] | None = None
 
 
 def _normalize_string(
@@ -45,12 +121,16 @@ def _normalize_string(
     return text
 
 
-def _extract_domains(payload: Mapping[str, Any], source: pathlib.Path) -> Dict[str, List[str]]:
+def _extract_domains(
+    payload: Mapping[str, Any], source: pathlib.Path
+) -> tuple[Dict[str, List[str]], Dict[str, str], Dict[str, Dict[str, Any]]]:
     domains = payload.get("domains")
     if not isinstance(domains, Mapping) or not domains:
         raise ValueError(f"{source}: 'domains' must be a non-empty mapping")
 
     watcher_domains: Dict[str, List[str]] = {}
+    aliases: Dict[str, str] = {}
+    overrides: Dict[str, Dict[str, Any]] = {}
     for domain_raw, watchers in domains.items():
         domain = _normalize_string(domain_raw, field="domain name", source=source)
         if not isinstance(watchers, list) or not watchers:
@@ -58,11 +138,42 @@ def _extract_domains(payload: Mapping[str, Any], source: pathlib.Path) -> Dict[s
 
         seen: set[str] = set()
         for index, watcher_raw in enumerate(watchers, start=1):
-            watcher_id = _normalize_string(
-                watcher_raw,
-                field=f"watcher #{index} in domain '{domain}'",
-                source=source,
-            )
+            base_id: str
+            watcher_id: str
+            override_payload: Dict[str, Any] | None = None
+            if isinstance(watcher_raw, Mapping):
+                base_candidate = watcher_raw.get("watcher")
+                if base_candidate is None:
+                    raise ValueError(
+                        f"{source}: watcher override #{index} in domain '{domain}' must define 'watcher'"
+                    )
+                base_id = _normalize_string(
+                    base_candidate,
+                    field=f"watcher #{index} in domain '{domain}' base id",
+                    source=source,
+                )
+                custom_id = watcher_raw.get("id")
+                if custom_id is None:
+                    watcher_id = base_id
+                else:
+                    watcher_id = _normalize_string(
+                        custom_id,
+                        field=f"watcher #{index} in domain '{domain}' override id",
+                        source=source,
+                    )
+                override_payload = {
+                    key: watcher_raw[key]
+                    for key in watcher_raw
+                    if key not in {"watcher", "id"}
+                }
+            else:
+                watcher_id = _normalize_string(
+                    watcher_raw,
+                    field=f"watcher #{index} in domain '{domain}'",
+                    source=source,
+                )
+                base_id = watcher_id
+
             if watcher_id in seen:
                 raise ValueError(
                     f"{source}: duplicated watcher '{watcher_id}' declared for domain '{domain}'"
@@ -72,7 +183,11 @@ def _extract_domains(payload: Mapping[str, Any], source: pathlib.Path) -> Dict[s
             if domain not in mapping:
                 mapping.append(domain)
 
-    return watcher_domains
+            aliases.setdefault(watcher_id, base_id)
+            if override_payload:
+                overrides.setdefault(watcher_id, {}).update(override_payload)
+
+    return watcher_domains, aliases, overrides
 
 
 def _extract_watcher_metadata(payload: Mapping[str, Any], source: pathlib.Path) -> Dict[str, Dict[str, Any]]:
@@ -80,6 +195,7 @@ def _extract_watcher_metadata(payload: Mapping[str, Any], source: pathlib.Path) 
     if not isinstance(watchers, Mapping) or not watchers:
         raise ValueError(f"{source}: 'watchers' must be a non-empty mapping")
 
+    defaults = _ensure_metadata_cache()
     metadata: Dict[str, Dict[str, Any]] = {}
     for watcher_id_raw, watcher_payload in watchers.items():
         watcher_id = _normalize_string(watcher_id_raw, field="watcher id", source=source)
@@ -87,63 +203,148 @@ def _extract_watcher_metadata(payload: Mapping[str, Any], source: pathlib.Path) 
             raise ValueError(f"{source}: watcher '{watcher_id}' must be defined as a mapping")
 
         owner_raw = watcher_payload.get("owner")
-        if owner_raw is None:
-            raise ValueError(f"{source}: watcher '{watcher_id}' missing required field 'owner'")
-        owner = _normalize_string(owner_raw, field=f"watcher '{watcher_id}' owner", source=source)
+        default_meta = defaults.get(watcher_id, {})
 
-        description_raw = watcher_payload.get("description", "")
+        owner_source = owner_raw if owner_raw is not None else default_meta.get("owner")
+        owner = (
+            _normalize_string(owner_source, field=f"watcher '{watcher_id}' owner", source=source)
+            if owner_source is not None
+            else None
+        )
+
+        description_source = watcher_payload.get("description", default_meta.get("description", ""))
         description = _normalize_string(
-            description_raw if description_raw is not None else "",
+            description_source if description_source is not None else "",
             field=f"watcher '{watcher_id}' description",
             source=source,
             allow_empty=True,
         )
 
-        entry: Dict[str, Any] = {"owner": owner, "description": description}
+        entry: Dict[str, Any] = {"description": description}
+        if owner is not None:
+            entry["owner"] = owner
+            entry["_owner_from_default"] = owner_raw is None and default_meta.get("owner") is not None
+        else:
+            entry["_owner_from_default"] = False
         for optional in OPTIONAL_FIELDS:
             if optional in watcher_payload and watcher_payload[optional] is not None:
                 entry[optional] = watcher_payload[optional]
+            elif optional in default_meta and default_meta[optional] is not None:
+                entry[optional] = default_meta[optional]
+
+        hooks_override = watcher_payload.get("hooks")
+        if isinstance(hooks_override, Mapping):
+            entry["_hooks"] = dict(hooks_override)
+        elif "hooks" in default_meta:
+            entry["_hooks"] = dict(default_meta["hooks"])
+
+        hook_single = watcher_payload.get("hook")
+        if isinstance(hook_single, str):
+            entry["_hook"] = hook_single
 
         metadata[watcher_id] = entry
 
     return metadata
 
 
-def _load_watchers(path: pathlib.Path) -> List[Dict[str, Any]]:
+def _load_watchers(path: pathlib.Path) -> tuple[List[Dict[str, Any]], Dict[tuple[str, str], str]]:
     if not path.exists():
         raise FileNotFoundError(f"Watcher configuration not found: {path}")
     if path.is_dir():
         raise ValueError(f"{path}: expected a consolidated watcher configuration file")
 
-    data = _parse_config(path.read_text(encoding="utf-8"))
+    data = load_config(path.read_text(encoding="utf-8"))
     if not isinstance(data, Mapping):
         raise ValueError(f"{path}: watcher configuration must be a mapping")
 
-    watcher_domains = _extract_domains(data, path)
+    watcher_domains, aliases, overrides = _extract_domains(data, path)
     watcher_metadata = _extract_watcher_metadata(data, path)
 
-    undefined = sorted(set(watcher_domains) - set(watcher_metadata))
+    required_base_ids = {base_id for base_id in aliases.values()}
+    undefined = sorted(base_id for base_id in required_base_ids if base_id not in watcher_metadata)
     if undefined:
         names = ", ".join(undefined)
         raise ValueError(f"{path}: undefined watcher metadata for: {names}")
 
-    unassigned = sorted(set(watcher_metadata) - set(watcher_domains))
+    unassigned = sorted(
+        base_id for base_id in watcher_metadata.keys() if base_id not in required_base_ids
+    )
     if unassigned:
         names = ", ".join(unassigned)
         raise ValueError(f"{path}: watchers missing domain assignment: {names}")
 
+    default_bindings = _ensure_bindings_cache()
+
     records: List[Dict[str, Any]] = []
-    for watcher_id in sorted(watcher_metadata):
+    bindings: Dict[tuple[str, str], str] = {}
+
+    for watcher_id in sorted(aliases):
+        base_id = aliases[watcher_id]
+        base_meta = dict(watcher_metadata[base_id])
+        hooks_map = base_meta.pop("_hooks", None)
+        hook_single = base_meta.pop("_hook", None)
+        owner_default_flag = bool(base_meta.pop("_owner_from_default", False))
+
+        override_payload = dict(overrides.get(watcher_id, {}))
+        override_hooks = override_payload.pop("hooks", None)
+        override_hook_single = override_payload.pop("hook", None)
+        override_owner_provided = "owner" in override_payload and override_payload["owner"] is not None
+
+        for key, value in override_payload.items():
+            if key in {"watcher", "id"}:
+                continue
+            base_meta[key] = value
+
+        if override_owner_provided:
+            owner_default_flag = False
+
         domains = watcher_domains[watcher_id]
+        owner_value = base_meta.get("owner")
+        if owner_value is None or (isinstance(owner_value, str) and not owner_value.strip()) or owner_default_flag:
+            raise ValueError(
+                f"{path}: watcher '{aliases[watcher_id]}' missing required field 'owner'"
+            )
         record = {
             "id": watcher_id,
             "domains": domains,
             "domain": domains[0],
-            **watcher_metadata[watcher_id],
+            **base_meta,
         }
         records.append(record)
 
-    return records
+        domain_hooks: Dict[str, str] = {}
+        if isinstance(hooks_map, Mapping):
+            for domain_key, hook_value in hooks_map.items():
+                if not isinstance(domain_key, str) or not isinstance(hook_value, str):
+                    continue
+                domain_hooks[domain_key.strip().upper()] = hook_value.strip()
+
+        if isinstance(override_hooks, Mapping):
+            for domain_key, hook_value in override_hooks.items():
+                if not isinstance(domain_key, str) or not isinstance(hook_value, str):
+                    continue
+                domain_hooks[domain_key.strip().upper()] = hook_value.strip()
+
+        if isinstance(override_hook_single, str):
+            for domain in domains:
+                domain_hooks[domain.upper()] = override_hook_single.strip()
+
+        if isinstance(hook_single, str) and not domain_hooks:
+            for domain in domains:
+                domain_hooks[domain.upper()] = hook_single.strip()
+
+        for domain in domains:
+            domain_key = domain.upper()
+            hook_id = domain_hooks.get(domain_key)
+            if hook_id is None:
+                hook_id = default_bindings.get((domain_key, base_id))
+            if hook_id is None:
+                raise ValueError(
+                    f"Watcher '{watcher_id}' in domain '{domain}' missing hook assignment in {path.name}"
+                )
+            bindings[(domain_key, watcher_id)] = hook_id
+
+    return records, bindings
 
 
 def _resolve_core_path(config: pathlib.Path) -> pathlib.Path:
@@ -152,38 +353,6 @@ def _resolve_core_path(config: pathlib.Path) -> pathlib.Path:
     if config.name == CORE_FILENAME:
         return config
     return config.parent / CORE_FILENAME
-
-
-def _load_core_bindings(core_path: pathlib.Path) -> Dict[tuple[str, str], str]:
-    if not core_path.exists():
-        raise FileNotFoundError(f"Watcher core configuration not found: {core_path}")
-
-    data = _parse_config(core_path.read_text(encoding="utf-8"))
-    if not isinstance(data, dict):
-        raise ValueError(f"Watcher core configuration must be a mapping: {core_path}")
-
-    watchers_section = data.get("watchers")
-    if not isinstance(watchers_section, dict) or not watchers_section:
-        raise ValueError(f"Watcher core configuration missing watcher definitions: {core_path}")
-
-    bindings: Dict[tuple[str, str], str] = {}
-    for watcher_id, meta in watchers_section.items():
-        hooks_map = meta.get("hooks")
-        if not isinstance(hooks_map, dict) or not hooks_map:
-            continue
-        for domain_key, hook_value in hooks_map.items():
-            if not isinstance(domain_key, str) or not isinstance(hook_value, str):
-                continue
-            domain = domain_key.strip().upper()
-            hook = hook_value.strip()
-            if not domain or not hook:
-                continue
-            bindings[(domain, watcher_id)] = hook
-
-    if not bindings:
-        raise ValueError(f"Watcher core configuration missing hook bindings: {core_path}")
-
-    return bindings
 
 
 def _attach_hooks(
@@ -253,9 +422,8 @@ def _resolve_source_path(config: pathlib.Path) -> str:
 
 
 def generate_report(config: pathlib.Path) -> Dict[str, Any]:
-    watchers = _load_watchers(config)
-    core_bindings = _load_core_bindings(_resolve_core_path(config))
-    enriched = _attach_hooks(watchers, core_bindings)
+    watchers, bindings = _load_watchers(config)
+    enriched = _attach_hooks(watchers, bindings)
     validated = [_validate_watcher(w) for w in enriched]
     validated.sort(key=lambda entry: (entry["domain"], entry["id"]))
     return {
