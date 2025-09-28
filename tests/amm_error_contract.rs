@@ -47,27 +47,9 @@ fn amm_error_runtime_metadata_is_exhaustive() {
         "descriptors e ALL_VARIANTS divergem"
     );
 
-    let yaml_variants: BTreeSet<_> = yaml_map.keys().cloned().collect();
-    let rust_variants: BTreeSet<_> = AmmError::ALL_VARIANTS
-        .iter()
-        .map(|variant| variant.variant_name().to_string())
-        .collect();
-
-    assert_eq!(
-        rust_variants, yaml_variants,
-        "catálogo YAML e enum AmmError não estão em sincronia"
-    );
-
+    let mut runtime_variants = BTreeMap::new();
     for variant in AmmError::ALL_VARIANTS {
-        let variant_name = variant.variant_name();
-        let entry = yaml_map
-            .get(variant_name)
-            .unwrap_or_else(|| panic!("variant {variant_name} ausente do catálogo"));
-
-        let descriptor = descriptors
-            .get(variant_name)
-            .unwrap_or_else(|| panic!("descriptor ausente para {variant_name}"));
-
+        let variant_name = variant.variant_name().to_string();
         let code = variant.error_code();
         let message = variant.user_message();
         let status = variant.http_status();
@@ -97,6 +79,32 @@ fn amm_error_runtime_metadata_is_exhaustive() {
             !message.contains('\n'),
             "mensagem deve ser single-line para variant {variant_name}"
         );
+
+        runtime_variants.insert(variant_name, (code, message, status));
+    }
+
+    assert_eq!(
+        runtime_variants.len(),
+        AmmError::ALL_VARIANTS.len(),
+        "coleta de variantes em tempo de execução está divergente de ALL_VARIANTS",
+    );
+
+    let yaml_variants: BTreeSet<_> = yaml_map.keys().cloned().collect();
+    let rust_variants: BTreeSet<_> = runtime_variants.keys().cloned().collect();
+
+    assert_eq!(
+        rust_variants, yaml_variants,
+        "catálogo YAML e enum AmmError não estão em sincronia"
+    );
+
+    for (variant_name, (code, message, status)) in runtime_variants {
+        let entry = yaml_map
+            .get(&variant_name)
+            .unwrap_or_else(|| panic!("variant {variant_name} ausente do catálogo"));
+
+        let descriptor = descriptors
+            .get(&variant_name)
+            .unwrap_or_else(|| panic!("descriptor ausente para {variant_name}"));
 
         assert_eq!(
             entry.code, code,
