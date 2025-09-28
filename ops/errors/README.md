@@ -1,45 +1,44 @@
 # AMM Error Contract Guide
 
-This guide documents how to evolve the AMM error contract safely. The contract is
-consumed by UI, API, and observability surfaces and **must remain stable**.
+Este guia documenta como evoluir o contrato de erros do AMM de forma segura.  
+O contrato é consumido por **UI, API e superfícies de observabilidade** e **deve permanecer estável**.
 
-## Adding a new error variant
+---
 
-1. **Declare the variant** in `src/amm/errors.rs` and keep the enum payload-free.
-2. **Assign contract metadata**:
-   - Extend the `AmmError::ALL_VARIANTS` array with the new variant.
-   - Provide mappings in `error_code()`, `user_message()`, `http_status()`, and `variant_name()`.
-   - Codes must follow `CE-AMM-XXXX`, be unique, and never be reused.
-   - Messages are short, neutral English sentences ending with a period.
-3. **Update the catalog** in `ops/errors/catalog_amm.yaml` with the same metadata.
-4. **Refresh the QA index** in `ops/reports/amm_error_index.json` (sorted by code).
-5. **Extend the tests**:
-   - Update assertions in `tests/amm_error_contract.rs` if new validation is required.
-   - Ensure `variant_count::<AmmError>()` matches the number of variants.
-6. **Document evidence**: run `ops/scripts/package_amm_error_contract.sh` to
-   regenerate the artifacts bundle so the formatter, linter, and test logs
-   capture the new variant.
+## Como adicionar uma nova variante de erro
 
-## Validating changes locally
+1. **Defina a variante no código**  
+   - Adicione a nova variante no enum `AmmError` em [`src/amm/errors.rs`](../../src/amm/errors.rs).  
+   - Mantenha o enum **sem payload** (somente variantes simples).  
+
+2. **Atribua a metadata do contrato**  
+   - Estenda o array `AmmError::ALL_VARIANTS` com a nova variante.  
+   - Forneça mapeamentos em:  
+     - `error_code()` → siga o padrão `CE-AMM-XXXX` (único, nunca reutilizado).  
+     - `user_message()` → frases curtas, neutras, em inglês, terminando com ponto.  
+     - `http_status()` → código HTTP correspondente.  
+     - `variant_name()` → nome legível da variante.  
+
+3. **Atualize o catálogo YAML**  
+   - Edite [`ops/errors/catalog_amm.yaml`](catalog_amm.yaml) adicionando a nova entrada com os campos:  
+     - `variant`, `code`, `default_message`, `http_status`.  
+
+4. **Regenere o índice JSON para dashboards**  
+   - Execute o script [`ops/scripts/generate_amm_error_index.py`](../scripts/generate_amm_error_index.py).  
+   - Ele consome o catálogo YAML e reescreve [`ops/reports/amm_error_index.json`](../reports/amm_error_index.json), usado em painéis de observabilidade.  
+
+5. **Atualize os testes**  
+   - Inclua a nova variante no teste [`tests/amm_error_catalog.rs`](../../tests/amm_error_catalog.rs) garantindo que `expected_catalog()` e `variant_count::<AmmError>()` estejam corretos.  
+
+6. **Documente a evidência**  
+   - Rode `ops/scripts/package_amm_error_contract.sh` para regenerar os bundles (`logs`, `patches`, `artifacts`).  
+   - Isso garante que formatador, linter e testes capturem a nova variante.  
+
+---
+
+## Validação local
 
 ```bash
 cargo fmt
 cargo clippy --all-targets --all-features
 cargo test
-```
-
-Keep the logs for these commands; they are bundled in the artifacts ZIP.
-
-## Releasing the change
-
-1. Execute `ops/scripts/package_amm_error_contract.sh` (optionally passing the
-   merge base) to refresh logs, artifacts, and patch outputs under `out/`.
-2. The script writes the Git diff to `out/patches/amm_error_contract.patch` and
-   produces ZIP archives (ignored by Git) for hand-off when required.
-3. Tag the commit with an **annotated** tag (`git tag -a`).
-4. Update the Jira comment template in `_jira_out/amm_error_contract.txt`.
-
-Each release should be auditable: the catalog, QA index, tests, and logs must be
-present so Support, Ops, and integrators can rely on the error surface. The
-packaging script keeps the reproducible ZIPs outside version control so they do
-not block PR creation while remaining one command away for distribution.
