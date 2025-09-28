@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Dependencies: Python 3.11+ with PyYAML available for YAML parsing
+# (falls back to the built-in json module when PyYAML is absent).
 set -euo pipefail
 
 usage() {
@@ -63,6 +65,11 @@ from collections import defaultdict
 from pathlib import Path
 import sys
 
+try:
+    import yaml  # type: ignore
+except ModuleNotFoundError:  # pragma: no cover - optional dependency
+    yaml = None  # type: ignore[assignment]
+
 errors = []
 watchers_path = Path('ops/watchers/core.yaml')
 hooks_path = Path('ops/hooks/a110.yml')
@@ -86,8 +93,32 @@ def load_json(path: Path) -> dict:
         sys.exit(1)
 
 
-watchers_data = load_json(watchers_path)
-hooks_data = load_json(hooks_path)
+def load_manifest(path: Path) -> dict:
+    if yaml is not None:
+        try:
+            with path.open() as fh:
+                data = yaml.safe_load(fh)
+        except yaml.YAMLError as exc:  # pragma: no cover - depends on yaml availability
+            print(f"[A110][ERROR] failed to parse {path}: {exc}", file=sys.stderr)
+            sys.exit(1)
+
+        if data is None:
+            return {}
+
+        if not isinstance(data, dict):
+            print(
+                f"[A110][ERROR] failed to parse {path}: expected a mapping, got {type(data).__name__}",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+        return data
+
+    return load_json(path)
+
+
+watchers_data = load_manifest(watchers_path)
+hooks_data = load_manifest(hooks_path)
 
 expected_domains = ["DEC", "PM", "DATA", "ML", "FE", "SEC/PRIV", "PLAT", "INT"]
 domains = watchers_data.get("domains", {})
@@ -239,11 +270,20 @@ print("[A110] Gate check passed: watchers, hooks e runbooks consistentes.")
 PY
 
 if [[ -n $timeout_secs ]]; then
-  if ! command -v timeout >/dev/null 2>&1; then
-    echo "[A110][ERROR] --timeout requested but 'timeout' command is not available" >&2
+  timeout_cmd=""
+  for candidate in timeout gtimeout; do
+    if command -v "$candidate" >/dev/null 2>&1; then
+      timeout_cmd="$candidate"
+      break
+    fi
+  done
+
+  if [[ -z $timeout_cmd ]]; then
+    echo "[A110][ERROR] --timeout requested but neither 'timeout' nor 'gtimeout' command is available" >&2
     exit 1
   fi
-  timeout "$timeout_secs" python "$script_path"
+
+  "$timeout_cmd" "$timeout_secs" python "$script_path"
 else
   python "$script_path"
 fi
