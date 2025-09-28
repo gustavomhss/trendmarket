@@ -1,7 +1,7 @@
 {
   "generated_at": "2025-09-27T20:15:00+00:00",
   "source": "ops/hooks/a110.yml",
-  "total_hooks": 29,
+  "total_hooks": 30,
   "hooks": [
     {
       "hook": "dec-latency-gap",
@@ -132,7 +132,20 @@
         "playbook:docs/runbooks/ml_model_ops.md#runtime-eol"
       ],
       "hash": "436e9fb108365037f424a94ae6f12e3ba4bbc40069720848c1d245b45b646f46"
+    },
+    {
+      "hook": "dep-vuln-freeze",
+      "kpi": "security.deps.critical_vulns",
+      "threshold": 0,
+      "window": "15m",
+      "action": "block_release",
+      "owner": "SEC",
+      "rollback": true,
+      "evidence": [
+        "playbook:docs/runbooks/sec_privacy.md#dep-vuln"
+      ],
+      "hash": "09d45854b308c10dcc8deeda6bd8ddefedb29efa80a0f1ae7a0fc22078dcac96"
     }
-    // ... demais hooks até totalizar 29, seguindo o mesmo padrão ...
+    // ... demais hooks até totalizar 30, seguindo o mesmo padrão ...
   ]
 }

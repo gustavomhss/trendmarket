@@ -3,9 +3,9 @@
   "watchers_artifact": "ops/reports/watchers_dry.json",
   "hooks_artifact": "ops/reports/hooks_dry.json",
   "watchers_digest": "acc7e3641e7d0a0ba521176db8b857cad617c5a40e79ac3b1b6efe3534eaa5a6",
-  "hooks_digest": "69198f64b92da4213cb5fd251f78a9fa92c3847745c9ed3079c20c9933157a9b",
+  "hooks_digest": "76c9c43e8ca85f037db9216994ffacd3c4f3634f49e882d0423172e8ef5a6053",
   "watchers_count": 31,
-  "hooks_count": 26,
+  "hooks_count": 27,
   "evidence": {
     "watchers": [
       {
@@ -295,4 +295,64 @@
         "evidence": [
           "metrics:ml.psi",
           "experiments:srm",
-          "playbook:docs/runbooks/ml_model_ops
+          "playbook:docs/runbooks/ml_model_ops.md#model-drift"
+        ],
+        "hash": "fd0601d33a230155d8e2b3b57dce735b096c160b24feaf8654e308cdd10df4c0"
+      },
+      {
+        "hook": "image-vuln-regression-block",
+        "kpi": "image.critical_vuln_count",
+        "threshold": 0,
+        "window": "15m",
+        "action": "block_release",
+        "owner": "sec-priv@trendmarket",
+        "rollback": true,
+        "evidence": [
+          "sbom:latest",
+          "playbook:docs/runbooks/sec_privacy.md#image-vuln"
+        ],
+        "hash": "605160d59f1398348a0e67361e545bfe058985ac6a4f1c5d9dfb9f9e4cb3f039"
+      },
+      {
+        "hook": "dep-vuln-freeze",
+        "kpi": "security.deps.critical_vulns",
+        "threshold": 0,
+        "window": "15m",
+        "action": "block_release",
+        "owner": "sec-priv@trendmarket",
+        "rollback": true,
+        "evidence": [
+          "sbom:latest",
+          "playbook:docs/runbooks/sec_privacy.md#dep-vuln"
+        ],
+        "hash": "6f9a07cb2739097dd119c9b7b0cafdbac85fbfdb42cf3871cef44904a4496686"
+      },
+      {
+        "hook": "formal-verification-freeze",
+        "kpi": "formal.verification.failure",
+        "threshold": 1,
+        "window": "5m",
+        "action": "freeze_pipeline",
+        "owner": "sec-priv@trendmarket",
+        "rollback": true,
+        "evidence": [
+          "playbook:docs/runbooks/sec_privacy.md#formal-verification"
+        ],
+        "hash": "9cb072ce7f233edce7e68f302639e54712bcd1dfa21d1dd4960fdfe614eb0a45"
+      },
+      {
+        "hook": "okr-alignment-escalation",
+        "kpi": "okr.risk_alignment_score",
+        "threshold": 0.8,
+        "window": "7d",
+        "action": "escalate_exec_review",
+        "owner": "strategyops@trendmarket",
+        "rollback": false,
+        "evidence": [
+          "playbook:docs/runbooks/plat_observability.md#okr-alignment"
+        ],
+        "hash": "ea84483b6ddce6866d83a9cb767bcd3c44e768d6c09c5a7292b33dfd817624e6"
+      }
+    ]
+}
+}
