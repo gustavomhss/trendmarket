@@ -1,21 +1,15 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 
-use credit_engine_core::amm::errors::{AmmError, AmmErrorDescriptor, AMM_ERROR_DESCRIPTORS};
+use credit_engine_core::amm::errors::{AmmError, AMM_ERROR_DESCRIPTORS};
 use once_cell::sync::Lazy;
 use regex::Regex;
 
 #[path = "catalog_utils.rs"]
 mod catalog_utils;
+use catalog_utils::{descriptors_by_variant, runtime_catalog_snapshot};
 
 static CODE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"^CE-AMM-\d{4}$").unwrap());
 const ALLOWED_HTTP_STATUSES: &[u16] = &[400, 403, 404, 409, 500, 502, 503];
-
-fn descriptors_by_variant() -> BTreeMap<String, &'static AmmErrorDescriptor> {
-    AMM_ERROR_DESCRIPTORS
-        .iter()
-        .map(|descriptor| (descriptor.variant.variant_name().to_string(), descriptor))
-        .collect()
-}
 
 #[test]
 fn amm_error_runtime_metadata_is_exhaustive() {
@@ -28,11 +22,7 @@ fn amm_error_runtime_metadata_is_exhaustive() {
     );
     assert_eq!(catalog.meta.version, 1, "versão inválida no catálogo");
 
-    let yaml_map: BTreeMap<_, _> = catalog
-        .errors
-        .iter()
-        .map(|entry| (entry.variant.clone(), entry.clone()))
-        .collect();
+    let yaml_map = catalog.entries_by_variant();
     assert_eq!(
         yaml_map.len(),
         catalog.errors.len(),
@@ -40,11 +30,17 @@ fn amm_error_runtime_metadata_is_exhaustive() {
     );
 
     let descriptors = descriptors_by_variant();
+    let runtime_snapshot = runtime_catalog_snapshot();
     assert_eq!(descriptors.len(), AMM_ERROR_DESCRIPTORS.len());
     assert_eq!(
         descriptors.len(),
         AmmError::ALL_VARIANTS.len(),
         "descriptors e ALL_VARIANTS divergem"
+    );
+    assert_eq!(
+        descriptors.len(),
+        runtime_snapshot.len(),
+        "snapshot e descriptors divergem"
     );
 
     let yaml_variants: BTreeSet<_> = yaml_map.keys().cloned().collect();
@@ -67,6 +63,9 @@ fn amm_error_runtime_metadata_is_exhaustive() {
         let descriptor = descriptors
             .get(variant_name)
             .unwrap_or_else(|| panic!("descriptor ausente para {variant_name}"));
+        let snapshot = runtime_snapshot
+            .get(variant_name)
+            .unwrap_or_else(|| panic!("snapshot ausente para {variant_name}"));
 
         let code = variant.error_code();
         let message = variant.user_message();
@@ -122,6 +121,18 @@ fn amm_error_runtime_metadata_is_exhaustive() {
         assert_eq!(
             descriptor.http_status, status,
             "descriptor divergente (http_status) para {variant_name}"
+        );
+        assert_eq!(
+            snapshot.code, code,
+            "snapshot divergente (code) para {variant_name}"
+        );
+        assert_eq!(
+            snapshot.message, message,
+            "snapshot divergente (message) para {variant_name}"
+        );
+        assert_eq!(
+            snapshot.http_status, status,
+            "snapshot divergente (http_status) para {variant_name}"
         );
     }
 }

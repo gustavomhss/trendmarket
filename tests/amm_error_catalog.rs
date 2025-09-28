@@ -1,76 +1,52 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 
-use credit_engine_core::amm::errors::{AmmError, AmmErrorDescriptor, AMM_ERROR_DESCRIPTORS};
+use credit_engine_core::amm::errors::AmmError;
 
 #[path = "catalog_utils.rs"]
 mod catalog_utils;
 
-fn descriptor_map() -> BTreeMap<String, &'static AmmErrorDescriptor> {
-    AMM_ERROR_DESCRIPTORS
-        .iter()
-        .map(|descriptor| (descriptor.variant.variant_name().to_string(), descriptor))
-        .collect()
+#[test]
+fn catalog_metadata_is_consistent() {
+    let catalog = catalog_utils::load_catalog();
+
+    assert_eq!(catalog.meta.domain, "AMM", "unexpected catalog domain");
+    assert_eq!(catalog.meta.prefix, "CE-AMM", "unexpected catalog prefix");
+    assert_eq!(catalog.meta.version, 1, "unexpected catalog version");
 }
 
 #[test]
-fn catalog_is_structurally_valid() {
+fn catalog_entries_match_runtime_descriptors() {
     let catalog = catalog_utils::load_catalog();
-
-    assert_eq!(catalog.meta.domain, "AMM");
-    assert_eq!(catalog.meta.prefix, "CE-AMM");
-    assert_eq!(catalog.meta.version, 1);
-
-    let mut seen_codes = BTreeSet::new();
-    for entry in &catalog.errors {
-        assert!(
-            seen_codes.insert(entry.code.clone()),
-            "código duplicado: {}",
-            entry.code
-        );
-    }
-}
-
-#[test]
-fn catalog_matches_runtime_descriptors() {
-    let catalog = catalog_utils::load_catalog();
-    let descriptors = descriptor_map();
-
+    let yaml_map = catalog.entries_by_variant();
     assert_eq!(
+        yaml_map.len(),
         catalog.errors.len(),
-        descriptors.len(),
-        "quantidade de entradas divergente"
+        "catalog contains duplicated variants"
     );
 
-    for entry in &catalog.errors {
-        let descriptor = descriptors
-            .get(&entry.variant)
-            .unwrap_or_else(|| panic!("descriptor ausente para {}", entry.variant));
+    let runtime_snapshot = catalog_utils::runtime_catalog_snapshot();
+    assert_eq!(
+        runtime_snapshot.len(),
+        AmmError::ALL_VARIANTS.len(),
+        "runtime descriptors and enum variants diverge"
+    );
 
-        assert_eq!(
-            descriptor.code, entry.code,
-            "code divergente para {}",
-            entry.variant
-        );
-        assert_eq!(
-            descriptor.message, entry.message,
-            "mensagem divergente para {}",
-            entry.variant
-        );
-        assert_eq!(
-            descriptor.http_status, entry.http_status,
-            "http_status divergente para {}",
-            entry.variant
-        );
-    }
+    let yaml_variants: BTreeSet<_> = yaml_map.keys().cloned().collect();
+    let runtime_variants: BTreeSet<_> = runtime_snapshot.keys().cloned().collect();
+    assert_eq!(
+        yaml_variants, runtime_variants,
+        "YAML catalog variants diverge from runtime descriptors"
+    );
 
-    for variant in AmmError::ALL_VARIANTS {
-        let variant_name = variant.variant_name();
-        assert!(
-            catalog
-                .errors
-                .iter()
-                .any(|entry| entry.variant == variant_name),
-            "variant {variant_name} ausente do catálogo"
-        );
-    }
+    let yaml_codes: BTreeSet<_> = yaml_map.values().map(|entry| entry.code.clone()).collect();
+    assert_eq!(
+        yaml_codes.len(),
+        yaml_map.len(),
+        "catalog contains duplicated error codes"
+    );
+
+    assert_eq!(
+        yaml_map, runtime_snapshot,
+        "YAML catalog contents diverge from runtime descriptors"
+    );
 }
