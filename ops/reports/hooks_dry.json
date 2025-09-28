@@ -106,7 +106,7 @@
       "evidence": [
         "playbook:docs/runbooks/ml_model_ops.md#runtime-eol"
       ],
-      "hash": "436e9fb108365037f424a94ae6f12e3ba4bbc40069720848c1d245b45b646f46"
+      "hash": "7d682944c100af58e81c02cf1607d1856ea3dcd36192ee923ba2d29603c8d737"
     },
     {
       "hook": "image-vuln-regression-block",

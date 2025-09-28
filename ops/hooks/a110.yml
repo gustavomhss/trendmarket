@@ -291,6 +291,19 @@
       "playbook": "docs/runbooks/plat_observability.md#okr-alignment"
     },
     {
+      "hook": "dp-budget-freeze",
+      "watchers": [
+        "dp_budget_breach_watch"
+      ],
+      "kpi": "privacy.dp_budget_multiplier",
+      "threshold": 1.5,
+      "window": "60m",
+      "action": "freeze_processing",
+      "owner": "SEC",
+      "rollback": true,
+      "playbook": "docs/runbooks/sec_privacy.md#dp-budget"
+    },
+    {
       "hook": "tracing-sampling-freeze",
       "watchers": [
         "tracing_sampling_watch"
