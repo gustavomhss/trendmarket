@@ -1,0 +1,12 @@
+M README.md
+A out/docs/inventory_formulas.csv
+A out/docs/notation_index.json
+A out/logs/threadA/created_files_threadA.txt
+A out/logs/threadA/edited_files_threadA.txt
+A out/logs/threadA/grep_consts.log
+A out/logs/threadA/grep_math.log
+A out/logs/threadA/grep_ops.log
+A out/logs/threadA/link_check.log
+A out/logs/threadA/markdownlint.log
+A out/logs/threadA/name_status_threadA.txt
+A out/logs/threadA/triple_review.md
