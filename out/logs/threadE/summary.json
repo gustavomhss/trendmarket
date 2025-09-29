@@ -1,0 +1,16 @@
+{
+  "build": "PASS",
+  "test": "PASS",
+  "bench": "PASS",
+  "tools": {
+    "rustc": "rustc 1.89.0 (29483883e 2025-08-04)",
+    "cargo": "cargo 1.89.0 (c24e10642 2025-06-23)",
+    "node": "v20.19.4",
+    "npm": "11.4.2",
+    "python": "Python 3.12.10",
+    "go": "go version go1.24.3 linux/amd64"
+  },
+  "artifacts": {
+    "criterion": "target/criterion"
+  }
+}
