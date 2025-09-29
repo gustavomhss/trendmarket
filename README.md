@@ -282,3 +282,192 @@ Os símbolos adotam o padrão `snake_case` dos parâmetros no código, com prefi
 **Notas:** Garante `S_burn <= S_tot`, evita underflow nos saldos e verifica que as reservas remanescentes permanecem acima de `MIN_RESERVE`.
 <!-- END:FORMULAS -->
 
+## Exemplos (Didático / Realista)
+<!-- SECTION:EXAMPLES -->
+### Exemplos Didáticos
+<!-- SUBSECTION:DIDATIC -->
+<!-- END:SUBSECTION:DIDATIC -->
+
+### Exemplos Realistas
+<!-- SUBSECTION:REALISTIC -->
+#### RX1: Cálculo de amount_out (X→Y) — swap VOL→STBL com fee de 30 bps
+**Contexto realista:** pool VOL/STBL com reservas profundas (`125M` VOL vs. `83M` STBL). O livro da corretora mantém STBL com 6 casas, mas o roteador normaliza para WAD (1e18) antes da cotação. A mesa envia `275k` VOL com taxa de taker de 30 bps para testar a fronteira de rounding da cobrança de fee.
+
+**Parâmetros (unidades/escala entre parênteses):**
+| Parâmetro | Valor | Unidade/Escala |
+|---:|---:|:--|
+| decimals_V | 18 | casas |
+| decimals_STBL | 6 → normalizado para WAD | casas |
+| reserves | (R_V, R_STBL) = (125_000_000.000000, 83_000_000.000000) | unidades nativas |
+| fee_bps | 30 | bps |
+| input | dx = 275_000.432109 VOL | WAD (1e18) |
+
+**Passos (com fórmulas ASCII e rounding):**
+1) Aplica fee sobre o input — `dx_fee = ceil(dx * f_ppm / PPM_SCALE)` ⇒ **825.001296327 VOL**  
+   *Rounding:* ceil em `apply_input_fee` — ver `rounding_matrix`: `swap_get_amount_out/apply_input_fee` (ref `src/amm/swap.rs:27..35`)
+2) Net do input — `dx_net = dx - dx_fee` ⇒ **274_175.430812673 VOL**
+3) Atualiza reserva X — `R_V' = R_V + dx_net` ⇒ **125_274_175.430812673 VOL**
+4) Resolve o invariável — `R_STBL* = round_nearest_even((R_V * R_STBL) / R_V')` ⇒ **82_818_345.954549746632789137 STBL**  
+   *Rounding:* bankers em `solve_invariant` — ver `rounding_matrix`: `swap_get_amount_out/solve_invariant` (ref `src/amm/swap.rs:57..59`)
+5) Diferencial de saída — `dy_out = R_STBL - R_STBL*` ⇒ **181_654.045450253367210863 STBL** e `R_STBL' = 82_818_345.954549746632789137 STBL`  
+   *Rounding:* floor em `finalize_out_amount` — ver `rounding_matrix`: `swap_get_amount_out/finalize_out_amount` (ref `src/amm/swap.rs:61..68`)
+
+**Resultado:** `dy_out` = **181_654.045450253367210863 STBL** (WAD, 18 casas)
+
+**Verificação (snippet executável):**
+```rust
+use credit_engine_core::amm::{swap, types::WAD};
+
+let x = 125_000_000u128 * WAD;
+let y = 83_000_000u128 * WAD;
+let dx = 275_000_432_109_000_000_000_000u128; // 275000.432109 VOL
+let dy_out = swap::get_amount_out(x, y, dx, 3_000).unwrap();
+assert_eq!(dy_out, 181_654_045_450_253_367_210_863u128);
+```
+
+**Referências:** Fórmulas → § *Fórmulas do Módulo* (Cálculo de amount_out (X→Y)); Rounding → § *Política de Rounding* (`swap_get_amount_out/apply_input_fee`, `swap_get_amount_out/solve_invariant`, `swap_get_amount_out/finalize_out_amount`)
+
+#### RX2: Amount_in mínimo para alvo Y — swap VOL→STBL próximo ao limite de reserva
+**Contexto realista:** carteira de crédito precisa sacar `525.500875012` STBL de um pool com apenas `12.1M` STBL líquidos (já normalizados para WAD). O pedido respeita o mínimo de reserva (`R_STBL - dy ≈ 12M`), mas pressiona o rounding de ceil nas estimativas para garantir que o protocolo capture taxa integral (50 bps).
+
+**Parâmetros (unidades/escala entre parênteses):**
+| Parâmetro | Valor | Unidade/Escala |
+|---:|---:|:--|
+| decimals_V | 18 | casas |
+| decimals_STBL | 6 → normalizado para WAD | casas |
+| reserves | (R_V, R_STBL) = (48_000_000.000000, 12_100_000.000000) | unidades nativas |
+| fee_bps | 50 | bps |
+| input | dy_target = 525_500.875012 STBL | WAD (1e18) |
+
+**Passos (com fórmulas ASCII e rounding):**
+1) Checagem de segurança — `R_STBL - dy_target = 12_099_999.474499125 STBL` (mantém ≥ `MIN_RESERVE`)
+2) Estima net — `dx_net_est = ceil(R_V * dy_target / (R_STBL - dy_target))` ⇒ **2_179_277.196204561579795744 VOL**  
+   *Rounding:* ceil em `compute_net_target` — ver `rounding_matrix`: `swap_get_amount_in/compute_net_target` (ref `src/amm/swap.rs:94..96`)
+3) Faz gross-up da taxa — `dx_gross_guess = ceil(dx_net_est * PPM_SCALE / (PPM_SCALE - f_ppm))` ⇒ **2_190_228.337894031738488185 VOL**  
+   *Rounding:* ceil em `gross_up_fee` — ver `rounding_matrix`: `swap_get_amount_in/gross_up_fee` (ref `src/amm/swap.rs:105..111`)
+4) Busca binária com `get_amount_out` ⇒ menor `dx_in = 2_190_228.337894031738488183 VOL` que entrega `dy_target` respeitando os roundings de RX1
+
+**Resultado:** `dx_in` = **2_190_228.337894031738488183 VOL** (WAD, 18 casas)
+
+**Verificação (snippet executável):**
+```rust
+use credit_engine_core::amm::{swap, types::WAD};
+
+let x = 48_000_000u128 * WAD;
+let y = 12_100_000u128 * WAD;
+let dy = 525_500_875_012_000_000_000_000u128;
+let dx = swap::get_amount_in(x, y, dy, 5_000).unwrap();
+assert_eq!(dx, 2_190_228_337_894_031_738_488_183u128);
+```
+
+**Referências:** Fórmulas → § *Fórmulas do Módulo* (Amount_in mínimo para alvo Y); Rounding → § *Política de Rounding* (`swap_get_amount_in/compute_net_target`, `swap_get_amount_in/gross_up_fee`, `swap_get_amount_out/*`)
+
+#### RX3: Min out com tolerância — trade de alta tolerância (95%) para VOL→STBL
+**Contexto realista:** um agregador móvel aceita slippage de até 95% para garantir execução num cenário de stress de liquidez. As reservas são assimétricas (`90.5M` VOL vs. `64.25M` STBL), e a operação demonstra o rounding floor ao aplicar o desconto de tolerância.
+
+**Parâmetros (unidades/escala entre parênteses):**
+| Parâmetro | Valor | Unidade/Escala |
+|---:|---:|:--|
+| decimals_V | 18 | casas |
+| decimals_STBL | 6 → normalizado para WAD | casas |
+| reserves | (R_V, R_STBL) = (90_500_000.000000, 64_250_000.000000) | unidades nativas |
+| fee_bps | 30 | bps |
+| slippage_tolerance_ppm | 950_000 | ppm |
+| input | dx = 1_200_000.125987 VOL | WAD (1e18) |
+
+**Passos (com fórmulas ASCII e rounding):**
+1) Cotação bruta — `dy_out = get_amount_out(...)` ⇒ **838_295.810577985881513049 STBL** (mesmos roundings de RX1)
+2) Clamp da tolerância — `tol_eff = min(950_000, PPM_SCALE) = 950_000 ppm`
+3) Desconto conservador — `dy_min = floor(dy_out * (PPM_SCALE - tol_eff) / PPM_SCALE)` ⇒ **41_914.790528899294075652 STBL**  
+   *Rounding:* floor em `apply_slippage_discount` — ver `rounding_matrix`: `pricing_min_out_with_tolerance/apply_slippage_discount` (ref `src/amm/pricing.rs:84..88`)
+
+**Resultado:** `dy_min` = **41_914.790528899294075652 STBL** (WAD, 18 casas)
+
+**Verificação (snippet executável):**
+```rust
+use credit_engine_core::amm::{pricing, types::WAD};
+
+let x = 90_500_000u128 * WAD;
+let y = 64_250_000u128 * WAD;
+let dx = 1_200_000_125_987_000_000_000_000u128;
+let dy_min = pricing::min_out_with_tolerance(x, y, dx, 3_000, 950_000).unwrap();
+assert_eq!(dy_min, 41_914_790_528_899_294_075_652u128);
+```
+
+**Referências:** Fórmulas → § *Fórmulas do Módulo* (Min out com tolerância); Rounding → § *Política de Rounding* (`pricing_min_out_with_tolerance/apply_slippage_discount`, `swap_get_amount_out/*`)
+
+#### RX4: Slippage relativo X→Y — impacto de trade grande com clamp em ppm
+**Contexto realista:** roteador institucional avalia a perda de preço efetivo ao vender `950k` VOL num pool desequilibrado (`32.75M` VOL vs. `112.9M` STBL). O cálculo usa preços em WAD e entrega `31_023 ppm` de slippage, cobrindo dois arredondamentos `bankers` e o clamp sem rounding.
+
+**Parâmetros (unidades/escala entre parênteses):**
+| Parâmetro | Valor | Unidade/Escala |
+|---:|---:|:--|
+| decimals_V | 18 | casas |
+| decimals_STBL | 6 → normalizado para WAD | casas |
+| reserves | (R_V, R_STBL) = (32_750_000.000000, 112_900_000.000000) | unidades nativas |
+| fee_bps | 30 | bps |
+| input | dx = 950_000.784321 VOL | WAD (1e18) |
+
+**Passos (com fórmulas ASCII e rounding):**
+1) Preço spot — `p_spot = round_nearest_even((R_STBL * WAD) / R_V)` ⇒ **3.447328244274809160 WAD**  
+   *Rounding:* bankers em `compute_spot_price` — ver `rounding_matrix`: `pricing_spot_price_x_in_y/compute_spot_price` (ref `src/amm/pricing.rs:19..22`)
+2) Preço de execução — `p_exec = round_nearest_even((dy_out * WAD) / dx)` ⇒ **3.340380340412448601 WAD**  
+   *Rounding:* bankers em `compute_execution_price` — ver `rounding_matrix`: `pricing_execution_price_x_to_y/compute_execution_price` (ref `src/amm/pricing.rs:38..40`)
+3) Slippage bruta — `raw_ppm = round_nearest_even(((p_spot - p_exec) * PPM_SCALE) / p_spot)` ⇒ **31_023 ppm**  
+   *Rounding:* bankers em `normalize_slippage_ratio` — ver `rounding_matrix`: `pricing_slippage_ppm_x_to_y/normalize_slippage_ratio` (ref `src/amm/pricing.rs:52..60`)
+4) Clamp final — `slippage_ppm = min(raw_ppm, PPM_SCALE)` ⇒ **31_023 ppm**  
+   *Rounding:* none em `clamp_slippage_bounds` — ver `rounding_matrix`: `pricing_slippage_ppm_x_to_y/clamp_slippage_bounds` (ref `src/amm/pricing.rs:61..64`)
+
+**Resultado:** `slippage_ppm` = **31_023 ppm** (ppm, Q32.6)
+
+**Verificação (snippet executável):**
+```rust
+use credit_engine_core::amm::{pricing, types::WAD};
+
+let x = 32_750_000u128 * WAD;
+let y = 112_900_000u128 * WAD;
+let dx = 950_000_784_321_000_000_000_000u128;
+let slip = pricing::slippage_ppm_x_to_y(x, y, dx, 3_000).unwrap();
+assert_eq!(slip, 31_023u32);
+```
+
+**Referências:** Fórmulas → § *Fórmulas do Módulo* (Slippage relativo X→Y); Rounding → § *Política de Rounding* (`pricing_spot_price_x_in_y/compute_spot_price`, `pricing_execution_price_x_to_y/compute_execution_price`, `pricing_slippage_ppm_x_to_y/*`)
+
+#### RX5: Add liquidity proporcional — LP institucional em pool profundo
+**Contexto realista:** um provedor adiciona `2.5M` VOL e `2.95M` STBL a um pool com `152.5M` shares em circulação. Ambos os ativos têm 18 casas após normalização, e a alocação é limitada pelo braço de VOL; o exemplo evidencia o floor proporcional usado para proteger LPs contra diluição.
+
+**Parâmetros (unidades/escala entre parênteses):**
+| Parâmetro | Valor | Unidade/Escala |
+|---:|---:|:--|
+| decimals_V | 18 | casas |
+| decimals_STBL | 18 | casas |
+| reserves | (R_V, R_STBL) = (78_500_000.000000, 91_500_000.000000) | unidades nativas |
+| fee_bps | 0 | bps |
+| total_shares | 152_500_000.000000 shares | WAD (1e18) |
+| input | (dx, dy) = (2_500_000.458765 VOL, 2_950_000.876543 STBL) | WAD (1e18) |
+
+**Passos (com fórmulas ASCII e rounding):**
+1) Projeção pelo braço de X — `minted_x = floor(dx * S_tot / R_V)` ⇒ **4_856_688.789320541401273885 shares**  
+   *Rounding:* floor em `proportional_allocation_floor` — ver `rounding_matrix`: `liquidity_add_liquidity/proportional_allocation_floor` (ref `src/amm/liquidity.rs:50..55`)
+2) Projeção pelo braço de Y — `minted_y = floor(dy * S_tot / R_STBL)` ⇒ **4_916_668.127571666666666666 shares** (mesmo estágio de rounding)
+3) Escolha do mínimo — `shares_minted = min(minted_x, minted_y)` ⇒ **4_856_688.789320541401273885 shares**
+
+**Resultado:** `shares_minted` = **4_856_688.789320541401273885 shares** (WAD, 18 casas)
+
+**Verificação (snippet executável):**
+```rust
+use credit_engine_core::amm::{liquidity, types::WAD};
+
+let x = 78_500_000u128 * WAD;
+let y = 91_500_000u128 * WAD;
+let total_shares = 152_500_000u128 * WAD;
+let dx_add = 2_500_000_458_765_000_000_000_000u128;
+let dy_add = 2_950_000_876_543_000_000_000_000u128;
+let minted = liquidity::add_liquidity(x, y, dx_add, dy_add, total_shares).unwrap();
+assert_eq!(minted, 4_856_688_789_320_541_401_273_885u128);
+```
+
+**Referências:** Fórmulas → § *Fórmulas do Módulo* (Add liquidity proporcional); Rounding → § *Política de Rounding* (`liquidity_add_liquidity/proportional_allocation_floor`)
+<!-- END:SUBSECTION:REALISTIC -->
+<!-- END:EXAMPLES -->
+
