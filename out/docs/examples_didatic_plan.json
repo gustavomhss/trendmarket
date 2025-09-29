@@ -1,0 +1,62 @@
+[
+  {
+    "example_id": "EX1",
+    "operation_id": "swap_get_amount_out",
+    "operation_name": "Cálculo de amount_out (X→Y)",
+    "rounding_directions_used": ["ceil", "bankers", "floor"],
+    "stages": [
+      {"stage_id": "apply_input_fee", "description": "Aplica a taxa sobre dx_gross usando ceil"},
+      {"stage_id": "solve_invariant", "description": "Resolve y* = round_nearest_even((x*y)/(x+dx_net))"},
+      {"stage_id": "finalize_out_amount", "description": "Converte y - y* em dy_out com floor implícito"}
+    ],
+    "formula_refs": ["out/docs/inventory_formulas.csv#swap_get_amount_out"],
+    "rounding_refs": [
+      "rounding_matrix:swap_get_amount_out/apply_input_fee",
+      "rounding_matrix:swap_get_amount_out/solve_invariant",
+      "rounding_matrix:swap_get_amount_out/finalize_out_amount"
+    ]
+  },
+  {
+    "example_id": "EX2",
+    "operation_id": "swap_get_amount_in",
+    "operation_name": "Amount_in mínimo para alvo Y",
+    "rounding_directions_used": ["ceil"],
+    "stages": [
+      {"stage_id": "compute_net_target", "description": "Calcula dx_net = ceil(x * dy / (y - dy))"},
+      {"stage_id": "gross_up_fee", "description": "Gross-up da taxa: ceil(dx_net * 1e6 / (1e6 - fee_ppm))"}
+    ],
+    "formula_refs": ["out/docs/inventory_formulas.csv#swap_get_amount_in"],
+    "rounding_refs": [
+      "rounding_matrix:swap_get_amount_in/compute_net_target",
+      "rounding_matrix:swap_get_amount_in/gross_up_fee"
+    ]
+  },
+  {
+    "example_id": "EX3",
+    "operation_id": "pricing_slippage_ppm_x_to_y",
+    "operation_name": "Slippage relativo X→Y",
+    "rounding_directions_used": ["bankers", "none"],
+    "stages": [
+      {"stage_id": "normalize_slippage_ratio", "description": "Calcula ppm = round_nearest_even(((spot - exec) * 1e6) / spot)"},
+      {"stage_id": "clamp_slippage_bounds", "description": "Clampa o resultado ao intervalo [0, PPM_SCALE]"}
+    ],
+    "formula_refs": ["out/docs/inventory_formulas.csv#pricing_slippage_ppm_x_to_y"],
+    "rounding_refs": [
+      "rounding_matrix:pricing_slippage_ppm_x_to_y/normalize_slippage_ratio",
+      "rounding_matrix:pricing_slippage_ppm_x_to_y/clamp_slippage_bounds"
+    ]
+  },
+  {
+    "example_id": "EX4",
+    "operation_id": "liquidity_add_liquidity",
+    "operation_name": "Add liquidity proporcional",
+    "rounding_directions_used": ["floor"],
+    "stages": [
+      {"stage_id": "proportional_allocation_floor", "description": "Calcula shares = floor(min(dx_add * S_tot / R_x, dy_add * S_tot / R_y))"}
+    ],
+    "formula_refs": ["out/docs/inventory_formulas.csv#liquidity_add_liquidity"],
+    "rounding_refs": [
+      "rounding_matrix:liquidity_add_liquidity/proportional_allocation_floor"
+    ]
+  }
+]
