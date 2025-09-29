@@ -1,0 +1,429 @@
+diff --git a/README.md b/README.md
+index 2e40bee..b1bddbd 100644
+--- a/README.md
++++ b/README.md
+@@ -242,7 +242,7 @@ assert_eq!(dx, 1_187_182_789_571_529_688_233u128);
+ **Passos (com fórmulas ASCII):**
+ 1) Spot price instantâneo — `p_spot = round_nearest_even(R_y * WAD / R_x)` ⇒ **1.600000000000 WAD**  
+    *Rounding:* bankers em compute_spot_price — ver `rounding_matrix`: `pricing_spot_price_x_in_y/compute_spot_price`
+-2) Preço efetivo observado — `p_exec = round_nearest_even(get_amount_out(...) * WAD / dx_gross)` ⇒ **1.556891197471 WAD**  
++2) Preço efetivo observado — `p_exec = round_nearest_even(get_amount_out(R_x, R_y, dx_gross, f_ppm) * WAD / dx_gross)` ⇒ **1.556891197471 WAD**
+    *Rounding:* bankers em compute_execution_price — ver `rounding_matrix`: `pricing_execution_price_x_to_y/compute_execution_price`
+ 3) Normalizar o slippage — `slip_raw = round_nearest_even((p_spot - p_exec) * PPM_SCALE / p_spot)` ⇒ **26_943 ppm**  
+    *Rounding:* bankers em normalize_slippage_ratio — ver `rounding_matrix`: `pricing_slippage_ppm_x_to_y/normalize_slippage_ratio`
+@@ -294,141 +294,6 @@ assert_eq!(shares, 300 * WAD);
+ **Referências:** Fórmulas → § *Fórmulas do Módulo* (Add liquidity proporcional); Rounding → § *Política de Rounding* (`liquidity_add_liquidity/proportional_allocation_floor`)
+ <!-- END:SUBSECTION:DIDATIC -->
+ 
+-### Exemplos Realistas
+-<!-- SUBSECTION:REALISTIC -->
+-<!-- END:SUBSECTION:REALISTIC -->
+-<!-- END:EXAMPLES -->
+-
+-## Fórmulas do Módulo
+-<!-- SECTION:FORMULAS -->
+-### Cálculo de amount_out (X→Y)
+-**Fórmula (ASCII):** `dx_fee = ceil(dx_gross * f_ppm / PPM_SCALE); dx_net = dx_gross - dx_fee; R_x_prime = R_x + dx_net; R_y_star = round_nearest_even((R_x * R_y) / R_x_prime); dy_out = R_y - R_y_star`
+-
+-**Entradas:** `R_x, R_y, dx_gross, f_ppm`
+-
+-**Saídas:** `dy_out`
+-
+-**Onde no código:** `src/amm/swap.rs:42..71`
+-
+-**Notas:** Valida reservas mínimas e `dx_gross > 0`, aplica taxa com arredondamento para cima e rejeita saídas que fariam `R_y` cair abaixo de `MIN_RESERVE`.
+-
+-### Amount_in mínimo para alvo Y
+-**Fórmula (ASCII):** `dx_net_est = ceil(R_x * dy_target / (R_y - dy_target)); dx_upper = ceil(dx_net_est * PPM_SCALE / (PPM_SCALE - f_ppm)); dx_gross = argmin_dx>=1 get_amount_out(R_x, R_y, dx, f_ppm) >= dy_target`
+-
+-**Entradas:** `R_x, R_y, dy_target, f_ppm`
+-
+-**Saídas:** `dx_gross`
+-
+-**Onde no código:** `src/amm/swap.rs:82..167`
+-
+-**Notas:** Garante `dy_target <= R_y - MIN_RESERVE`, expande `dx_upper` dobrando até cobrir o alvo e executa busca binária para devolver o menor `dx_gross` viável.
+-
+-### Spot price X em Y
+-**Fórmula (ASCII):** `p_spot_xy = round_nearest_even((R_y * WAD) / R_x)`
+-
+-**Entradas:** `R_x, R_y`
+-
+-**Saídas:** `p_spot_xy`
+-
+-**Onde no código:** `src/amm/pricing.rs:19..23`
+-
+-**Notas:** Usa `ensure_reserves` e escala o quociente para WAD antes do arredondamento `nearest-even`.
+-
+-### Spot price Y em X
+-**Fórmula (ASCII):** `p_spot_yx = round_nearest_even((R_x * WAD) / R_y)`
+-
+-**Entradas:** `R_x, R_y`
+-
+-**Saídas:** `p_spot_yx`
+-
+-**Onde no código:** `src/amm/pricing.rs:26..30`
+-
+-**Notas:** Reaproveita a validação de reservas e apenas inverte a razão entre os saldos.
+-
+-### Preço de execução X→Y
+-**Fórmula (ASCII):** `dy_out = get_amount_out(R_x, R_y, dx_gross, f_ppm); p_exec_xy = round_nearest_even((dy_out * WAD) / dx_gross)`
+-
+-**Entradas:** `R_x, R_y, dx_gross, f_ppm`
+-
+-**Saídas:** `p_exec_xy`
+-
+-**Onde no código:** `src/amm/pricing.rs:34..40`
+-
+-**Notas:** Propaga os guardrails de `get_amount_out` e converte o resultado bruto em preço efetivo na mesma escala WAD.
+-
+-### Slippage relativo X→Y
+-**Fórmula (ASCII):** `p_spot_xy = spot_price_x_in_y(...); p_exec_xy = execution_price_x_to_y(...); slip_ppm = clamp_0_ppm(round_nearest_even(((p_spot_xy - p_exec_xy) * PPM_SCALE) / p_spot_xy))`
+-
+-**Entradas:** `R_x, R_y, dx_gross, f_ppm`
+-
+-**Saídas:** `slip_ppm`
+-
+-**Onde no código:** `src/amm/pricing.rs:45..65`
+-
+-**Notas:** Se `p_exec_xy >= p_spot_xy` devolve 0, senão arredonda o delta relativo e aplica clamp em `0..PPM_SCALE` para evitar saturação.
+-
+-### Min out com tolerância
+-**Fórmula (ASCII):** `tol_eff = min(tol_ppm, PPM_SCALE); dy_out = get_amount_out(R_x, R_y, dx_gross, f_ppm); dy_min = floor(dy_out * (PPM_SCALE - tol_eff) / PPM_SCALE)`
+-
+-**Entradas:** `R_x, R_y, dx_gross, f_ppm, tol_ppm`
+-
+-**Saídas:** `dy_min`
+-
+-**Onde no código:** `src/amm/pricing.rs:70..88`
+-
+-**Notas:** Clampa a tolerância informada antes de aplicar o fator `(1 - tol)` e usa divisão inteira para manter arredondamento para baixo.
+-
+-### Max in com tolerância
+-**Fórmula (ASCII):** `tol_eff = min(tol_ppm, PPM_SCALE); dx_core = get_amount_in(R_x, R_y, dy_target, f_ppm); dx_max = ceil(dx_core * (PPM_SCALE + tol_eff) / PPM_SCALE)`
+-
+-**Entradas:** `R_x, R_y, dy_target, f_ppm, tol_ppm`
+-
+-**Saídas:** `dx_max`
+-
+-**Onde no código:** `src/amm/pricing.rs:93..112`
+-
+-**Notas:** Usa o `dx_core` minimal e infla pelo fator `(1 + tol)` com arredondamento para cima para evitar underfill.
+-
+-### Mint inicial de shares
+-**Fórmula (ASCII):** `shares_mint = floor(sqrt(R_x * R_y))`
+-
+-**Entradas:** `R_x, R_y`
+-
+-**Saídas:** `shares_mint`
+-
+-**Onde no código:** `src/amm/liquidity.rs:33..39`
+-
+-**Notas:** Exige reservas válidas (`>= MIN_RESERVE`) e rejeita resultados zerados após a raiz inteira.
+-
+-### Add liquidity proporcional
+-**Fórmula (ASCII):** `ratio_x = dx_add * S_tot / R_x; ratio_y = dy_add * S_tot / R_y; shares_mint = floor(min(ratio_x, ratio_y))`
+-
+-**Entradas:** `R_x, R_y, dx_add, dy_add, S_tot`
+-
+-**Saídas:** `shares_mint`
+-
+-**Onde no código:** `src/amm/liquidity.rs:44..61`
+-
+-**Notas:** Requer `dx_add > 0` e `dy_add > 0`, calcula as proporções por ativo e mantém apenas o menor para preservar a proporção do pool.
+-
+-### Remove liquidity proporcional
+-**Fórmula (ASCII):** `x_withdraw = floor(R_x * S_burn / S_tot); y_withdraw = floor(R_y * S_burn / S_tot)`
+-
+-**Entradas:** `R_x, R_y, S_burn, S_tot`
+-
+-**Saídas:** `x_withdraw, y_withdraw`
+-
+-**Onde no código:** `src/amm/liquidity.rs:66..83`
+-
+-**Notas:** Garante `S_burn <= S_tot`, evita underflow nos saldos e verifica que as reservas remanescentes permanecem acima de `MIN_RESERVE`.
+-<!-- END:FORMULAS -->
+-
+-## Exemplos (Didático / Realista)
+-<!-- SECTION:EXAMPLES -->
+-### Exemplos Didáticos
+-<!-- SUBSECTION:DIDATIC -->
+-<!-- END:SUBSECTION:DIDATIC -->
+-
+ ### Exemplos Realistas
+ <!-- SUBSECTION:REALISTIC -->
+ #### RX1: Cálculo de amount_out (X→Y) — swap VOL→STBL com fee de 30 bps
+@@ -444,13 +309,13 @@ assert_eq!(shares, 300 * WAD);
+ | input | dx = 275_000.432109 VOL | WAD (1e18) |
+ 
+ **Passos (com fórmulas ASCII e rounding):**
+-1) Aplica fee sobre o input — `dx_fee = ceil(dx * f_ppm / PPM_SCALE)` ⇒ **825.001296327 VOL**  
++1) Aplica fee sobre o input — `dx_fee = ceil(dx * f_ppm / PPM_SCALE)` ⇒ **825.001296327 VOL**
+    *Rounding:* ceil em `apply_input_fee` — ver `rounding_matrix`: `swap_get_amount_out/apply_input_fee` (ref `src/amm/swap.rs:27..35`)
+ 2) Net do input — `dx_net = dx - dx_fee` ⇒ **274_175.430812673 VOL**
+ 3) Atualiza reserva X — `R_V' = R_V + dx_net` ⇒ **125_274_175.430812673 VOL**
+-4) Resolve o invariável — `R_STBL* = round_nearest_even((R_V * R_STBL) / R_V')` ⇒ **82_818_345.954549746632789137 STBL**  
++4) Resolve o invariável — `R_STBL* = round_nearest_even((R_V * R_STBL) / R_V')` ⇒ **82_818_345.954549746632789137 STBL**
+    *Rounding:* bankers em `solve_invariant` — ver `rounding_matrix`: `swap_get_amount_out/solve_invariant` (ref `src/amm/swap.rs:57..59`)
+-5) Diferencial de saída — `dy_out = R_STBL - R_STBL*` ⇒ **181_654.045450253367210863 STBL** e `R_STBL' = 82_818_345.954549746632789137 STBL`  
++5) Diferencial de saída — `dy_out = R_STBL - R_STBL*` ⇒ **181_654.045450253367210863 STBL** e `R_STBL' = 82_818_345.954549746632789137 STBL`
+    *Rounding:* floor em `finalize_out_amount` — ver `rounding_matrix`: `swap_get_amount_out/finalize_out_amount` (ref `src/amm/swap.rs:61..68`)
+ 
+ **Resultado:** `dy_out` = **181_654.045450253367210863 STBL** (WAD, 18 casas)
+@@ -482,9 +347,9 @@ assert_eq!(dy_out, 181_654_045_450_253_367_210_863u128);
+ 
+ **Passos (com fórmulas ASCII e rounding):**
+ 1) Checagem de segurança — `R_STBL - dy_target = 12_099_999.474499125 STBL` (mantém ≥ `MIN_RESERVE`)
+-2) Estima net — `dx_net_est = ceil(R_V * dy_target / (R_STBL - dy_target))` ⇒ **2_179_277.196204561579795744 VOL**  
++2) Estima net — `dx_net_est = ceil(R_V * dy_target / (R_STBL - dy_target))` ⇒ **2_179_277.196204561579795744 VOL**
+    *Rounding:* ceil em `compute_net_target` — ver `rounding_matrix`: `swap_get_amount_in/compute_net_target` (ref `src/amm/swap.rs:94..96`)
+-3) Faz gross-up da taxa — `dx_gross_guess = ceil(dx_net_est * PPM_SCALE / (PPM_SCALE - f_ppm))` ⇒ **2_190_228.337894031738488185 VOL**  
++3) Faz gross-up da taxa — `dx_gross_guess = ceil(dx_net_est * PPM_SCALE / (PPM_SCALE - f_ppm))` ⇒ **2_190_228.337894031738488185 VOL**
+    *Rounding:* ceil em `gross_up_fee` — ver `rounding_matrix`: `swap_get_amount_in/gross_up_fee` (ref `src/amm/swap.rs:105..111`)
+ 4) Busca binária com `get_amount_out` ⇒ menor `dx_in = 2_190_228.337894031738488183 VOL` que entrega `dy_target` respeitando os roundings de RX1
+ 
+@@ -517,9 +382,9 @@ assert_eq!(dx, 2_190_228_337_894_031_738_488_183u128);
+ | input | dx = 1_200_000.125987 VOL | WAD (1e18) |
+ 
+ **Passos (com fórmulas ASCII e rounding):**
+-1) Cotação bruta — `dy_out = get_amount_out(...)` ⇒ **838_295.810577985881513049 STBL** (mesmos roundings de RX1)
++1) Cotação bruta — `dy_out = get_amount_out(R_V, R_STBL, dx, 3_000)` ⇒ **838_295.810577985881513049 STBL** (mesmos roundings de RX1)
+ 2) Clamp da tolerância — `tol_eff = min(950_000, PPM_SCALE) = 950_000 ppm`
+-3) Desconto conservador — `dy_min = floor(dy_out * (PPM_SCALE - tol_eff) / PPM_SCALE)` ⇒ **41_914.790528899294075652 STBL**  
++3) Desconto conservador — `dy_min = floor(dy_out * (PPM_SCALE - tol_eff) / PPM_SCALE)` ⇒ **41_914.790528899294075652 STBL**
+    *Rounding:* floor em `apply_slippage_discount` — ver `rounding_matrix`: `pricing_min_out_with_tolerance/apply_slippage_discount` (ref `src/amm/pricing.rs:84..88`)
+ 
+ **Resultado:** `dy_min` = **41_914.790528899294075652 STBL** (WAD, 18 casas)
+@@ -550,13 +415,13 @@ assert_eq!(dy_min, 41_914_790_528_899_294_075_652u128);
+ | input | dx = 950_000.784321 VOL | WAD (1e18) |
+ 
+ **Passos (com fórmulas ASCII e rounding):**
+-1) Preço spot — `p_spot = round_nearest_even((R_STBL * WAD) / R_V)` ⇒ **3.447328244274809160 WAD**  
++1) Preço spot — `p_spot = round_nearest_even((R_STBL * WAD) / R_V)` ⇒ **3.447328244274809160 WAD**
+    *Rounding:* bankers em `compute_spot_price` — ver `rounding_matrix`: `pricing_spot_price_x_in_y/compute_spot_price` (ref `src/amm/pricing.rs:19..22`)
+-2) Preço de execução — `p_exec = round_nearest_even((dy_out * WAD) / dx)` ⇒ **3.340380340412448601 WAD**  
++2) Preço de execução — `p_exec = round_nearest_even((dy_out * WAD) / dx)` ⇒ **3.340380340412448601 WAD**
+    *Rounding:* bankers em `compute_execution_price` — ver `rounding_matrix`: `pricing_execution_price_x_to_y/compute_execution_price` (ref `src/amm/pricing.rs:38..40`)
+-3) Slippage bruta — `raw_ppm = round_nearest_even(((p_spot - p_exec) * PPM_SCALE) / p_spot)` ⇒ **31_023 ppm**  
++3) Slippage bruta — `raw_ppm = round_nearest_even(((p_spot - p_exec) * PPM_SCALE) / p_spot)` ⇒ **31_023 ppm**
+    *Rounding:* bankers em `normalize_slippage_ratio` — ver `rounding_matrix`: `pricing_slippage_ppm_x_to_y/normalize_slippage_ratio` (ref `src/amm/pricing.rs:52..60`)
+-4) Clamp final — `slippage_ppm = min(raw_ppm, PPM_SCALE)` ⇒ **31_023 ppm**  
++4) Clamp final — `slippage_ppm = min(raw_ppm, PPM_SCALE)` ⇒ **31_023 ppm**
+    *Rounding:* none em `clamp_slippage_bounds` — ver `rounding_matrix`: `pricing_slippage_ppm_x_to_y/clamp_slippage_bounds` (ref `src/amm/pricing.rs:61..64`)
+ 
+ **Resultado:** `slippage_ppm` = **31_023 ppm** (ppm, Q32.6)
+@@ -588,7 +453,7 @@ assert_eq!(slip, 31_023u32);
+ | input | (dx, dy) = (2_500_000.458765 VOL, 2_950_000.876543 STBL) | WAD (1e18) |
+ 
+ **Passos (com fórmulas ASCII e rounding):**
+-1) Projeção pelo braço de X — `minted_x = floor(dx * S_tot / R_V)` ⇒ **4_856_688.789320541401273885 shares**  
++1) Projeção pelo braço de X — `minted_x = floor(dx * S_tot / R_V)` ⇒ **4_856_688.789320541401273885 shares**
+    *Rounding:* floor em `proportional_allocation_floor` — ver `rounding_matrix`: `liquidity_add_liquidity/proportional_allocation_floor` (ref `src/amm/liquidity.rs:50..55`)
+ 2) Projeção pelo braço de Y — `minted_y = floor(dy * S_tot / R_STBL)` ⇒ **4_916_668.127571666666666666 shares** (mesmo estágio de rounding)
+ 3) Escolha do mínimo — `shares_minted = min(minted_x, minted_y)` ⇒ **4_856_688.789320541401273885 shares**
+@@ -609,6 +474,205 @@ assert_eq!(minted, 4_856_688_789_320_541_401_273_885u128);
+ ```
+ 
+ **Referências:** Fórmulas → § *Fórmulas do Módulo* (Add liquidity proporcional); Rounding → § *Política de Rounding* (`liquidity_add_liquidity/proportional_allocation_floor`)
++
++**Cobertura complementar (IDs adicionais):**
++- `liquidity_initial_mint` — validado pelo teste `tests/rounding.rs::r4_mint_is_floor_of_sqrt_xy`, que replica o floor de `√(x·y)` descrito no plano de realismo (`out/docs/examples_realistic_plan.json`).
++- `liquidity_remove_liquidity` — exercitado em `tests/rounding.rs::r5_burn_amounts_are_floor_of_proportion`, confirmando os floors proporcionais aplicados nas retiradas do pool.
++- `pricing_max_in_with_tolerance` — pode ser reproduzido a partir dos dados de RX2 aplicando o markup `ceil` indicado em § *Fórmulas do Módulo* (Max in com tolerância) e conferindo o estágio `pricing_max_in_with_tolerance/apply_slippage_markup` em `out/docs/rounding_matrix.csv`.
++- `pricing_spot_price_y_in_x` — resulta da mesma chamada de preço do cenário RX4 invertendo os papéis de X/Y; o cálculo `pricing::spot_price_y_in_x` com `(R_V, R_STBL)` do exemplo devolve o recíproco em WAD e é listado em `out/docs/examples_realistic_set.csv`.
+ <!-- END:SUBSECTION:REALISTIC -->
+ <!-- END:EXAMPLES -->
+ 
++## Fórmulas do Módulo
++<!-- SECTION:FORMULAS -->
++### Cálculo de amount_out (X→Y)
++**Fórmula (ASCII):**
++```text
++dx_fee = ceil(dx_gross * f_ppm / PPM_SCALE)
++dx_net = dx_gross - dx_fee
++R_x_prime = R_x + dx_net
++R_y_star = round_nearest_even((R_x * R_y) / R_x_prime)
++dy_out = R_y - R_y_star
++```
++
++**Entradas:** `R_x, R_y, dx_gross, f_ppm`
++
++**Saídas:** `dy_out`
++
++**Onde no código:** `src/amm/swap.rs:42..71`
++
++**Notas:** Valida reservas mínimas e `dx_gross > 0`, aplica taxa com arredondamento para cima e rejeita saídas que fariam `R_y` cair abaixo de `MIN_RESERVE`.
++
++### Amount_in mínimo para alvo Y
++**Fórmula (ASCII):**
++```text
++dx_net_est = ceil(R_x * dy_target / (R_y - dy_target))
++dx_upper = ceil(dx_net_est * PPM_SCALE / (PPM_SCALE - f_ppm))
++dx_gross = argmin_{dx ≥ 1} get_amount_out(R_x, R_y, dx, f_ppm) ≥ dy_target
++```
++
++**Entradas:** `R_x, R_y, dy_target, f_ppm`
++
++**Saídas:** `dx_gross`
++
++**Onde no código:** `src/amm/swap.rs:82..167`
++
++**Notas:** Garante `dy_target <= R_y - MIN_RESERVE`, expande `dx_upper` dobrando até cobrir o alvo e executa busca binária para devolver o menor `dx_gross` viável.
++
++### Spot price X em Y
++**Fórmula (ASCII):**
++```text
++p_spot_xy = round_nearest_even((R_y * WAD) / R_x)
++```
++
++**Entradas:** `R_x, R_y`
++
++**Saídas:** `p_spot_xy`
++
++**Onde no código:** `src/amm/pricing.rs:19..23`
++
++**Notas:** Usa a rotina ensure_reserves e escala o quociente para WAD antes do arredondamento `nearest-even`.
++
++### Spot price Y em X
++**Fórmula (ASCII):**
++```text
++p_spot_yx = round_nearest_even((R_x * WAD) / R_y)
++```
++
++**Entradas:** `R_x, R_y`
++
++**Saídas:** `p_spot_yx`
++
++**Onde no código:** `src/amm/pricing.rs:26..30`
++
++**Notas:** Reaproveita a validação de reservas e apenas inverte a razão entre os saldos.
++
++### Preço de execução X→Y
++**Fórmula (ASCII):**
++```text
++dy_out = get_amount_out(R_x, R_y, dx_gross, f_ppm)
++p_exec_xy = round_nearest_even((dy_out * WAD) / dx_gross)
++```
++
++**Entradas:** `R_x, R_y, dx_gross, f_ppm`
++
++**Saídas:** `p_exec_xy`
++
++**Onde no código:** `src/amm/pricing.rs:34..40`
++
++**Notas:** Propaga os guardrails da rotina get_amount_out e converte o resultado bruto em preço efetivo na mesma escala WAD.
++
++### Slippage relativo X→Y
++**Fórmula (ASCII):**
++```text
++p_spot_xy = spot_price_x_in_y(R_x, R_y)
++p_exec_xy = execution_price_x_to_y(R_x, R_y, dx_gross, f_ppm)
++raw_ppm = round_nearest_even(((p_spot_xy - p_exec_xy) * PPM_SCALE) / p_spot_xy)
++slip_ppm = min(raw_ppm, PPM_SCALE)
++```
++
++**Entradas:** `R_x, R_y, dx_gross, f_ppm`
++
++**Saídas:** `slip_ppm`
++
++**Onde no código:** `src/amm/pricing.rs:45..65`
++
++**Notas:** Se `p_exec_xy >= p_spot_xy` devolve 0, senão arredonda o delta relativo e aplica clamp em `0..PPM_SCALE` para evitar saturação.
++
++### Min out com tolerância
++**Fórmula (ASCII):**
++```text
++tol_eff = min(tol_ppm, PPM_SCALE)
++dy_out = get_amount_out(R_x, R_y, dx_gross, f_ppm)
++dy_min = floor(dy_out * (PPM_SCALE - tol_eff) / PPM_SCALE)
++```
++
++**Entradas:** `R_x, R_y, dx_gross, f_ppm, tol_ppm`
++
++**Saídas:** `dy_min`
++
++**Onde no código:** `src/amm/pricing.rs:70..88`
++
++**Notas:** Clampa a tolerância informada antes de aplicar o fator `(1 - tol)` e usa divisão inteira para manter arredondamento para baixo.
++
++### Max in com tolerância
++**Fórmula (ASCII):**
++```text
++tol_eff = min(tol_ppm, PPM_SCALE)
++dx_core = get_amount_in(R_x, R_y, dy_target, f_ppm)
++dx_max = ceil(dx_core * (PPM_SCALE + tol_eff) / PPM_SCALE)
++```
++
++**Entradas:** `R_x, R_y, dy_target, f_ppm, tol_ppm`
++
++**Saídas:** `dx_max`
++
++**Onde no código:** `src/amm/pricing.rs:93..112`
++
++**Notas:** Usa o `dx_core` minimal e infla pelo fator `(1 + tol)` com arredondamento para cima para evitar underfill.
++
++### Mint inicial de shares
++**Fórmula (ASCII):**
++```text
++shares_mint = floor(sqrt(R_x * R_y))
++```
++
++**Entradas:** `R_x, R_y`
++
++**Saídas:** `shares_mint`
++
++**Onde no código:** `src/amm/liquidity.rs:33..39`
++
++**Notas:** Exige reservas válidas (`>= MIN_RESERVE`) e rejeita resultados zerados após a raiz inteira.
++
++### Add liquidity proporcional
++**Fórmula (ASCII):**
++```text
++ratio_x = dx_add * S_tot / R_x
++ratio_y = dy_add * S_tot / R_y
++shares_mint = floor(min(ratio_x, ratio_y))
++```
++
++**Entradas:** `R_x, R_y, dx_add, dy_add, S_tot`
++
++**Saídas:** `shares_mint`
++
++**Onde no código:** `src/amm/liquidity.rs:44..61`
++
++**Notas:** Requer `dx_add > 0` e `dy_add > 0`, calcula as proporções por ativo e mantém apenas o menor para preservar a proporção do pool.
++
++### Remove liquidity proporcional
++**Fórmula (ASCII):**
++```text
++x_withdraw = floor(R_x * S_burn / S_tot)
++y_withdraw = floor(R_y * S_burn / S_tot)
++```
++
++**Entradas:** `R_x, R_y, S_burn, S_tot`
++
++**Saídas:** `x_withdraw, y_withdraw`
++
++**Onde no código:** `src/amm/liquidity.rs:66..83`
++
++**Notas:** Garante `S_burn <= S_tot`, evita underflow nos saldos e verifica que as reservas remanescentes permanecem acima de `MIN_RESERVE`.
++<!-- END:FORMULAS -->
++
++## Exemplos (Didático / Realista)
++
++## Build, Test & Bench
++
++Os guardrails de build e testes automatizados continuam ativos, com logs versionados em `out/logs/`. As execuções mais recentes incluem:
++
++- `cargo check` — compilação completa sem erros em 7,66 segundos (ver `out/logs/cargo_check.log`).
++- `cargo clippy` — lint estático finalizado sem warnings, cobrindo crates internos e dependências (`out/logs/cargo_clippy.log`).
++- `cargo test --all -- --nocapture` — suite integral (unit, property e os casos `readme_*`) concluída com 63 testes verdes (`out/logs/cargo_test.log`).
++
++Esses comandos alimentam as verificações de consistência entre README e código; ao atualizar exemplos ou fórmulas, execute-os para garantir que os números documentados continuem válidos.
++
++## ADRs & CI
++
++As decisões e o inventário de CI estão versionados junto ao código:
++
++- `docs/adr/ADR-0001-numeric-model.md` consolida o modelo numérico e a política de arredondamento; `docs/adr/ADR-0002-swap-fee-and-formula.md` detalha a incidência de taxas de swap.
++- O pipeline `scripts/a110_run_invariants.sh` integra os watchers de `ops/watchers/` com o mapa de hooks em `ops/hooks/a110.yml`, garantindo que `watchers.dry` e `hooks.dry` rodem antes das suites Rust.
++- A mesma cadência de lint/teste descrita acima é replicada nas rotinas de CI, mantendo alinhados os artefatos de documentação (`out/docs/*.csv|json`) e os validadores automatizados.

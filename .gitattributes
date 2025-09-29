@@ -1,2 +1,2 @@
 otelcol-contrib filter=lfs diff=lfs merge=lfs -text
-*.zlist text eol=lf
+*.zlist text eol=lf diff
