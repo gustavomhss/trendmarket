@@ -1,0 +1,405 @@
+[
+  {
+    "symbol": "R_x",
+    "name": "Reserva do ativo X",
+    "unit": "Wad",
+    "scale": "1e18",
+    "type": "u128",
+    "refs": [
+      {
+        "file": "src/amm/swap.rs",
+        "line": 42
+      }
+    ]
+  },
+  {
+    "symbol": "R_y",
+    "name": "Reserva do ativo Y",
+    "unit": "Wad",
+    "scale": "1e18",
+    "type": "u128",
+    "refs": [
+      {
+        "file": "src/amm/swap.rs",
+        "line": 42
+      }
+    ]
+  },
+  {
+    "symbol": "dx_gross",
+    "name": "Quantidade bruta enviada de X",
+    "unit": "Wad",
+    "scale": "1e18",
+    "type": "u128",
+    "refs": [
+      {
+        "file": "src/amm/swap.rs",
+        "line": 42
+      }
+    ]
+  },
+  {
+    "symbol": "f_ppm",
+    "name": "Taxa aplicada em partes por milhão",
+    "unit": "ppm",
+    "scale": "1e6",
+    "type": "u32",
+    "refs": [
+      {
+        "file": "src/amm/swap.rs",
+        "line": 42
+      }
+    ]
+  },
+  {
+    "symbol": "dx_fee",
+    "name": "Taxa cobrada sobre dx_gross",
+    "unit": "Wad",
+    "scale": "1e18",
+    "type": "u128",
+    "refs": [
+      {
+        "file": "src/amm/swap.rs",
+        "line": 48
+      }
+    ]
+  },
+  {
+    "symbol": "dx_net",
+    "name": "Quantidade líquida após taxa",
+    "unit": "Wad",
+    "scale": "1e18",
+    "type": "u128",
+    "refs": [
+      {
+        "file": "src/amm/swap.rs",
+        "line": 49
+      }
+    ]
+  },
+  {
+    "symbol": "R_x_prime",
+    "name": "Reserva X pós-entrada (x1)",
+    "unit": "Wad",
+    "scale": "1e18",
+    "type": "u128",
+    "refs": [
+      {
+        "file": "src/amm/swap.rs",
+        "line": 55
+      }
+    ]
+  },
+  {
+    "symbol": "k",
+    "name": "Invariante produto R_x * R_y",
+    "unit": "Wad^2",
+    "scale": "1e36",
+    "type": "U256",
+    "refs": [
+      {
+        "file": "src/amm/swap.rs",
+        "line": 58
+      }
+    ]
+  },
+  {
+    "symbol": "R_y_star",
+    "name": "Reserva Y hipotética após a troca",
+    "unit": "Wad",
+    "scale": "1e18",
+    "type": "u128",
+    "refs": [
+      {
+        "file": "src/amm/swap.rs",
+        "line": 59
+      }
+    ]
+  },
+  {
+    "symbol": "dy_out",
+    "name": "Quantidade de Y entregue na troca",
+    "unit": "Wad",
+    "scale": "1e18",
+    "type": "u128",
+    "refs": [
+      {
+        "file": "src/amm/swap.rs",
+        "line": 62
+      }
+    ]
+  },
+  {
+    "symbol": "dy_target",
+    "name": "Quantidade alvo de Y desejada",
+    "unit": "Wad",
+    "scale": "1e18",
+    "type": "u128",
+    "refs": [
+      {
+        "file": "src/amm/swap.rs",
+        "line": 82
+      }
+    ]
+  },
+  {
+    "symbol": "dx_upper",
+    "name": "Limite superior bruto usado na busca",
+    "unit": "Wad",
+    "scale": "1e18",
+    "type": "u128",
+    "refs": [
+      {
+        "file": "src/amm/swap.rs",
+        "line": 105
+      }
+    ]
+  },
+  {
+    "symbol": "dx_core",
+    "name": "dx calculado por get_amount_in",
+    "unit": "Wad",
+    "scale": "1e18",
+    "type": "u128",
+    "refs": [
+      {
+        "file": "src/amm/pricing.rs",
+        "line": 101
+      }
+    ]
+  },
+  {
+    "symbol": "p_spot_xy",
+    "name": "Preço spot de X em Y",
+    "unit": "Wad",
+    "scale": "1e18",
+    "type": "u128",
+    "refs": [
+      {
+        "file": "src/amm/pricing.rs",
+        "line": 19
+      }
+    ]
+  },
+  {
+    "symbol": "p_spot_yx",
+    "name": "Preço spot de Y em X",
+    "unit": "Wad",
+    "scale": "1e18",
+    "type": "u128",
+    "refs": [
+      {
+        "file": "src/amm/pricing.rs",
+        "line": 26
+      }
+    ]
+  },
+  {
+    "symbol": "p_exec_xy",
+    "name": "Preço efetivo da troca X→Y",
+    "unit": "Wad",
+    "scale": "1e18",
+    "type": "u128",
+    "refs": [
+      {
+        "file": "src/amm/pricing.rs",
+        "line": 34
+      }
+    ]
+  },
+  {
+    "symbol": "slip_ppm",
+    "name": "Slippage relativo em ppm",
+    "unit": "ppm",
+    "scale": "1e6",
+    "type": "u32",
+    "refs": [
+      {
+        "file": "src/amm/pricing.rs",
+        "line": 45
+      }
+    ]
+  },
+  {
+    "symbol": "tol_ppm",
+    "name": "Tolerância de slippage informada",
+    "unit": "ppm",
+    "scale": "1e6",
+    "type": "u32",
+    "refs": [
+      {
+        "file": "src/amm/pricing.rs",
+        "line": 75
+      }
+    ]
+  },
+  {
+    "symbol": "tol_eff",
+    "name": "Tolerância limitada a 0..PPM_SCALE",
+    "unit": "ppm",
+    "scale": "1e6",
+    "type": "u64",
+    "refs": [
+      {
+        "file": "src/amm/pricing.rs",
+        "line": 79
+      }
+    ]
+  },
+  {
+    "symbol": "dy_min",
+    "name": "Mínimo aceitável de Y com tolerância",
+    "unit": "Wad",
+    "scale": "1e18",
+    "type": "u128",
+    "refs": [
+      {
+        "file": "src/amm/pricing.rs",
+        "line": 84
+      }
+    ]
+  },
+  {
+    "symbol": "dx_max",
+    "name": "Máximo aceitável de X com tolerância",
+    "unit": "Wad",
+    "scale": "1e18",
+    "type": "u128",
+    "refs": [
+      {
+        "file": "src/amm/pricing.rs",
+        "line": 108
+      }
+    ]
+  },
+  {
+    "symbol": "S_tot",
+    "name": "Total de shares em circulação",
+    "unit": "Wad",
+    "scale": "1e18",
+    "type": "u128",
+    "refs": [
+      {
+        "file": "src/amm/liquidity.rs",
+        "line": 44
+      }
+    ]
+  },
+  {
+    "symbol": "dx_add",
+    "name": "Quantidade de X adicionada na liquidez",
+    "unit": "Wad",
+    "scale": "1e18",
+    "type": "u128",
+    "refs": [
+      {
+        "file": "src/amm/liquidity.rs",
+        "line": 44
+      }
+    ]
+  },
+  {
+    "symbol": "dy_add",
+    "name": "Quantidade de Y adicionada na liquidez",
+    "unit": "Wad",
+    "scale": "1e18",
+    "type": "u128",
+    "refs": [
+      {
+        "file": "src/amm/liquidity.rs",
+        "line": 44
+      }
+    ]
+  },
+  {
+    "symbol": "shares_mint",
+    "name": "Shares emitidas para o provedor",
+    "unit": "Wad",
+    "scale": "1e18",
+    "type": "u128",
+    "refs": [
+      {
+        "file": "src/amm/liquidity.rs",
+        "line": 54
+      }
+    ]
+  },
+  {
+    "symbol": "S_burn",
+    "name": "Shares queimadas no resgate",
+    "unit": "Wad",
+    "scale": "1e18",
+    "type": "u128",
+    "refs": [
+      {
+        "file": "src/amm/liquidity.rs",
+        "line": 66
+      }
+    ]
+  },
+  {
+    "symbol": "x_withdraw",
+    "name": "Quantidade de X retirada no burn",
+    "unit": "Wad",
+    "scale": "1e18",
+    "type": "u128",
+    "refs": [
+      {
+        "file": "src/amm/liquidity.rs",
+        "line": 74
+      }
+    ]
+  },
+  {
+    "symbol": "y_withdraw",
+    "name": "Quantidade de Y retirada no burn",
+    "unit": "Wad",
+    "scale": "1e18",
+    "type": "u128",
+    "refs": [
+      {
+        "file": "src/amm/liquidity.rs",
+        "line": 75
+      }
+    ]
+  },
+  {
+    "symbol": "WAD",
+    "name": "Escala fixa para valores (1e18)",
+    "unit": "Wad",
+    "scale": "1e18",
+    "type": "const u128",
+    "refs": [
+      {
+        "file": "src/amm/types.rs",
+        "line": 15
+      }
+    ]
+  },
+  {
+    "symbol": "PPM_SCALE",
+    "name": "Escala fixa para ppm",
+    "unit": "ppm",
+    "scale": "1e6",
+    "type": "const u32",
+    "refs": [
+      {
+        "file": "src/amm/types.rs",
+        "line": 16
+      }
+    ]
+  },
+  {
+    "symbol": "MIN_RESERVE",
+    "name": "Reserva mínima por ativo",
+    "unit": "Wad",
+    "scale": "1e18",
+    "type": "const u128",
+    "refs": [
+      {
+        "file": "src/amm/types.rs",
+        "line": 17
+      }
+    ]
+  }
+]
