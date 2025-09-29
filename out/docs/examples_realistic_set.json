@@ -1,0 +1,171 @@
+[
+  {
+    "id": "RX1",
+    "operation_id": "swap_get_amount_out",
+    "operation_name": "C\u00e1lculo de amount_out (X\u2192Y)",
+    "reserves": {
+      "R_x": 125000000000000000000000000,
+      "R_y": 83000000000000000000000000
+    },
+    "input": {
+      "dx": 275000432109000000000000,
+      "fee_ppm": 3000
+    },
+    "outputs": {
+      "dx_fee": 825001296327000000000,
+      "dx_net": 274175430812673000000000,
+      "x_prime": 125274175430812673000000000,
+      "y_star": 82818345954549746632789137,
+      "dy_out": 181654045450253367210863,
+      "y_prime": 82818345954549746632789137
+    },
+    "reserves_human": {
+      "R_x": "125000000.000000",
+      "R_y": "83000000.000000"
+    },
+    "inputs_human": {
+      "dx": "275000.432109",
+      "fee_ppm": 3000
+    },
+    "outputs_human": {
+      "dx_fee": "825.001296",
+      "dx_net": "274175.430813",
+      "x_prime": "125274175.430813",
+      "y_star": "82818345.954550",
+      "dy_out": "181654.045450",
+      "y_prime": "82818345.954550"
+    }
+  },
+  {
+    "id": "RX2",
+    "operation_id": "swap_get_amount_in",
+    "operation_name": "Amount_in m\u00ednimo para alvo Y",
+    "reserves": {
+      "R_x": 48000000000000000000000000,
+      "R_y": 12100000000000000000000000
+    },
+    "input": {
+      "dy_target": 525500875012000000000000,
+      "fee_ppm": 5000
+    },
+    "outputs": {
+      "y_minus_dy": 11574499124988000000000000,
+      "dx_net_est": 2179277196204561579795744,
+      "dx_gross_guess": 2190228337894031738488185,
+      "dx_in": 2190228337894031738488183
+    },
+    "reserves_human": {
+      "R_x": "48000000.000000",
+      "R_y": "12100000.000000"
+    },
+    "inputs_human": {
+      "dy_target": "525500.875012",
+      "fee_ppm": 5000
+    },
+    "outputs_human": {
+      "y_minus_dy": "11574499.124988",
+      "dx_net_est": "2179277.196205",
+      "dx_gross_guess": "2190228.337894",
+      "dx_in": "2190228.337894"
+    }
+  },
+  {
+    "id": "RX3",
+    "operation_id": "pricing_min_out_with_tolerance",
+    "operation_name": "Min out com toler\u00e2ncia",
+    "reserves": {
+      "R_x": 90500000000000000000000000,
+      "R_y": 64250000000000000000000000
+    },
+    "input": {
+      "dx": 1200000125987000000000000,
+      "fee_ppm": 3000,
+      "slippage_tolerance_ppm": 950000
+    },
+    "outputs": {
+      "dy_out": 838295810577985881513049,
+      "factor_ppm": 50000,
+      "dy_min": 41914790528899294075652
+    },
+    "reserves_human": {
+      "R_x": "90500000.000000",
+      "R_y": "64250000.000000"
+    },
+    "inputs_human": {
+      "dx": "1200000.125987",
+      "fee_ppm": 3000,
+      "slippage_tolerance_ppm": 950000
+    },
+    "outputs_human": {
+      "dy_out": "838295.810578",
+      "factor_ppm": 50000,
+      "dy_min": "41914.790529"
+    }
+  },
+  {
+    "id": "RX4",
+    "operation_id": "pricing_slippage_ppm_x_to_y",
+    "operation_name": "Slippage relativo X\u2192Y",
+    "reserves": {
+      "R_x": 32750000000000000000000000,
+      "R_y": 112900000000000000000000000
+    },
+    "input": {
+      "dx": 950000784321000000000000,
+      "fee_ppm": 3000
+    },
+    "outputs": {
+      "spot_price_wad": 3447328244274809160,
+      "execution_price_wad": 3340380340412448601,
+      "slippage_ppm_raw": 31023,
+      "slippage_ppm": 31023
+    },
+    "reserves_human": {
+      "R_x": "32750000.000000",
+      "R_y": "112900000.000000"
+    },
+    "inputs_human": {
+      "dx": "950000.784321",
+      "fee_ppm": 3000
+    },
+    "outputs_human": {
+      "spot_price_wad": "3.447328",
+      "execution_price_wad": "3.340380",
+      "slippage_ppm_raw": 31023,
+      "slippage_ppm": 31023
+    }
+  },
+  {
+    "id": "RX5",
+    "operation_id": "liquidity_add_liquidity",
+    "operation_name": "Add liquidity proporcional",
+    "reserves": {
+      "R_x": 78500000000000000000000000,
+      "R_y": 91500000000000000000000000
+    },
+    "input": {
+      "total_shares": 152500000000000000000000000,
+      "dx_add": 2500000458765000000000000,
+      "dy_add": 2950000876543000000000000
+    },
+    "outputs": {
+      "minted_x": 4856688789320541401273885,
+      "minted_y": 4916668127571666666666666,
+      "shares_minted": 4856688789320541401273885
+    },
+    "reserves_human": {
+      "R_x": "78500000.000000",
+      "R_y": "91500000.000000"
+    },
+    "inputs_human": {
+      "total_shares": "152500000.000000",
+      "dx_add": "2500000.458765",
+      "dy_add": "2950000.876543"
+    },
+    "outputs_human": {
+      "minted_x": "4856688.789321",
+      "minted_y": "4916668.127572",
+      "shares_minted": "4856688.789321"
+    }
+  }
+]
