@@ -15,6 +15,41 @@ Building a [custom collector](https://opentelemetry.io/docs/collector/custom-col
 
 The full list of components is available in the [manifest](manifest.yaml)
 
+## ADRs & CI
+<!-- SECTION:ADRCI -->
+### ADRs relevantes
+Tabela com ADRs que impactam este módulo.
+
+| ID | Título | Data | Status | Área | Link |
+|:--:|:-------|:-----|:------:|:----|:-----|
+| 0001 | ADR-0001 — Modelo numérico & política de arredondamento (CPMM) | 2025-09-19 | Proposed | amm | [ADR-0001-numeric-model.md](docs/adr/ADR-0001-numeric-model.md#adr-0001-modelo-numerico-politica-de-arredondamento-cpmm) |
+| 0002 | ADR-0002 — Taxa e fórmula de swap (CPMM) | 2025-09-19 | Proposed | amm | [ADR-0002-swap-fee-and-formula.md](docs/adr/ADR-0002-swap-fee-and-formula.md#adr-0002-taxa-e-formula-de-swap-cpmm) |
+
+> Para o índice completo, veja `docs/adr/INDEX.md` (se existir) ou a pasta `docs/adr/`.
+
+### Integração Contínua (CI)
+Badges e links para workflows/pipelines.
+
+[![CI](https://github.com/gustavomhss/trendmarket/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/gustavomhss/trendmarket/actions/workflows/ci.yml)
+[![Docs Guard (Agents)](https://github.com/gustavomhss/trendmarket/actions/workflows/docs-guard-agents.yml/badge.svg?branch=main)](https://github.com/gustavomhss/trendmarket/actions/workflows/docs-guard-agents.yml)
+
+**Workflows/pipelines**
+| Nome | Arquivo | Link |
+|:-----|:--------|:-----|
+| CI | .github/workflows/ci.yml | https://github.com/gustavomhss/trendmarket/actions/workflows/ci.yml |
+| Docs Guard (Agents) | .github/workflows/docs-guard-agents.yml | https://github.com/gustavomhss/trendmarket/actions/workflows/docs-guard-agents.yml |
+
+**Como verificar o status**
+- Abra o workflow **CI** e valide os jobs `gate-a110` e `sbom` na branch `main` ou na branch desta thread.
+- Consulte os artefatos anexados (`gate_a110.log`, `sbom.json`) para cruzar com os comandos descritos em *Build, Test & Bench*.
+- No workflow **Docs Guard (Agents)**, confirme que o rótulo `docs::guard::agents` está aplicado antes do merge.
+
+**Observações**
+- O workflow **CI** roda continuamente em pushes e pull requests para garantir Gate A110 e gerar o snapshot de SBOM.
+- O workflow **Docs Guard (Agents)** bloqueia PRs sem o rótulo obrigatório quando tocam documentação regida por `agents.md`.
+- Para replicar localmente, execute os comandos da seção *Build, Test & Bench* antes de abrir o PR.
+<!-- END:ADRCI -->
+
 ### Rules for Component Inclusion
 
 - Include all extensions at [Alpha stability](https://github.com/open-telemetry/opentelemetry-collector#alpha) or higher and pipeline components that have at least 1 signal at [Alpha stability](https://github.com/open-telemetry/opentelemetry-collector#alpha) or higher.

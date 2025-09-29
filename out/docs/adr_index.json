@@ -1,0 +1,22 @@
+[
+  {
+    "id": "0001",
+    "title": "ADR-0001 — Modelo numérico & política de arredondamento (CPMM)",
+    "date": "2025-09-19",
+    "status": "Proposed",
+    "area": "amm",
+    "filename": "ADR-0001-numeric-model.md",
+    "relpath": "docs/adr/ADR-0001-numeric-model.md",
+    "anchor": "#adr-0001-modelo-numerico-politica-de-arredondamento-cpmm"
+  },
+  {
+    "id": "0002",
+    "title": "ADR-0002 — Taxa e fórmula de swap (CPMM)",
+    "date": "2025-09-19",
+    "status": "Proposed",
+    "area": "amm",
+    "filename": "ADR-0002-swap-fee-and-formula.md",
+    "relpath": "docs/adr/ADR-0002-swap-fee-and-formula.md",
+    "anchor": "#adr-0002-taxa-e-formula-de-swap-cpmm"
+  }
+]
