@@ -1,0 +1,9 @@
+M	README.md
+A	out/docs/examples_didatic_plan.json
+A	out/logs/threadC/cargo_test.log
+A	out/logs/threadC/created_files_threadC.txt
+A	out/logs/threadC/edited_files_threadC.txt
+A	out/logs/threadC/link_check.log
+A	out/logs/threadC/markdownlint.log
+A	out/logs/threadC/triple_review.md
+A	tests/readme_examples_didactic.rs

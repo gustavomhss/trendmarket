@@ -158,6 +158,147 @@ Os símbolos adotam o padrão `snake_case` dos parâmetros no código, com prefi
 | MIN_RESERVE | Reserva mínima por ativo | Wad | 1e18 (18 casas) | const u128 | src/amm/types.rs:17 |
 <!-- END:NOTATION -->
 
+## Exemplos (Didático / Realista)
+<!-- SECTION:EXAMPLES -->
+### Exemplos Didáticos
+<!-- SUBSECTION:DIDATIC -->
+#### EX1: Cálculo de amount_out (X→Y)
+**Contexto:** demonstra a sequência completa de `quote_in`, cobrando taxa de entrada com `ceil`, resolvendo o invariável com `nearest-even` e finalizando o `amount_out` com `floor`.
+
+**Entradas (unidades/escala entre parênteses):**
+| Parâmetro | Valor | Unidade/Escala |
+|---:|---:|:--|
+| `R_x` | `50_000 * WAD` | WAD (1e18) |
+| `R_y` | `80_000 * WAD` | WAD (1e18) |
+| `dx_gross` | `1_234 * WAD` | WAD (1e18) |
+| `f_ppm` | `3_000` | ppm (1e6) |
+
+**Passos (com fórmulas ASCII):**
+1) Cobrar taxa sobre `dx_gross` — `dx_fee = ceil(dx_gross * f_ppm / PPM_SCALE)` ⇒ **3.702000000000 WAD**  
+   *Rounding:* ceil em apply_input_fee — ver `rounding_matrix`: `swap_get_amount_out/apply_input_fee`
+2) Apurar entrada líquida — `dx_net = dx_gross - dx_fee` ⇒ **1_230.298000000000 WAD**  
+   *Rounding:* n/a (subtração inteira)
+3) Resolver o invariável — `y_star = round_nearest_even((R_x * R_y) / (R_x + dx_net))` ⇒ **78_078.796262321176 WAD**  
+   *Rounding:* bankers em solve_invariant — ver `rounding_matrix`: `swap_get_amount_out/solve_invariant`
+4) Finalizar o `amount_out` — `dy_out = R_y - y_star` ⇒ **1_921.203737678824 WAD**  
+   *Rounding:* floor em finalize_out_amount — ver `rounding_matrix`: `swap_get_amount_out/finalize_out_amount`
+5) Validar reserva mínima — `R_y' = R_y - dy_out = 78_078.796262321176 WAD ≥ MIN_RESERVE`  
+   *Rounding:* n/a (checagem de limite)
+
+**Resultado:** `dy_out` = **1_921.203737678824 WAD**
+
+**Verificação (snippet executável):**
+```rust
+use credit_engine_core::amm::{swap, types::WAD};
+
+let out = swap::get_amount_out(50_000 * WAD, 80_000 * WAD, 1_234 * WAD, 3_000).unwrap();
+assert_eq!(out, 1_921_203_737_678_824_355_072u128);
+```
+
+**Referências:** Fórmulas → § *Fórmulas do Módulo* (Cálculo de amount_out (X→Y)); Rounding → § *Política de Rounding* (`swap_get_amount_out/apply_input_fee`, `swap_get_amount_out/solve_invariant`, `swap_get_amount_out/finalize_out_amount`)
+
+#### EX2: Amount_in mínimo para alvo Y
+**Contexto:** ilustra `quote_out`, destacando os dois `ceil` sucessivos que garantem `dx` suficiente mesmo com taxa positiva.
+
+**Entradas (unidades/escala entre parênteses):**
+| Parâmetro | Valor | Unidade/Escala |
+|---:|---:|:--|
+| `R_x` | `50_000 * WAD` | WAD (1e18) |
+| `R_y` | `80_000 * WAD` | WAD (1e18) |
+| `dy_target` | `1_850 * WAD` | WAD (1e18) |
+| `f_ppm` | `3_000` | ppm (1e6) |
+
+**Passos (com fórmulas ASCII):**
+1) Calcular o alvo líquido — `dx_net = ceil(R_x * dy_target / (R_y - dy_target))` ⇒ **1_183.621241202815 WAD**  
+   *Rounding:* ceil em compute_net_target — ver `rounding_matrix`: `swap_get_amount_in/compute_net_target`
+2) Fazer o gross-up da taxa — `dx_hi = ceil(dx_net * PPM_SCALE / (PPM_SCALE - f_ppm))` ⇒ **1_187.182789571530 WAD**  
+   *Rounding:* ceil em gross_up_fee — ver `rounding_matrix`: `swap_get_amount_in/gross_up_fee`
+3) Busca binária minimal — `dx_final = min { dx | get_amount_out(R_x, R_y, dx, f_ppm) ≥ dy_target }` ⇒ **1_187.182789571530 WAD**  
+   *Rounding:* n/a (busca discreta)
+
+**Resultado:** `dx_final` = **1_187.182789571530 WAD**
+
+**Verificação (snippet executável):**
+```rust
+use credit_engine_core::amm::{swap, types::WAD};
+
+let dx = swap::get_amount_in(50_000 * WAD, 80_000 * WAD, 1_850 * WAD, 3_000).unwrap();
+assert_eq!(dx, 1_187_182_789_571_529_688_233u128);
+```
+
+**Referências:** Fórmulas → § *Fórmulas do Módulo* (Amount_in mínimo para alvo Y); Rounding → § *Política de Rounding* (`swap_get_amount_in/compute_net_target`, `swap_get_amount_in/gross_up_fee`)
+
+#### EX3: Slippage relativo X→Y
+**Contexto:** cobre a cadeia `spot → execution → slippage`, evidenciando o uso de `nearest-even` e o clamp final para ppm.
+
+**Entradas (unidades/escala entre parênteses):**
+| Parâmetro | Valor | Unidade/Escala |
+|---:|---:|:--|
+| `R_x` | `50_000 * WAD` | WAD (1e18) |
+| `R_y` | `80_000 * WAD` | WAD (1e18) |
+| `dx_gross` | `1_234 * WAD` | WAD (1e18) |
+| `f_ppm` | `3_000` | ppm (1e6) |
+
+**Passos (com fórmulas ASCII):**
+1) Spot price instantâneo — `p_spot = round_nearest_even(R_y * WAD / R_x)` ⇒ **1.600000000000 WAD**  
+   *Rounding:* bankers em compute_spot_price — ver `rounding_matrix`: `pricing_spot_price_x_in_y/compute_spot_price`
+2) Preço efetivo observado — `p_exec = round_nearest_even(get_amount_out(...) * WAD / dx_gross)` ⇒ **1.556891197471 WAD**  
+   *Rounding:* bankers em compute_execution_price — ver `rounding_matrix`: `pricing_execution_price_x_to_y/compute_execution_price`
+3) Normalizar o slippage — `slip_raw = round_nearest_even((p_spot - p_exec) * PPM_SCALE / p_spot)` ⇒ **26_943 ppm**  
+   *Rounding:* bankers em normalize_slippage_ratio — ver `rounding_matrix`: `pricing_slippage_ppm_x_to_y/normalize_slippage_ratio`
+4) Aplicar limites — `slippage_ppm = min(slip_raw, PPM_SCALE)` ⇒ **26_943 ppm**  
+   *Rounding:* none em clamp_slippage_bounds — ver `rounding_matrix`: `pricing_slippage_ppm_x_to_y/clamp_slippage_bounds`
+
+**Resultado:** `slippage_ppm` = **26_943 ppm**
+
+**Verificação (snippet executável):**
+```rust
+use credit_engine_core::amm::{pricing, types::WAD};
+
+let ppm = pricing::slippage_ppm_x_to_y(50_000 * WAD, 80_000 * WAD, 1_234 * WAD, 3_000).unwrap();
+assert_eq!(ppm, 26_943u32);
+```
+
+**Referências:** Fórmulas → § *Fórmulas do Módulo* (Slippage relativo X→Y); Rounding → § *Política de Rounding* (`pricing_spot_price_x_in_y/compute_spot_price`, `pricing_execution_price_x_to_y/compute_execution_price`, `pricing_slippage_ppm_x_to_y/normalize_slippage_ratio`, `pricing_slippage_ppm_x_to_y/clamp_slippage_bounds`)
+
+#### EX4: Add liquidity proporcional
+**Contexto:** demonstra a alocação proporcional que usa `floor` para limitar o mint ao braço mais curto.
+
+**Entradas (unidades/escala entre parênteses):**
+| Parâmetro | Valor | Unidade/Escala |
+|---:|---:|:--|
+| `R_x` | `120_000 * WAD` | WAD (1e18) |
+| `R_y` | `75_000 * WAD` | WAD (1e18) |
+| `dx_add` | `1_000 * WAD` | WAD (1e18) |
+| `dy_add` | `450 * WAD` | WAD (1e18) |
+| `S_tot` | `50_000 * WAD` | WAD (1e18) |
+
+**Passos (com fórmulas ASCII):**
+1) Projetar cada braço — `shares_x = floor(dx_add * S_tot / R_x)`, `shares_y = floor(dy_add * S_tot / R_y)` ⇒ **416.666666666666 WAD** e **300.000000000000 WAD**  
+   *Rounding:* floor em proportional_allocation_floor — ver `rounding_matrix`: `liquidity_add_liquidity/proportional_allocation_floor`
+2) Escolher o limitante — `shares_mint = min(shares_x, shares_y)` ⇒ **300.000000000000 WAD**  
+   *Rounding:* n/a (mínimo discreto)
+3) Pós-condição — `R_x' = R_x + dx_add`, `R_y' = R_y + dy_add` (ambos ≥ `MIN_RESERVE`)  
+   *Rounding:* n/a (somas inteiras)
+
+**Resultado:** `shares_mint` = **300.000000000000 WAD**
+
+**Verificação (snippet executável):**
+```rust
+use credit_engine_core::amm::{liquidity, types::WAD};
+
+let shares = liquidity::add_liquidity(120_000 * WAD, 75_000 * WAD, 1_000 * WAD, 450 * WAD, 50_000 * WAD).unwrap();
+assert_eq!(shares, 300 * WAD);
+```
+
+**Referências:** Fórmulas → § *Fórmulas do Módulo* (Add liquidity proporcional); Rounding → § *Política de Rounding* (`liquidity_add_liquidity/proportional_allocation_floor`)
+<!-- END:SUBSECTION:DIDATIC -->
+
+### Exemplos Realistas
+<!-- SUBSECTION:REALISTIC -->
+<!-- END:SUBSECTION:REALISTIC -->
+<!-- END:EXAMPLES -->
+
 ## Fórmulas do Módulo
 <!-- SECTION:FORMULAS -->
 ### Cálculo de amount_out (X→Y)
