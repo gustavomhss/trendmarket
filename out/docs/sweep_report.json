@@ -1,0 +1,6 @@
+{
+  "markdownlint": "CHECK",
+  "link_check": "CHECK",
+  "tests": "CHECK",
+  "validation": "PASS"
+}

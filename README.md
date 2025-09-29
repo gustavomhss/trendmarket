@@ -16,38 +16,46 @@ Building a [custom collector](https://opentelemetry.io/docs/collector/custom-col
 The full list of components is available in the [manifest](manifest.yaml)
 
 ## ADRs & CI
+
 <!-- SECTION:ADRCI -->
+
 ### ADRs relevantes
+
 Tabela com ADRs que impactam este módulo.
 
-| ID | Título | Data | Status | Área | Link |
-|:--:|:-------|:-----|:------:|:----|:-----|
-| 0001 | ADR-0001 — Modelo numérico & política de arredondamento (CPMM) | 2025-09-19 | Proposed | amm | [ADR-0001-numeric-model.md](docs/adr/ADR-0001-numeric-model.md#adr-0001-modelo-numerico-politica-de-arredondamento-cpmm) |
-| 0002 | ADR-0002 — Taxa e fórmula de swap (CPMM) | 2025-09-19 | Proposed | amm | [ADR-0002-swap-fee-and-formula.md](docs/adr/ADR-0002-swap-fee-and-formula.md#adr-0002-taxa-e-formula-de-swap-cpmm) |
+|  ID  | Título                                                         | Data       |  Status  | Área | Link                                                                                                                     |
+| :--: | :------------------------------------------------------------- | :--------- | :------: | :--- | :----------------------------------------------------------------------------------------------------------------------- |
+| 0001 | ADR-0001 — Modelo numérico & política de arredondamento (CPMM) | 2025-09-19 | Proposed | amm  | [ADR-0001-numeric-model.md](docs/adr/ADR-0001-numeric-model.md#adr-0001-modelo-numerico-politica-de-arredondamento-cpmm) |
+| 0002 | ADR-0002 — Taxa e fórmula de swap (CPMM)                       | 2025-09-19 | Proposed | amm  | [ADR-0002-swap-fee-and-formula.md](docs/adr/ADR-0002-swap-fee-and-formula.md#adr-0002-taxa-e-formula-de-swap-cpmm)       |
 
 > Para o índice completo, veja `docs/adr/INDEX.md` (se existir) ou a pasta `docs/adr/`.
 
 ### Integração Contínua (CI)
+
 Badges e links para workflows/pipelines.
 
 [![CI](https://github.com/gustavomhss/trendmarket/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/gustavomhss/trendmarket/actions/workflows/ci.yml)
 [![Docs Guard (Agents)](https://github.com/gustavomhss/trendmarket/actions/workflows/docs-guard-agents.yml/badge.svg?branch=main)](https://github.com/gustavomhss/trendmarket/actions/workflows/docs-guard-agents.yml)
 
 **Workflows/pipelines**
-| Nome | Arquivo | Link |
-|:-----|:--------|:-----|
-| CI | .github/workflows/ci.yml | https://github.com/gustavomhss/trendmarket/actions/workflows/ci.yml |
-| Docs Guard (Agents) | .github/workflows/docs-guard-agents.yml | https://github.com/gustavomhss/trendmarket/actions/workflows/docs-guard-agents.yml |
+
+| Nome                | Arquivo                                 | Link                                                                                                                                                                     |
+| :------------------ | :-------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CI                  | .github/workflows/ci.yml                | [https://github.com/gustavomhss/trendmarket/actions/workflows/ci.yml](https://github.com/gustavomhss/trendmarket/actions/workflows/ci.yml)                               |
+| Docs Guard (Agents) | .github/workflows/docs-guard-agents.yml | [https://github.com/gustavomhss/trendmarket/actions/workflows/docs-guard-agents.yml](https://github.com/gustavomhss/trendmarket/actions/workflows/docs-guard-agents.yml) |
 
 **Como verificar o status**
-- Abra o workflow **CI** e valide os jobs `gate-a110` e `sbom` na branch `main` ou na branch desta thread.
-- Consulte os artefatos anexados (`gate_a110.log`, `sbom.json`) para cruzar com os comandos descritos em *Build, Test & Bench*.
-- No workflow **Docs Guard (Agents)**, confirme que o rótulo `docs::guard::agents` está aplicado antes do merge.
+
+* Abra o workflow **CI** e valide os jobs `gate-a110` e `sbom` na branch `main` ou na branch desta thread.
+* Consulte os artefatos anexados (`gate_a110.log`, `sbom.json`) para cruzar com os comandos descritos em *Build, Test & Bench*.
+* No workflow **Docs Guard (Agents)**, confirme que o rótulo `docs::guard::agents` está aplicado antes do merge.
 
 **Observações**
-- O workflow **CI** roda continuamente em pushes e pull requests para garantir Gate A110 e gerar o snapshot de SBOM.
-- O workflow **Docs Guard (Agents)** bloqueia PRs sem o rótulo obrigatório quando tocam documentação regida por `agents.md`.
-- Para replicar localmente, execute os comandos da seção *Build, Test & Bench* antes de abrir o PR.
+
+* O workflow **CI** roda continuamente em pushes e pull requests para garantir Gate A110 e gerar o snapshot de SBOM.
+* O workflow **Docs Guard (Agents)** bloqueia PRs sem o rótulo obrigatório quando tocam documentação regida por `agents.md`.
+* Para replicar localmente, execute os comandos da seção *Build, Test & Bench* antes de abrir o PR.
+
 <!-- END:ADRCI -->
 
 ### Rules for Component Inclusion
@@ -292,7 +300,7 @@ assert_eq!(dx, 1_187_182_789_571_529_688_233u128);
 
 1. Spot price instantâneo — `p_spot = round_nearest_even(R_y * WAD / R_x)` ⇒ **1.600000000000 WAD**
    *Rounding:* bankers em compute_spot_price — ver `rounding_matrix`: `pricing_spot_price_x_in_y/compute_spot_price`
-2. Preço efetivo observado — `p_exec = round_nearest_even(get_amount_out(...) * WAD / dx_gross)` ⇒ **1.556891197471 WAD**
+2. Preço efetivo observado — `p_exec = round_nearest_even(get_amount_out(R_x, R_y, dx_gross, f_ppm) * WAD / dx_gross)` ⇒ **1.556891197471 WAD**
    *Rounding:* bankers em compute_execution_price — ver `rounding_matrix`: `pricing_execution_price_x_to_y/compute_execution_price`
 3. Normalizar o slippage — `slip_raw = round_nearest_even((p_spot - p_exec) * PPM_SCALE / p_spot)` ⇒ **26_943 ppm**
    *Rounding:* bankers em normalize_slippage_ratio — ver `rounding_matrix`: `pricing_slippage_ppm_x_to_y/normalize_slippage_ratio`
@@ -553,6 +561,13 @@ assert_eq!(minted, 4_856_688_789_320_541_401_273_885u128);
 
 **Referências:** Fórmulas → § *Fórmulas do Módulo* (Add liquidity proporcional); Rounding → § *Política de Rounding* (`liquidity_add_liquidity/proportional_allocation_floor`)
 
+**Cobertura complementar (IDs adicionais):**
+
+* `liquidity_initial_mint` — validado pelo teste `tests/rounding.rs::r4_mint_is_floor_of_sqrt_xy`, que replica o floor de `√(x·y)` descrito no plano de realismo (`out/docs/examples_realistic_plan.json`).
+* `liquidity_remove_liquidity` — exercitado em `tests/rounding.rs::r5_burn_amounts_are_floor_of_proportion`, confirmando os floors proporcionais aplicados nas retiradas do pool.
+* `pricing_max_in_with_tolerance` — pode ser reproduzido a partir dos dados de RX2 aplicando o markup `ceil` indicado em § *Fórmulas do Módulo* (Max in com tolerância) e conferindo o estágio `pricing_max_in_with_tolerance/apply_slippage_markup` em `out/docs/rounding_matrix.csv`.
+* `pricing_spot_price_y_in_x` — resulta da mesma chamada de preço do cenário RX4 invertendo os papéis de X/Y; o cálculo `pricing::spot_price_y_in_x` com `(R_V, R_STBL)` do exemplo devolve o recíproco em WAD e é listado em `out/docs/examples_realistic_set.csv`.
+
 <!-- END:SUBSECTION:REALISTIC -->
 
 <!-- END:EXAMPLES -->
@@ -575,7 +590,7 @@ assert_eq!(minted, 4_856_688_789_320_541_401_273_885u128);
 
 ### Amount_in mínimo para alvo Y
 
-**Fórmula (ASCII):** `dx_net_est = ceil(R_x * dy_target / (R_y - dy_target)); dx_upper = ceil(dx_net_est * PPM_SCALE / (PPM_SCALE - f_ppm)); dx_gross = argmin_dx>=1 get_amount_out(R_x, R_y, dx, f_ppm) >= dy_target`
+**Fórmula (ASCII):** `dx_net_est = ceil(R_x * dy_target / (R_y - dy_target)); dx_upper = ceil(dx_net_est * PPM_SCALE / (PPM_SCALE - f_ppm)); dx_gross = argmin_dx>=1 get_amount_out(R_x, R_y, dx, f_ppm) ≥ dy_target`
 
 **Entradas:** `R_x, R_y, dy_target, f_ppm`
 
@@ -735,5 +750,21 @@ cargo bench
 * Como rodar só os testes do módulo X? → `cargo test module::submodule -- --nocapture` filtra por namespace ou nome de teste.
 * Como selecionar um benchmark específico? → `cargo bench swap/sym_small_f0` isola o benchmark desejado e grava os relatórios correspondentes em `target/criterion/swap/sym_small_f0/`.
 * Dicas de troubleshooting comuns. → Falhas de build geralmente são resolvidas com `cargo clean` + rebuild; erros de exportação OTLP durante os testes indicam apenas que o coletor não está ativo e podem ser ignorados se o foco for lógica de negócios.
+
+**Notas sobre execuções recentes**
+
+Os guardrails de build e testes automatizados continuam ativos, com logs versionados em `out/logs/`. As execuções mais recentes incluem:
+
+* `cargo check` — compilação completa sem erros em 7,66 segundos (ver `out/logs/cargo_check.log`).
+* `cargo clippy` — lint estático finalizado sem warnings, cobrindo crates internos e dependências (`out/logs/cargo_clippy.log`).
+* `cargo test --all -- --nocapture` — suite integral (unit, property e os casos `readme_*`) concluída com 63 testes verdes (`out/logs/cargo_test.log`).
+
+Esses comandos alimentam as verificações de consistência entre README e código; ao atualizar exemplos ou fórmulas, execute-os para garantir que os números documentados continuem válidos.
+
+**ADRs & CI (Complemento)**
+
+* `docs/adr/ADR-0001-numeric-model.md` consolida o modelo numérico e a política de arredondamento; `docs/adr/ADR-0002-swap-fee-and-formula.md` detalha a incidência de taxas de swap.
+* O pipeline `scripts/a110_run_invariants.sh` integra os watchers de `ops/watchers/` com o mapa de hooks em `ops/hooks/a110.yml`, garantindo que `watchers.dry` e `hooks.dry` rodem antes das suites Rust.
+* A mesma cadência de lint/teste descrita acima é replicada nas rotinas de CI, mantendo alinhados os artefatos de documentação (`out/docs/*.csv|json`) e os validadores automatizados.
 
 <!-- END:BTB -->
