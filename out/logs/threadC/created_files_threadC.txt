@@ -1,0 +1,9 @@
+out/docs/examples_didatic_plan.json
+out/logs/threadC/cargo_test.log
+out/logs/threadC/created_files_threadC.txt
+out/logs/threadC/edited_files_threadC.txt
+out/logs/threadC/link_check.log
+out/logs/threadC/markdownlint.log
+out/logs/threadC/triple_review.md
+tests/readme_examples_didactic.rs
+out/logs/threadC/name_status_threadC.txt

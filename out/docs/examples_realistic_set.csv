@@ -1,0 +1,6 @@
+id,operation_id,operation_name,fee_ppm,slippage_tolerance_ppm,dx,dy_target,dx_add,dy_add,total_shares,primary_output
+RX1,swap_get_amount_out,Cálculo de amount_out (X→Y),3000,,275000432109000000000000,,,,,181654045450253367210863
+RX2,swap_get_amount_in,Amount_in mínimo para alvo Y,5000,,,525500875012000000000000,,,,2190228337894031738488183
+RX3,pricing_min_out_with_tolerance,Min out com tolerância,3000,950000,1200000125987000000000000,,,,,838295810577985881513049
+RX4,pricing_slippage_ppm_x_to_y,Slippage relativo X→Y,3000,,950000784321000000000000,,,,,31023
+RX5,liquidity_add_liquidity,Add liquidity proporcional,,,,,2500000458765000000000000,2950000876543000000000000,152500000000000000000000000,4856688789320541401273885
