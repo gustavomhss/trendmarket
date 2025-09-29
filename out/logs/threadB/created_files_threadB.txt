@@ -1,0 +1,7 @@
+out/docs/rounding_matrix.csv
+out/docs/rounding_rules.json
+out/logs/threadB/created_files_threadB.txt
+out/logs/threadB/edited_files_threadB.txt
+out/logs/threadB/grep_consts.log
+out/logs/threadB/grep_rounding.log
+out/logs/threadB/triple_review.md
