@@ -1,0 +1,9 @@
+out/docs/final_inventory.json
+out/docs/final_readme_diff.patch
+out/docs/pr_body.md
+out/docs/pr_labels.txt
+out/docs/pr_title.txt
+out/logs/sub09/created_files_sub09.txt
+out/logs/sub09/edited_files_sub09.txt
+out/logs/sub09/name_status_sub09.txt
+out/logs/sub09/triple_review.md
