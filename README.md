@@ -459,7 +459,7 @@ assert_eq!(dx, 2_190_228_337_894_031_738_488_183u128);
 
 **Passos (com fórmulas ASCII e rounding):**
 
-1. Cotação bruta — `dy_out = get_amount_out(...)` ⇒ **838_295.810577985881513049 STBL** (mesmos roundings de RX1)
+1. Cotação bruta — `dy_out = get_amount_out(R_V, R_STBL, dx, fee_ppm)` ⇒ **838_295.810577985881513049 STBL** (mesmos roundings de RX1)
 2. Clamp da tolerância — `tol_eff = min(950_000, PPM_SCALE) = 950_000 ppm`
 3. Desconto conservador — `dy_min = floor(dy_out * (PPM_SCALE - tol_eff) / PPM_SCALE)` ⇒ **41_914.790528899294075652 STBL**
    *Rounding:* floor em `apply_slippage_discount` — ver `rounding_matrix`: `pricing_min_out_with_tolerance/apply_slippage_discount` (ref `src/amm/pricing.rs:84..88`)
@@ -638,7 +638,7 @@ assert_eq!(minted, 4_856_688_789_320_541_401_273_885u128);
 
 ### Slippage relativo X→Y
 
-**Fórmula (ASCII):** `p_spot_xy = spot_price_x_in_y(...); p_exec_xy = execution_price_x_to_y(...); slip_ppm = clamp_0_ppm(round_nearest_even(((p_spot_xy - p_exec_xy) * PPM_SCALE) / p_spot_xy))`
+**Fórmula (ASCII):** `p_spot_xy = spot_price_x_in_y(R_x, R_y); p_exec_xy = execution_price_x_to_y(R_x, R_y, dx_gross, f_ppm); slip_ppm = clamp_0_ppm(round_nearest_even(((p_spot_xy - p_exec_xy) * PPM_SCALE) / p_spot_xy))`
 
 **Entradas:** `R_x, R_y, dx_gross, f_ppm`
 

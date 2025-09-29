@@ -1,0 +1,10 @@
+M	README.md
+A	out/docs/final_inventory.json
+A	out/docs/final_readme_diff.patch
+A	out/docs/pr_body.md
+A	out/docs/pr_labels.txt
+A	out/docs/pr_title.txt
+A	out/logs/sub09/created_files_sub09.txt
+A	out/logs/sub09/edited_files_sub09.txt
+A	out/logs/sub09/name_status_sub09.txt
+A	out/logs/sub09/triple_review.md
