@@ -1,0 +1,40 @@
+{
+  "provider": "github",
+  "default_branch": "main",
+  "repo_web": "https://github.com/gustavomhss/trendmarket",
+  "workflows": [
+    {
+      "name": "CI",
+      "file": "ci.yml",
+      "path": ".github/workflows/ci.yml",
+      "kind": "workflow",
+      "triggers": [
+        "push",
+        "pull_request"
+      ],
+      "jobs": [
+        "gate-a110",
+        "sbom"
+      ],
+      "badge_markdown": "[![CI](https://github.com/gustavomhss/trendmarket/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/gustavomhss/trendmarket/actions/workflows/ci.yml)",
+      "link_url": "https://github.com/gustavomhss/trendmarket/actions/workflows/ci.yml",
+      "notes": ""
+    },
+    {
+      "name": "Docs Guard (Agents)",
+      "file": "docs-guard-agents.yml",
+      "path": ".github/workflows/docs-guard-agents.yml",
+      "kind": "workflow",
+      "triggers": [
+        "pull_request",
+        "workflow_dispatch"
+      ],
+      "jobs": [
+        "enforce-label"
+      ],
+      "badge_markdown": "[![Docs Guard (Agents)](https://github.com/gustavomhss/trendmarket/actions/workflows/docs-guard-agents.yml/badge.svg?branch=main)](https://github.com/gustavomhss/trendmarket/actions/workflows/docs-guard-agents.yml)",
+      "link_url": "https://github.com/gustavomhss/trendmarket/actions/workflows/docs-guard-agents.yml",
+      "notes": ""
+    }
+  ]
+}
