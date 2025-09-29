@@ -282,3 +282,34 @@ Os símbolos adotam o padrão `snake_case` dos parâmetros no código, com prefi
 **Notas:** Garante `S_burn <= S_tot`, evita underflow nos saldos e verifica que as reservas remanescentes permanecem acima de `MIN_RESERVE`.
 <!-- END:FORMULAS -->
 
+## Build, Test & Bench
+<!-- SECTION:BTB -->
+### Pré-requisitos
+- Ferramentas: `rustc 1.89.0`, `cargo 1.89.0` (instalados via [Rustup](https://rustup.rs/)).
+- Ambiente: execute os comandos a partir da raiz do repositório. Para suprimir avisos de telemetria durante os testes, aponte `OTEL_EXPORTER_OTLP_ENDPOINT` para um coletor válido ou inicie `docker compose -f docker-compose.observability.yml up -d` para subir o stack de observabilidade (collector + Jaeger + Prometheus + Grafana).
+
+### Build
+```bash
+cargo build --release
+```
+**Notas:** gera artefatos otimizados em `target/release/` (binários e `libcredit_engine_core.rlib`). Use `--features` para habilitar recursos opcionais e execute `cargo clean` antes de builds reproduzíveis ou quando alternar toolchains.
+
+### Test
+```bash
+cargo test --all -- --nocapture
+# exemplos de filtros
+cargo test swap::tests::t_out_symmetric_with_fee -- --nocapture
+```
+**Leitura dos resultados:** o sumário do `cargo test` indica contagem de testes por crate (ex.: `43 passed; 0 failed`). Logs adicionais aparecem inline porque usamos `--nocapture`. Caso veja `BatchSpanProcessor.ExportError`, significa apenas que não há um coletor OTLP ouvindo em `http://localhost:4318`; suba o stack observability citado acima ou exporte `OTEL_EXPORTER_OTLP_ENDPOINT` para um endpoint acessível se precisar validar telemetria.
+
+### Bench
+```bash
+cargo bench
+```
+**Leitura dos resultados:** o Criterion imprime no console medianas/intervalos (ex.: `swap/sym_small_f0 time: [177 ns 185 ns]`) e grava relatórios HTML/JSON em `target/criterion/<grupo>/<bench>/report/`. Para comparar execuções, salve uma baseline (`cargo bench -- --save-baseline main`) e compare depois (`cargo bench -- --baseline main`).
+
+### FAQ rápido
+* Como rodar só os testes do módulo X? → `cargo test module::submodule -- --nocapture` filtra por namespace ou nome de teste.
+* Como selecionar um benchmark específico? → `cargo bench swap/sym_small_f0` isola o benchmark desejado e grava os relatórios correspondentes em `target/criterion/swap/sym_small_f0/`.
+* Dicas de troubleshooting comuns. → Falhas de build geralmente são resolvidas com `cargo clean` + rebuild; erros de exportação OTLP durante os testes indicam apenas que o coletor não está ativo e podem ser ignorados se o foco for lógica de negócios.
+<!-- END:BTB -->

@@ -1,0 +1,20 @@
+{
+  "lang": "rust",
+  "workspace": {
+    "metadata": true
+  },
+  "module_root": "/workspace/trendmarket",
+  "scripts": {
+    "build": "cargo build --release",
+    "test_all": "cargo test --all -- --nocapture",
+    "bench": "cargo bench",
+    "make_help": "make help"
+  },
+  "benches": {
+    "criterion": true
+  },
+  "detected": [
+    "rust",
+    "make"
+  ]
+}
