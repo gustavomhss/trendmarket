@@ -197,6 +197,8 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "criterion",
+ "metrics",
+ "metrics-exporter-prometheus",
  "once_cell",
  "opentelemetry",
  "opentelemetry-otlp",
@@ -716,6 +718,21 @@ name = "memchr"
 version = "2.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32a282da65faaf38286cf3be983213fcf1d2e2a58700e808f83f4ea9a4804bc0"
+
+[[package]]
+name = "metrics"
+version = "0.21.0"
+dependencies = [
+ "once_cell",
+]
+
+[[package]]
+name = "metrics-exporter-prometheus"
+version = "0.13.0"
+dependencies = [
+ "metrics",
+ "once_cell",
+]
 
 [[package]]
 name = "miniz_oxide"
