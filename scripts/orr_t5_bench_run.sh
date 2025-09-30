@@ -16,7 +16,10 @@ note "Executando cargo bench (criterion)"
 export CRITERION_SAMPLE_SIZE=${CRITERION_SAMPLE_SIZE:-100}
 export CRITERION_MEASUREMENT_TIME=${CRITERION_MEASUREMENT_TIME:-3}
 set -o pipefail
-cargo bench 2>&1 | tee "$LOG/cargo_bench.txt" || true
+if ! cargo bench 2>&1 | tee "$LOG/cargo_bench.txt"; then
+  note "cargo bench falhou"
+  exit 1
+fi
 
 note "Coletando estimates.json"
 python3 scripts/orr_t5_collect_criterion.py | tee -a "$LOG/t5_collect.txt"
