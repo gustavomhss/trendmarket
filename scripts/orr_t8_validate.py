@@ -32,7 +32,7 @@ status = {
   'goldens': 'GREEN' if goldens and goldens.get('status')=='GREEN' and goldens.get('mismatch',1)==0 else 'RED',
   'bench':   'GREEN' if bench_base and (not bench_dlt or bench_dlt.get('status','GREEN')=='GREEN') else 'RED',
   'metrics': 'GREEN' if metrics_ok else 'RED',
-  'ci':      'GREEN' if ci_run and isinstance(ci_run, list) and len(ci_run)>0 and (ci_run[0].get('conclusion')=='success' or ci_run[0].get('status')=='completed') else 'RED',
+  'ci':      'GREEN' if ci_run and isinstance(ci_run, list) and len(ci_run)>0 and ci_run[0].get('status')=='completed' and ci_run[0].get('conclusion')=='success' else 'RED',
 }
 kill = sum(1 for v in status.values() if v!='GREEN')
 overall = 'GREEN' if kill==0 else 'RED'
