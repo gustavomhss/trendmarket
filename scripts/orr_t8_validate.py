@@ -27,12 +27,20 @@ ci_run     = rd(EVI/'ci'/'run_summary.json')
 
 # Status helpers
 def ci_green(run_summary):
-  if not isinstance(run_summary, list):
+  """Return True when the CI evidence shows a completed successful run."""
+  if isinstance(run_summary, dict):
+    runs = [run_summary]
+  elif isinstance(run_summary, list):
+    runs = run_summary
+  else:
     return False
-  for run in run_summary:
+
+  for run in runs:
     if not isinstance(run, dict):
       continue
-    if run.get('status') == 'completed' and run.get('conclusion') == 'success':
+    status = str(run.get('status', '')).lower()
+    conclusion = str(run.get('conclusion', '')).lower()
+    if status == 'completed' and conclusion == 'success':
       return True
   return False
 
