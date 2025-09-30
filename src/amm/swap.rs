@@ -60,7 +60,9 @@ pub fn get_amount_out(x: Wad, y: Wad, dx: Wad, fee_ppm: Ppm) -> Result<Wad, AmmE
 
     // out = floor(y - y*)
     let out = y.checked_sub(y_star).ok_or(AmmError::Overflow)?;
-    if out == 0 { return Err(AmmError::InputTooSmall); }
+    if out == 0 {
+        return Err(AmmError::InputTooSmall);
+    }
 
     // y' >= min_reserve
     let y1 = y.checked_sub(out).ok_or(AmmError::Overflow)?;
