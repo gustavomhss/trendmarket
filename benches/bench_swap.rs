@@ -1,4 +1,4 @@
-use credit_engine_core::amm::swap::get_amount_out;
+use credit_engine_core::amm::swap::get_amount_out; // se sua função estiver em cpmm, troque swap->cpmm
 use credit_engine_core::amm::types::{Wad, WAD};
 use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughput};
 use std::time::Duration;
