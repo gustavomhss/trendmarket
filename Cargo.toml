@@ -13,6 +13,8 @@ tracing = "0.1"
 tracing-opentelemetry = "0.30"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 uint = "0.9"
+metrics = { version = "0.21", path = "vendor/metrics" }
+metrics-exporter-prometheus = { version = "0.13", optional = true, path = "vendor/metrics-exporter-prometheus" }
 
 [dev-dependencies]
 proptest = "1"
@@ -33,3 +35,8 @@ harness = false
 [[bench]]
 name = "bench_liquidity"
 harness = false
+
+[features]
+obs = [
+  "metrics-exporter-prometheus"
+]

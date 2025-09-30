@@ -2,6 +2,11 @@ use anyhow::Result;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
+#[cfg(feature = "obs")]
+use metrics_exporter_prometheus::PrometheusBuilder;
+#[cfg(feature = "obs")]
+use std::net::SocketAddr;
+
 use opentelemetry::{
     global,
     metrics::{Histogram, Meter, MeterProvider},
@@ -160,6 +165,35 @@ pub fn make_info_span(name: &str, op_id: u32, component: &str) -> tracing::Span 
         op_id = op_id,
         component = component
     )
+}
+
+#[cfg(feature = "obs")]
+pub fn start_prometheus(addr: &str) -> anyhow::Result<()> {
+    let sock: SocketAddr = addr.parse()?;
+    PrometheusBuilder::new()
+        .with_http_listener(sock)
+        .install()?;
+    Ok(())
+}
+
+#[cfg(feature = "obs")]
+pub fn inc_swap(pair: &str) {
+    metrics::counter!("amm_swaps_total", "pair" => pair).increment(1);
+}
+
+#[cfg(feature = "obs")]
+pub fn inc_liquidity(op: &str) {
+    metrics::counter!("amm_liquidity_ops_total", "op" => op).increment(1);
+}
+
+#[cfg(feature = "obs")]
+pub fn inc_error(code: &str) {
+    metrics::counter!("amm_error_total", "code" => code).increment(1);
+}
+
+#[cfg(feature = "obs")]
+pub fn observe_swap_latency_ms(v: f64) {
+    metrics::histogram!("amm_swap_latency_ms").record(v);
 }
 
 #[cfg(test)]
