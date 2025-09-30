@@ -1,8 +1,6 @@
 use credit_engine_core::amm::{
     guardrails::{div_nearest_even_u256_to_u128, u256_to_u128_checked},
-    liquidity,
-    pricing,
-    swap,
+    liquidity, pricing, swap,
     types::{Ppm, Wad, PPM_SCALE, U256, WAD},
 };
 
@@ -50,7 +48,11 @@ fn readme_ex2_quote_out_numbers_match() {
     assert_eq!(dx_net, 1_183_621_241_202_815_099_169u128);
 
     let denom_ppm = U256::from((PPM_SCALE - fee_ppm) as u64);
-    let dx_hi = u256_to_u128_checked(ceil_div_u256(U256::from(dx_net) * U256::from(PPM_SCALE as u64), denom_ppm)).unwrap();
+    let dx_hi = u256_to_u128_checked(ceil_div_u256(
+        U256::from(dx_net) * U256::from(PPM_SCALE as u64),
+        denom_ppm,
+    ))
+    .unwrap();
     assert_eq!(dx_hi, 1_187_182_789_571_529_688_234u128);
 
     let dx_final = swap::get_amount_in(x, y, dy, fee_ppm).unwrap();

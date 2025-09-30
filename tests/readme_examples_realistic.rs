@@ -1,9 +1,7 @@
 use credit_engine_core::amm::{
     guardrails::{div_nearest_even_u256_to_u128, u256_to_u128_checked},
-    liquidity,
-    pricing,
-    swap,
-    types::{Ppm, Wad, WAD, PPM_SCALE, U256},
+    liquidity, pricing, swap,
+    types::{Ppm, Wad, PPM_SCALE, U256, WAD},
 };
 
 fn wad(n: &str) -> Wad {
@@ -17,7 +15,11 @@ fn wad_from_str(value: &str) -> Wad {
     if parts.next().is_some() {
         panic!("invalid decimal: {value}");
     }
-    let int = if int_part.is_empty() { 0 } else { int_part.parse::<u128>().expect("int") };
+    let int = if int_part.is_empty() {
+        0
+    } else {
+        int_part.parse::<u128>().expect("int")
+    };
     let mut frac = frac_part;
     if frac.len() > 18 {
         panic!("too many decimal places in {value}");
@@ -30,8 +32,7 @@ fn wad_from_str(value: &str) -> Wad {
     } else {
         frac.parse::<u128>().expect("frac")
     };
-    int
-        .checked_mul(WAD)
+    int.checked_mul(WAD)
         .expect("int overflow")
         .checked_add(frac_value)
         .expect("frac overflow")
@@ -116,8 +117,8 @@ fn compute_pricing_min_out_with_tolerance() {
     let out = swap::get_amount_out(x, y, dx, fee_ppm).expect("amount out");
     let tol = tolerance_ppm.min(PPM_SCALE);
     let factor = (PPM_SCALE - tol) as u64;
-    let min_out = pricing::min_out_with_tolerance(x, y, dx, fee_ppm, tolerance_ppm)
-        .expect("min out");
+    let min_out =
+        pricing::min_out_with_tolerance(x, y, dx, fee_ppm, tolerance_ppm).expect("min out");
 
     assert_eq!(dx, 1200000125987000000000000u128);
     assert_eq!(out, 838295810577985881513049u128);
