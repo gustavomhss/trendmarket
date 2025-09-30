@@ -2,6 +2,7 @@ use credit_engine_core::amm::liquidity::remove_liquidity;
 use credit_engine_core::amm::types::{Wad, WAD};
 use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughput};
 use std::time::Duration;
+
 #[inline]
 fn w(n: u128) -> Wad {
     n * WAD
@@ -32,5 +33,6 @@ fn bench_liquidity(c: &mut Criterion) {
 
     g.finish();
 }
+
 criterion_group!(benches, bench_liquidity);
 criterion_main!(benches);

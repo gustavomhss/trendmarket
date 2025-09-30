@@ -53,6 +53,7 @@ fn bench_swap(c: &mut Criterion) {
             });
         });
     }
+
     g.finish();
 }
 
