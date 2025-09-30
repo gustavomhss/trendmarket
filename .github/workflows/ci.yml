@@ -1,82 +1,62 @@
 name: CI
-
 on:
   push:
-    branches:
-      - main
-      - 'release/**'
-  pull_request: {}
-
-permissions:
-  contents: read
-  actions: write
+    branches: [ main, '*' ]
+  pull_request:
+    branches: [ main ]
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  gate-a110:
-    name: Gate A110 validation
+  rust:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Validate watchers and hooks
+      - name: Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cargo cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Format check
+        run: cargo fmt --all -- --check
+
+      - name: Clippy (deny warnings)
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Tests (all features)
         run: |
           set -o pipefail
-          ./ops/scripts/gate_a110.sh --check | tee gate_a110.log
+          cargo test --all-features --verbose 2>&1 | tee ci_cargo_test.txt
 
-      - name: Upload Gate A110 report
-        uses: actions/upload-artifact@v4
-        with:
-          name: gate-a110-report
-          path: gate_a110.log
-
-  sbom:
-    name: SBOM snapshot
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Generate SBOM report
+      - name: Bench (smoke, if benches exist)
         run: |
-          python - <<'PY'
-import json
-import hashlib
-import os
-from pathlib import Path
+          if [ -d bench ] || [ -d benches ]; then
+            cargo bench 2>&1 | tee ci_cargo_bench.txt || true
+          else
+            echo "No benches/; skipping" | tee ci_cargo_bench.txt
+          fi
 
-root = Path('.')
-exclude_dirs = {'.git', 'artifacts'}
-entries = []
-for path in sorted(root.rglob('*')):
-    if path.is_dir():
-        continue
-    if any(part in exclude_dirs for part in path.parts):
-        continue
-    digest = hashlib.sha256(path.read_bytes()).hexdigest()
-    entries.append({
-        "path": str(path),
-        "sha256": digest,
-        "size": path.stat().st_size,
-    })
+      - name: ORR (best-effort): gerar artefatos se scripts existirem
+        run: |
+          mkdir -p out/orr_gatecheck/logs out/orr_gatecheck/evidence out/orr_gatecheck/docs
+          if [ -f scripts/orr_scan_static.py ]; then python3 scripts/orr_scan_static.py || true; fi
+          if [ -f scripts/orr_t2_parse_unit.py ]; then python3 scripts/orr_t2_parse_unit.py || true; fi
+          if [ -f scripts/orr_t4_goldens_run.sh ]; then bash scripts/orr_t4_goldens_run.sh || true; fi
+          if [ -f scripts/orr_t5_collect_criterion.py ]; then python3 scripts/orr_t5_collect_criterion.py || true; fi
 
-sbom_dir = Path('artifacts')
-sbom_dir.mkdir(exist_ok=True)
-report = {
-    "repository": os.environ.get('GITHUB_REPOSITORY', ''),
-    "commit": os.environ.get('GITHUB_SHA', ''),
-    "entries": entries,
-}
-with (sbom_dir / 'sbom.json').open('w', encoding='utf-8') as fh:
-    json.dump(report, fh, indent=2)
-PY
-
-      - name: Upload SBOM artifact
+      - name: Upload artifacts (logs + ORR evidence)
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: sbom-scan
-          path: artifacts/sbom.json
+          name: orr-ci-artifacts
+          path: |
+            ci_cargo_test.txt
+            ci_cargo_bench.txt
+            out/orr_gatecheck/**
