@@ -26,13 +26,23 @@ metrics_ok = (EVI/'metrics'/'smoke.txt').exists() and (EVI/'metrics'/'ports.json
 ci_run     = rd(EVI/'ci'/'run_summary.json')
 
 # Status helpers
+def ci_green(run_summary):
+  if not isinstance(run_summary, list):
+    return False
+  for run in run_summary:
+    if not isinstance(run, dict):
+      continue
+    if run.get('status') == 'completed' and run.get('conclusion') == 'success':
+      return True
+  return False
+
 status = {
   'unit':    'GREEN' if unit and unit.get('status')=='GREEN' and unit.get('failed',1)==0 else 'RED',
   'property':'GREEN' if props and props.get('status')=='GREEN' and props.get('failed',1)==0 else 'RED',
   'goldens': 'GREEN' if goldens and goldens.get('status')=='GREEN' and goldens.get('mismatch',1)==0 else 'RED',
   'bench':   'GREEN' if bench_base and (not bench_dlt or bench_dlt.get('status','GREEN')=='GREEN') else 'RED',
   'metrics': 'GREEN' if metrics_ok else 'RED',
-  'ci':      'GREEN' if ci_run and isinstance(ci_run, list) and len(ci_run)>0 and ci_run[0].get('status')=='completed' and ci_run[0].get('conclusion')=='success' else 'RED',
+  'ci':      'GREEN' if ci_green(ci_run) else 'RED',
 }
 kill = sum(1 for v in status.values() if v!='GREEN')
 overall = 'GREEN' if kill==0 else 'RED'
