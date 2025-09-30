@@ -61,9 +61,13 @@ impl EntryBuilder {
 
     fn finish(self) -> CatalogEntry {
         CatalogEntry {
-            variant: self.variant.expect("variant ausente em entrada do catálogo"),
+            variant: self
+                .variant
+                .expect("variant ausente em entrada do catálogo"),
             code: self.code.expect("code ausente em entrada do catálogo"),
-            message: self.message.expect("default_message ausente em entrada do catálogo"),
+            message: self
+                .message
+                .expect("default_message ausente em entrada do catálogo"),
             http_status: self
                 .http_status
                 .expect("http_status ausente em entrada do catálogo"),
@@ -116,9 +120,9 @@ fn parse_catalog(contents: &str) -> CatalogDocument {
                         "domain" => meta.domain = cleaned.to_string(),
                         "prefix" => meta.prefix = cleaned.to_string(),
                         "version" => {
-                            meta.version = cleaned
-                                .parse()
-                                .unwrap_or_else(|_| panic!("versão inválida no catálogo: {cleaned}"));
+                            meta.version = cleaned.parse().unwrap_or_else(|_| {
+                                panic!("versão inválida no catálogo: {cleaned}")
+                            });
                         }
                         other => panic!("chave de meta desconhecida: {other}"),
                     }

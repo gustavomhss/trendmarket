@@ -12,8 +12,8 @@ use std::io::Write as _;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use credit_engine_core::amm::swap::{get_amount_in, get_amount_out};
-use credit_engine_core::amm::types::{Ppm, Wad};
+use credit_engine_core::amm::swap::{get_amount_in, get_amount_out}; // se sua função estiver em cpmm, troque swap->cpmm
+use credit_engine_core::amm::types::{Ppm, Wad, U256, WAD};
 
 const FIXTURE_RELATIVE_PATH: &str = "goldens/amm_cpmw_v1.csv";
 const ACTUAL_DIR: &str = "out/orr_gatecheck/evidence/goldens/actual";
@@ -69,7 +69,9 @@ impl GoldenRow {
         assert_eq!(parts.len(), 9, "CSV do golden deve ter 9 colunas");
         let expected = match parts[7] {
             "ok" => ExpectedOutcome::Ok(parse_wad(parts[8])),
-            err if err.starts_with("err:") => ExpectedOutcome::Err(err.trim_start_matches("err:").to_string()),
+            err if err.starts_with("err:") => {
+                ExpectedOutcome::Err(err.trim_start_matches("err:").to_string())
+            }
             other => panic!("Valor inesperado em expect_kind: {other}"),
         };
         GoldenRow {
@@ -119,15 +121,7 @@ fn golden_cpmm_contract_v1() {
 
         actual_lines.push(format!(
             "{},{},{},{},{},{},{},{},{}",
-            row.id,
-            row.op,
-            row.x,
-            row.y,
-            row.dx,
-            row.dy,
-            row.fee_ppm,
-            kind_label,
-            wad_string
+            row.id, row.op, row.x, row.y, row.dx, row.dy, row.fee_ppm, kind_label, wad_string
         ));
 
         match (&row.expected, actual_result) {
@@ -182,7 +176,8 @@ fn parse_wad(raw: &str) -> Wad {
     if raw.is_empty() {
         0
     } else {
-        raw.parse::<Wad>().unwrap_or_else(|err| panic!("Valor Wad inválido '{raw}': {err}"))
+        raw.parse::<Wad>()
+            .unwrap_or_else(|err| panic!("Valor Wad inválido '{raw}': {err}"))
     }
 }
 
@@ -190,15 +185,17 @@ fn parse_ppm(raw: &str) -> Ppm {
     if raw.is_empty() {
         0
     } else {
-        raw.parse::<Ppm>().unwrap_or_else(|err| panic!("Valor ppm inválido '{raw}': {err}"))
+        raw.parse::<Ppm>()
+            .unwrap_or_else(|err| panic!("Valor ppm inválido '{raw}': {err}"))
     }
 }
 
 fn write_sha256(actual: &Path, sha_path: &Path, label: &str) -> std::io::Result<()> {
     let (hash, tool) = match Command::new("sha256sum").arg(actual).output() {
-        Ok(output) if output.status.success() => {
-            (String::from_utf8(output.stdout).expect("sha256sum deve produzir UTF-8"), "sha256sum")
-        }
+        Ok(output) if output.status.success() => (
+            String::from_utf8(output.stdout).expect("sha256sum deve produzir UTF-8"),
+            "sha256sum",
+        ),
         _ => {
             let output = Command::new("shasum")
                 .arg("-a")
@@ -209,13 +206,13 @@ fn write_sha256(actual: &Path, sha_path: &Path, label: &str) -> std::io::Result<
             if !output.status.success() {
                 return Err(std::io::Error::new(
                     std::io::ErrorKind::Other,
-                    format!(
-                        "Falha ao calcular sha256 usando shasum: status {}",
-                        output.status
-                    ),
+                    format!("Falha ao calcular sha256 usando shasum: status {}", output.status),
                 ));
             }
-            (String::from_utf8(output.stdout).expect("shasum deve produzir UTF-8"), "shasum")
+            (
+                String::from_utf8(output.stdout).expect("shasum deve produzir UTF-8"),
+                "shasum",
+            )
         }
     };
 
@@ -226,4 +223,54 @@ fn write_sha256(actual: &Path, sha_path: &Path, label: &str) -> std::io::Result<
     let mut file = fs::File::create(sha_path)?;
     writeln!(file, "{}  {}", digest, label)?;
     Ok(())
+}
+
+// -----------------------------------------------------------------------------
+// Golden set CPMM (fee=0): |Δk/k| ≤ 1e-9 usando Wad nos inputs e U256 só para k
+// -----------------------------------------------------------------------------
+
+#[inline]
+fn w(n: &str) -> Wad {
+    n.parse::<u128>().expect("u128") * WAD
+}
+
+#[inline]
+fn k(x: Wad, y: Wad) -> U256 {
+    U256::from(x) * U256::from(y)
+}
+
+fn check(name: &str, rx: Wad, ry: Wad, dx: Wad) {
+    let k0 = k(rx, ry);
+    let dy: Wad = get_amount_out(rx, ry, dx, 0u32).expect("swap ok");
+    let k1 = k(rx + dx, ry - dy);
+    let delta = if k1 >= k0 { k1 - k0 } else { k0 - k1 };
+    let tol = k0 / U256::from(1_000_000_000u64);
+    assert!(
+        delta <= tol,
+        "{}: |Δk|={} > tol={} (rx={}, ry={}, dx={}, dy={})",
+        name, delta, tol, rx, ry, dx, dy
+    );
+}
+
+#[test]
+fn golden_cpmm_all() {
+    // 1e18 escala (WAD)
+    let rx = w("1000000");
+    let ry = w("1000000");
+    let dx = w("1000");
+    check("sym:small", rx, ry, dx);
+
+    check("sym:large", w("5000000000"), w("5000000000"), w("1000000"));
+
+    // assimetria
+    check("asym:x>>y", w("1000000000"), w("1000000"), w("1000"));
+    check("asym:y>>x", w("1000000"), w("1000000000"), w("1000"));
+
+    // limites
+    check("lim:min_dx", w("1000000"), w("1000000"), 1u128); // 1 wei
+    check("lim:tiny_vs_big", w("1000"), w("1000000000"), w("1"));
+
+    // sequência add→swap→remove (invariância validada no swap)
+    let s: Wad = 2u128; // fator de escala (add)
+    check("seq:add→swap→remove", w("2000000") * s, w("3000000") * s, w("500"));
 }
