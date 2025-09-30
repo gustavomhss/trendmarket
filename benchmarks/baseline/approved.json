@@ -1,0 +1,102 @@
+{
+  "entries": [
+    {
+      "id": "liquidity/remove_liquidity_partial/base",
+      "mean_ns": 351.52072640408414,
+      "median_ns": 344.00232370456945,
+      "slope": 357.15590816463623,
+      "path": "target/criterion/liquidity/remove_liquidity_partial/base/estimates.json"
+    },
+    {
+      "id": "liquidity/remove_liquidity_partial/new",
+      "mean_ns": 351.52072640408414,
+      "median_ns": 344.00232370456945,
+      "slope": 357.15590816463623,
+      "path": "target/criterion/liquidity/remove_liquidity_partial/new/estimates.json"
+    },
+    {
+      "id": "swap/asym_xgg_f0/base",
+      "mean_ns": 295.3216512231151,
+      "median_ns": 292.33800540490165,
+      "slope": 296.66439922751965,
+      "path": "target/criterion/swap/asym_xgg_f0/base/estimates.json"
+    },
+    {
+      "id": "swap/asym_xgg_f0/new",
+      "mean_ns": 295.3216512231151,
+      "median_ns": 292.33800540490165,
+      "slope": 296.66439922751965,
+      "path": "target/criterion/swap/asym_xgg_f0/new/estimates.json"
+    },
+    {
+      "id": "swap/asym_ygg_f0/base",
+      "mean_ns": 302.68883063414034,
+      "median_ns": 297.73682924580487,
+      "slope": 301.5003394470465,
+      "path": "target/criterion/swap/asym_ygg_f0/base/estimates.json"
+    },
+    {
+      "id": "swap/asym_ygg_f0/new",
+      "mean_ns": 302.68883063414034,
+      "median_ns": 297.73682924580487,
+      "slope": 301.5003394470465,
+      "path": "target/criterion/swap/asym_ygg_f0/new/estimates.json"
+    },
+    {
+      "id": "swap/sym_large_f0/base",
+      "mean_ns": 306.92940618587556,
+      "median_ns": 300.0798383398303,
+      "slope": 302.0590099693895,
+      "path": "target/criterion/swap/sym_large_f0/base/estimates.json"
+    },
+    {
+      "id": "swap/sym_large_f0/new",
+      "mean_ns": 306.92940618587556,
+      "median_ns": 300.0798383398303,
+      "slope": 302.0590099693895,
+      "path": "target/criterion/swap/sym_large_f0/new/estimates.json"
+    },
+    {
+      "id": "swap/sym_small_f0/base",
+      "mean_ns": 309.5492605067716,
+      "median_ns": 305.20121454343365,
+      "slope": 311.27986998228204,
+      "path": "target/criterion/swap/sym_small_f0/base/estimates.json"
+    },
+    {
+      "id": "swap/sym_small_f0/new",
+      "mean_ns": 309.5492605067716,
+      "median_ns": 305.20121454343365,
+      "slope": 311.27986998228204,
+      "path": "target/criterion/swap/sym_small_f0/new/estimates.json"
+    },
+    {
+      "id": "swap/sym_small_fee_f300/base",
+      "mean_ns": 385.04455843710235,
+      "median_ns": 379.3268642676866,
+      "slope": 386.55765354340315,
+      "path": "target/criterion/swap/sym_small_fee_f300/base/estimates.json"
+    },
+    {
+      "id": "swap/sym_small_fee_f300/new",
+      "mean_ns": 385.04455843710235,
+      "median_ns": 379.3268642676866,
+      "slope": 386.55765354340315,
+      "path": "target/criterion/swap/sym_small_fee_f300/new/estimates.json"
+    },
+    {
+      "id": "swap/asym_xgg_fee_f300/base",
+      "mean_ns": 404.96414249798784,
+      "median_ns": 397.72793519425795,
+      "slope": 403.9490609015641,
+      "path": "target/criterion/swap/asym_xgg_fee_f300/base/estimates.json"
+    },
+    {
+      "id": "swap/asym_xgg_fee_f300/new",
+      "mean_ns": 404.96414249798784,
+      "median_ns": 397.72793519425795,
+      "slope": 403.9490609015641,
+      "path": "target/criterion/swap/asym_xgg_fee_f300/new/estimates.json"
+    }
+  ]
+}
