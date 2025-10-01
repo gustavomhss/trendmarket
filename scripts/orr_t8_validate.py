@@ -3,6 +3,7 @@
 Saída: out/orr_gatecheck/evidence/orr_final_summary.json
 """
 import json, pathlib, re, sys
+from json import JSONDecodeError
 from pathlib import Path
 ROOT=Path('.')
 OUT=ROOT/'out'/'orr_gatecheck'
@@ -13,17 +14,27 @@ DOC.mkdir(parents=True, exist_ok=True)
 
 # Util
 p=lambda *a: ROOT.joinpath(*a)
-rd=lambda pth: json.loads(Path(pth).read_text(encoding='utf-8')) if Path(pth).exists() else None
+
+def rd_safe(pth):
+    p = Path(pth)
+    if not p.exists():
+        return None
+    try:
+        return json.loads(p.read_text(encoding='utf-8'))
+    except JSONDecodeError:
+        return None
+    except Exception:
+        return None
 
 # Coleta
-static     = rd(EVI/'orr_static_summary.json')
-unit       = rd(EVI/'unit'/'summary.json')
-props      = rd(EVI/'property'/'summary.json')
-goldens    = rd(EVI/'goldens'/'summary.json')
-bench_base = rd(EVI/'bench'/'baseline'/'criterion_summary.json')
-bench_dlt  = rd(EVI/'bench'/'delta.json')
+static     = rd_safe(EVI/'orr_static_summary.json')
+unit       = rd_safe(EVI/'unit'/'summary.json')
+props      = rd_safe(EVI/'property'/'summary.json')
+goldens    = rd_safe(EVI/'goldens'/'summary.json')
+bench_base = rd_safe(EVI/'bench'/'baseline'/'criterion_summary.json')
+bench_dlt  = rd_safe(EVI/'bench'/'delta.json')
 metrics_ok = (EVI/'metrics'/'smoke.txt').exists() and (EVI/'metrics'/'ports.json').exists()
-ci_run     = rd(EVI/'ci'/'run_summary.json')
+ci_run     = rd_safe(EVI/'ci'/'run_summary.json')
 
 # Status helpers
 def ci_green(run_summary):
