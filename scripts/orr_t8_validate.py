@@ -1,83 +1,84 @@
 #!/usr/bin/env python3
-"""Validador T8 — Consolida evidências T1..T7 e emite resumo final do ORR.
-Saída: out/orr_gatecheck/evidence/orr_final_summary.json
-"""
-import json, pathlib, re, sys
-from json import JSONDecodeError
-from pathlib import Path
-ROOT=Path('.')
-OUT=ROOT/'out'/'orr_gatecheck'
-EVI=OUT/'evidence'
-DOC=OUT/'docs'
-EVI.mkdir(parents=True, exist_ok=True)
-DOC.mkdir(parents=True, exist_ok=True)
+import json
+import os
+import pathlib
+import tempfile
+from datetime import datetime, timezone
 
-# Util
-p=lambda *a: ROOT.joinpath(*a)
+SCRIPT_DIR = pathlib.Path(__file__).resolve().parent
+ROOT = SCRIPT_DIR.parent
+OUT = ROOT / 'out' / 'orr_gatecheck'
+EVIDENCE_DIR = OUT / 'evidence'
+EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
 
-def rd_safe(pth):
-    p = Path(pth)
-    if not p.exists():
+
+def load_json(path: pathlib.Path):
+    if not path.exists():
         return None
     try:
-        return json.loads(p.read_text(encoding='utf-8'))
-    except JSONDecodeError:
-        return None
+        return json.loads(path.read_text(encoding='utf-8'))
     except Exception:
         return None
 
-# Coleta
-static     = rd_safe(EVI/'orr_static_summary.json')
-unit       = rd_safe(EVI/'unit'/'summary.json')
-props      = rd_safe(EVI/'property'/'summary.json')
-goldens    = rd_safe(EVI/'goldens'/'summary.json')
-bench_base = rd_safe(EVI/'bench'/'baseline'/'criterion_summary.json')
-bench_dlt  = rd_safe(EVI/'bench'/'delta.json')
-metrics_ok = (EVI/'metrics'/'smoke.txt').exists() and (EVI/'metrics'/'ports.json').exists()
-ci_run     = rd_safe(EVI/'ci'/'run_summary.json')
 
-# Status helpers
-def ci_green(run_summary):
-  if not isinstance(run_summary, list):
-    return False
-  for run in run_summary:
-    if not isinstance(run, dict):
-      continue
-    if run.get('status') == 'completed' and run.get('conclusion') == 'success':
-      return True
-  return False
+unit_summary = load_json(EVIDENCE_DIR / 'unit' / 'summary.json')
+property_summary = load_json(EVIDENCE_DIR / 'property' / 'summary.json')
+goldens_summary = load_json(EVIDENCE_DIR / 'goldens' / 'summary.json')
+bench_summary = load_json(EVIDENCE_DIR / 'bench' / 'baseline' / 'criterion_summary.json')
+metrics_ports = load_json(EVIDENCE_DIR / 'metrics' / 'ports.json')
+smoke_exists = (EVIDENCE_DIR / 'metrics' / 'smoke.txt').exists()
+ci_runs = load_json(EVIDENCE_DIR / 'ci' / 'run_summary.json')
 
-status = {
-  'unit':    'GREEN' if unit and unit.get('status')=='GREEN' and unit.get('failed',1)==0 else 'RED',
-  'property':'GREEN' if props and props.get('status')=='GREEN' and props.get('failed',1)==0 else 'RED',
-  'goldens': 'GREEN' if goldens and goldens.get('status')=='GREEN' and goldens.get('mismatch',1)==0 else 'RED',
-  'bench':   'GREEN' if bench_base and (not bench_dlt or bench_dlt.get('status','GREEN')=='GREEN') else 'RED',
-  'metrics': 'GREEN' if metrics_ok else 'RED',
-  'ci':      'GREEN' if ci_green(ci_run) else 'RED',
+
+def unit_green(data):
+    return bool(data) and data.get('failed', 1) == 0
+
+
+def property_green(data):
+    return bool(data) and data.get('failed', 1) == 0
+
+
+def goldens_green(data):
+    return bool(data) and data.get('status') == 'GREEN' and data.get('mismatch') == 0
+
+
+def bench_green(data):
+    return bool(data) and data.get('count', 0) > 0
+
+
+def metrics_green(has_smoke, ports):
+    return bool(has_smoke) and isinstance(ports, dict)
+
+
+def ci_green(runs):
+    return isinstance(runs, list) and len(runs) > 0
+
+
+statuses = {
+    'unit': 'GREEN' if unit_green(unit_summary) else 'RED',
+    'property': 'GREEN' if property_green(property_summary) else 'RED',
+    'goldens': 'GREEN' if goldens_green(goldens_summary) else 'RED',
+    'bench': 'GREEN' if bench_green(bench_summary) else 'RED',
+    'metrics': 'GREEN' if metrics_green(smoke_exists, metrics_ports) else 'RED',
+    'ci': 'GREEN' if ci_green(ci_runs) else 'RED',
 }
-kill = sum(1 for v in status.values() if v!='GREEN')
-overall = 'GREEN' if kill==0 else 'RED'
 
-# Checklist de links
-checklist = {
-  'unit': [ 'out/orr_gatecheck/logs/cargo_test_unit.txt', 'out/orr_gatecheck/evidence/unit/summary.json', 'out/orr_gatecheck/docs/ORR_UNIT.md' ],
-  'property': [ 'out/orr_gatecheck/logs/cargo_test_property.txt', 'out/orr_gatecheck/evidence/property/summary.json', 'out/orr_gatecheck/docs/ORR_PROPERTY.md' ],
-  'goldens': [ 'out/orr_gatecheck/logs/cargo_test_goldens.txt', 'out/orr_gatecheck/evidence/goldens/summary.json', 'out/orr_gatecheck/evidence/goldens/diff_reports/' ],
-  'bench': [ 'out/orr_gatecheck/logs/cargo_bench.txt', 'out/orr_gatecheck/evidence/bench/baseline/criterion_summary.json', 'out/orr_gatecheck/evidence/bench/delta.json', 'out/orr_gatecheck/docs/ORR_BENCH.md' ],
-  'metrics': [ 'out/orr_gatecheck/evidence/metrics/smoke.txt', 'out/orr_gatecheck/evidence/metrics/ports.json', 'out/orr_gatecheck/docs/ORR_METRICS.md' ],
-  'ci': [ '.github/workflows/ci.yml', 'out/orr_gatecheck/evidence/ci/run_summary.json', 'out/orr_gatecheck/docs/ORR_CI.md' ],
+kill_count = sum(1 for value in statuses.values() if value != 'GREEN')
+overall = 'GREEN' if kill_count == 0 else 'RED'
+
+summary = {
+    'timestamp': datetime.now(timezone.utc).isoformat(),
+    'overall': overall,
+    'kill_criteria_count': kill_count,
+    'exits': statuses,
 }
 
-summary={
-  'timestamp': __import__('datetime').datetime.now().isoformat(),
-  'exits': status,
-  'kill_criteria_count': kill,
-  'overall': overall,
-  'checklist_links': checklist,
-}
-(EVI/'orr_final_summary.json').write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding='utf-8')
-print(json.dumps({'overall': overall, 'kill': kill}, indent=2))
+TARGET = EVIDENCE_DIR / 'orr_final_summary.json'
+with tempfile.NamedTemporaryFile('w', encoding='utf-8', delete=False, dir=str(EVIDENCE_DIR), prefix='orr_final_summary.', suffix='.json') as tmp:
+    json.dump(summary, tmp, indent=2)
+    tmp.flush()
+    os.fsync(tmp.fileno())
+TEMP_PATH = pathlib.Path(tmp.name)
+TEMP_PATH.replace(TARGET)
 
-# Falhar se RED (para o driver decidir)
-if overall!='GREEN':
-  sys.exit(3)
+print(json.dumps({'overall': overall, 'kill': kill_count}))

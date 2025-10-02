@@ -1,33 +1,47 @@
 #!/usr/bin/env python3
-import json, sys
+import json
+import os
+import sys
+import tempfile
 from pathlib import Path
-ROOT = Path('.')
-OUT = ROOT/'out'/'orr_gatecheck'
-EVI = OUT/'evidence'/'bench'/'baseline'
-LOG = OUT/'logs'
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+ROOT = SCRIPT_DIR.parent
+OUT = ROOT / 'out' / 'orr_gatecheck'
+EVI = OUT / 'evidence' / 'bench' / 'baseline'
 EVI.mkdir(parents=True, exist_ok=True)
-paths = list(ROOT.glob('target/criterion/**/new/estimates.json'))
-summary = []
-for p in paths:
+
+paths = sorted(ROOT.glob('target/criterion/**/new/estimates.json'))
+benchmarks = []
+for path in paths:
     try:
-        data = json.loads(p.read_text(encoding='utf-8'))
+        data = json.loads(path.read_text(encoding='utf-8'))
     except Exception:
         continue
-    # coleta campos chave do Criterion
-    s = {
-        'benchmark': str(p.parent.parent.parent.name),
-        'mean_point_estimate': data.get('mean',{}).get('point_estimate'),
-        'median_point_estimate': data.get('median',{}).get('point_estimate'),
-        'slope_point_estimate': data.get('slope',{}).get('point_estimate'),
-    }
-    summary.append(s)
-out = {
-    'count': len(summary),
-    'benchmarks': summary,
+    parents = path.parents
+    bench_name = parents[1].name if len(parents) > 1 else path.parent.name
+    benchmarks.append({
+        'benchmark': bench_name,
+        'mean_point_estimate': data.get('mean', {}).get('point_estimate'),
+        'median_point_estimate': data.get('median', {}).get('point_estimate'),
+        'slope_point_estimate': data.get('slope', {}).get('point_estimate'),
+    })
+
+output = {
+    'count': len(benchmarks),
+    'benchmarks': benchmarks,
 }
-(EVI/'criterion_summary.json').write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding='utf-8')
-# Falha dura se nada foi encontrado (ativa fallback de benches)
-if out['count'] == 0:
+
+target = EVI / 'criterion_summary.json'
+with tempfile.NamedTemporaryFile('w', encoding='utf-8', delete=False, dir=str(EVI), prefix='criterion_summary.', suffix='.json') as tmp:
+    json.dump(output, tmp, indent=2)
+    tmp.flush()
+    os.fsync(tmp.fileno())
+temp_path = Path(tmp.name)
+temp_path.replace(target)
+
+if output['count'] == 0:
     sys.stderr.write('No Criterion artifacts found; run benches then collect.\n')
     sys.exit(3)
-print(json.dumps({'count': out['count']}))
+
+print(json.dumps({'count': output['count']}))
