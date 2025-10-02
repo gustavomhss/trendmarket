@@ -2,6 +2,7 @@
 import json
 import os
 import pathlib
+import sys
 import tempfile
 from datetime import datetime, timezone
 
@@ -21,13 +22,17 @@ def load_json(path: pathlib.Path):
         return None
 
 
-unit_summary = load_json(EVIDENCE_DIR / 'unit' / 'summary.json')
-property_summary = load_json(EVIDENCE_DIR / 'property' / 'summary.json')
-goldens_summary = load_json(EVIDENCE_DIR / 'goldens' / 'summary.json')
-bench_summary = load_json(EVIDENCE_DIR / 'bench' / 'baseline' / 'criterion_summary.json')
-metrics_ports = load_json(EVIDENCE_DIR / 'metrics' / 'ports.json')
+def rd_safe(path: pathlib.Path):
+    return load_json(path)
+
+
+unit_summary = rd_safe(EVIDENCE_DIR / 'unit' / 'summary.json')
+property_summary = rd_safe(EVIDENCE_DIR / 'property' / 'summary.json')
+goldens_summary = rd_safe(EVIDENCE_DIR / 'goldens' / 'summary.json')
+bench_summary = rd_safe(EVIDENCE_DIR / 'bench' / 'baseline' / 'criterion_summary.json')
+metrics_ports = rd_safe(EVIDENCE_DIR / 'metrics' / 'ports.json')
 smoke_exists = (EVIDENCE_DIR / 'metrics' / 'smoke.txt').exists()
-ci_runs = load_json(EVIDENCE_DIR / 'ci' / 'run_summary.json')
+ci_runs = rd_safe(EVIDENCE_DIR / 'ci' / 'run_summary.json')
 
 
 def unit_green(data):
@@ -74,11 +79,27 @@ summary = {
 }
 
 TARGET = EVIDENCE_DIR / 'orr_final_summary.json'
-with tempfile.NamedTemporaryFile('w', encoding='utf-8', delete=False, dir=str(EVIDENCE_DIR), prefix='orr_final_summary.', suffix='.json') as tmp:
-    json.dump(summary, tmp, indent=2)
+summary_json = json.dumps(summary, indent=2)
+
+try:
+    tmp_file = tempfile.NamedTemporaryFile(
+        'w',
+        encoding='utf-8',
+        delete=False,
+        dir=str(EVIDENCE_DIR),
+        prefix='orr_final_summary.',
+        suffix='.json',
+    )
+except OSError:
+    print(summary_json)
+    sys.exit(95)
+
+with tmp_file as tmp:
+    tmp.write(summary_json)
     tmp.flush()
     os.fsync(tmp.fileno())
-TEMP_PATH = pathlib.Path(tmp.name)
+
+TEMP_PATH = pathlib.Path(tmp_file.name)
 TEMP_PATH.replace(TARGET)
 
 print(json.dumps({'overall': overall, 'kill': kill_count}))
