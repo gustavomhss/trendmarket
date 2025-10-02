@@ -31,5 +31,6 @@ outp = {
     "filtered_out": filtered,
 }
 PATH = pathlib.Path('out/orr_gatecheck/evidence/unit/summary.json')
+PATH.parent.mkdir(parents=True, exist_ok=True)
 PATH.write_text(json.dumps(outp, indent=2), encoding='utf-8')
 print(json.dumps(outp, indent=2))
