@@ -6,6 +6,27 @@ import re
 import sys
 import tempfile
 
+
+def _nearest_existing_dir(path: pathlib.Path) -> pathlib.Path | None:
+    current = path
+    while True:
+        if current.exists():
+            if current.is_dir():
+                return current
+            parent = current.parent
+            return parent if parent != current else None
+        parent = current.parent
+        if parent == current:
+            return None
+        current = parent
+
+
+def _is_dir_writable(path: pathlib.Path) -> bool:
+    existing_dir = _nearest_existing_dir(path)
+    if existing_dir is None:
+        return False
+    return os.access(existing_dir, os.W_OK | os.X_OK)
+
 SCRIPT_DIR = pathlib.Path(__file__).resolve().parent
 ROOT = SCRIPT_DIR.parent
 LOG = ROOT / 'out' / 'orr_gatecheck' / 'logs' / 'cargo_test_unit.txt'
@@ -39,6 +60,9 @@ outp = {
 }
 
 evidence_dir = ROOT / 'out' / 'orr_gatecheck' / 'evidence' / 'unit'
+if not _is_dir_writable(evidence_dir):
+    print(json.dumps(outp, separators=(',', ':')))
+    sys.exit(95)
 evidence_dir.mkdir(parents=True, exist_ok=True)
 target = evidence_dir / 'summary.json'
 
