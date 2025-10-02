@@ -8,13 +8,25 @@ if ! gh auth status >/dev/null 2>&1; then
   echo "ERROR: gh not authenticated. Run: gh auth login -s repo,workflow -h github.com" >&2
   exit 2
 fi
-# Descobre o branch atual; fallback para main em caso de HEAD destacada
-BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+# Descobre o branch atual da forma mais resiliente possível
+BRANCH=""
+if command -v git >/dev/null 2>&1; then
+  BRANCH="$(git branch --show-current 2>/dev/null || true)"
+  if [ -z "$BRANCH" ]; then
+    BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+  fi
+fi
 if [ -z "$BRANCH" ] || [ "$BRANCH" = "HEAD" ]; then
-  BRANCH="main"
+  if [ -n "${GITHUB_HEAD_REF:-}" ]; then
+    BRANCH="$GITHUB_HEAD_REF"
+  elif [ -n "${BRANCH_NAME:-}" ]; then
+    BRANCH="$BRANCH_NAME"
+  else
+    BRANCH="main"
+  fi
 fi
 # Coleta runs mais recentes (branch atual, completados)
-gh run list --limit 20 \
+gh run list --limit 20 --branch "$BRANCH" \
   --json status,conclusion,workflowName,displayTitle,headBranch,headSha,createdAt,startedAt,updatedAt,url,number \
   > "$TMP"
 # Filtra e calcula duração
