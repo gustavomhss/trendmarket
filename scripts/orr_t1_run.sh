@@ -3,9 +3,10 @@ set -Eeuo pipefail
 ROOT="$(pwd)"
 OUT="$ROOT/out/orr_gatecheck"
 LOG="$OUT/logs"
-EVIDENCE="$OUT/evidence/unit"
+EVIDENCE_BASE="$OUT/evidence"
 DOCS="$OUT/docs"
-mkdir -p "$LOG" "$EVIDENCE" "$DOCS"
+mkdir -p "$LOG" "$EVIDENCE_BASE" "$DOCS"
+mkdir -p "$EVIDENCE_BASE/unit"
 TMPDIS=""
 if [ -f "src/bin/telemetry_smoke.rs" ]; then
   TMPDIS="src/bin/telemetry_smoke.rs.bak.$$"
