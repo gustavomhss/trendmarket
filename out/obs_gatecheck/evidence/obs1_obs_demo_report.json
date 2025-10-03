@@ -1,0 +1,44 @@
+{
+  "timestamp_utc": "2025-10-03T05:22:40.710496+00:00",
+  "run_parameters": {
+    "DEPLOY_ENV": "dev",
+    "OBSERVABILITY_LEVEL": "full",
+    "PROM_SCRAPE": "on",
+    "METRICS_HTTP_ADDR": "127.0.0.1:9464",
+    "OBS_DEMO_OPS": 50,
+    "SERVICE_NAME": "obs-demo",
+    "SERVICE_VERSION": "0.1.0",
+    "LOG_LEVEL": "info"
+  },
+  "stdout_samples": [
+    "Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.37s",
+    "Running `target/debug/obs_demo`",
+    "{\"env\":\"dev\",\"extra\":{\"message\":\"OBSERVABILITY_LEVEL=Full but OTLP endpoint missing; exporters will remain local\"},\"level\":\"warn\",\"msg\":\"obs_demo\",\"op\":\"unknown\",\"service\":\"obs-demo\",\"span_id\":\"0000000000000000\",\"trace_id\":\"00000000000000000000000000000000\",\"ts\":\"2025-10-03T05:22:20Z\",\"version\":\"0.1.0\"}",
+    "Prometheus exporter listening at http://127.0.0.1:9464/metrics",
+    "obs_demo starting: service=obs-demo version=0.1.0 env=dev operations=50"
+  ],
+  "metrics_excerpt": [
+    "# HELP amm_op_latency_seconds Latency per AMM operation in seconds",
+    "# TYPE amm_op_latency_seconds histogram",
+    "amm_op_latency_seconds_bucket{op=\"cdc_consume\",service=\"obs-demo\",env=\"dev\",version=\"0.1.0\",le=\"0.005\"} 0",
+    "amm_op_latency_seconds_bucket{op=\"cdc_consume\",service=\"obs-demo\",env=\"dev\",version=\"0.1.0\",le=\"0.01\"} 0",
+    "amm_op_latency_seconds_bucket{op=\"cdc_consume\",service=\"obs-demo\",env=\"dev\",version=\"0.1.0\",le=\"0.02\"} 0",
+    "amm_op_latency_seconds_bucket{op=\"cdc_consume\",service=\"obs-demo\",env=\"dev\",version=\"0.1.0\",le=\"0.03\"} 0",
+    "amm_op_latency_seconds_bucket{op=\"cdc_consume\",service=\"obs-demo\",env=\"dev\",version=\"0.1.0\",le=\"0.05\"} 1",
+    "amm_op_latency_seconds_bucket{op=\"cdc_consume\",service=\"obs-demo\",env=\"dev\",version=\"0.1.0\",le=\"0.075\"} 5",
+    "amm_op_latency_seconds_bucket{op=\"cdc_consume\",service=\"obs-demo\",env=\"dev\",version=\"0.1.0\",le=\"0.1\"} 14",
+    "amm_op_latency_seconds_bucket{op=\"cdc_consume\",service=\"obs-demo\",env=\"dev\",version=\"0.1.0\",le=\"0.15\"} 14",
+    "amm_op_latency_seconds_bucket{op=\"cdc_consume\",service=\"obs-demo\",env=\"dev\",version=\"0.1.0\",le=\"0.2\"} 14",
+    "amm_op_latency_seconds_bucket{op=\"cdc_consume\",service=\"obs-demo\",env=\"dev\",version=\"0.1.0\",le=\"0.3\"} 14",
+    "amm_op_latency_seconds_bucket{op=\"cdc_consume\",service=\"obs-demo\",env=\"dev\",version=\"0.1.0\",le=\"0.5\"} 14",
+    "amm_op_latency_seconds_bucket{op=\"cdc_consume\",service=\"obs-demo\",env=\"dev\",version=\"0.1.0\",le=\"0.75\"} 14",
+    "amm_op_latency_seconds_bucket{op=\"cdc_consume\",service=\"obs-demo\",env=\"dev\",version=\"0.1.0\",le=\"1\"} 14",
+    "amm_op_latency_seconds_bucket{op=\"cdc_consume\",service=\"obs-demo\",env=\"dev\",version=\"0.1.0\",le=\"1.5\"} 14",
+    "amm_op_latency_seconds_bucket{op=\"cdc_consume\",service=\"obs-demo\",env=\"dev\",version=\"0.1.0\",le=\"2\"} 14",
+    "amm_op_latency_seconds_bucket{op=\"cdc_consume\",service=\"obs-demo\",env=\"dev\",version=\"0.1.0\",le=\"3\"} 14",
+    "amm_op_latency_seconds_bucket{op=\"cdc_consume\",service=\"obs-demo\",env=\"dev\",version=\"0.1.0\",le=\"5\"} 14",
+    "amm_op_latency_seconds_bucket{op=\"cdc_consume\",service=\"obs-demo\",env=\"dev\",version=\"0.1.0\",le=\"+Inf\"} 14"
+  ],
+  "metrics_endpoint": "http://127.0.0.1:9464/metrics",
+  "sha256": "7b3d5c0e45b7a8af987dfb400c2d3a59a51a873617818f73f18daf5d3d7859e2  target/debug/obs_demo"
+}
