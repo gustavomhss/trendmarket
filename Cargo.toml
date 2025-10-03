@@ -6,18 +6,27 @@ build = "build.rs"
 
 [dependencies]
 anyhow = "1"
+bytes = "1"
+http-body-util = "0.1"
+hyper = { version = "1", features = ["http1", "server"] }
+hyper-util = { version = "0.1", features = ["server", "http1", "tokio"] }
+httpdate = { version = "1", path = "vendor/httpdate" }
 opentelemetry = { version = "0.29", features = ["trace", "metrics"] }
-opentelemetry-otlp = { version = "0.29", default-features = false, features = ["metrics", "http-proto", "hyper-client"] }
-opentelemetry_sdk = { version = "0.29", features = ["metrics", "rt-tokio", "experimental_metrics_periodicreader_with_async_runtime"] }
-tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+opentelemetry-otlp = { version = "0.29", features = ["http-proto"] }
+opentelemetry-prometheus = { version = "0.29", path = "vendor/opentelemetry-prometheus" }
+opentelemetry_sdk = { version = "0.29", features = ["metrics", "rt-tokio", "testing"] }
+prometheus = { version = "0.13", path = "vendor/prometheus" }
+thiserror = "2"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "sync", "time", "io-util"] }
 tracing = "0.1"
 tracing-opentelemetry = "0.30"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 uint = "0.9"
-metrics = { version = "0.21", path = "vendor/metrics" }
-metrics-exporter-prometheus = { version = "0.13", optional = true, path = "vendor/metrics-exporter-prometheus" }
-thiserror = "1"
-hyper = { version = "1.7", default-features = false, features = ["client", "http1"] }
+
+[patch.crates-io]
+httpdate = { path = "vendor/httpdate" }
+prometheus = { path = "vendor/prometheus" }
+opentelemetry-prometheus = { path = "vendor/opentelemetry-prometheus" }
 
 [dev-dependencies]
 proptest = "1"
@@ -38,10 +47,9 @@ name = "bench_liquidity"
 harness = false
 
 [features]
-obs = [
-  "metrics-exporter-prometheus"
-]
-metrics-otlp-grpc = ["opentelemetry-otlp/grpc-tonic"]
+obs = []
 
-[patch.crates-io]
-hyper-timeout = { path = "vendor/hyper-timeout" }
+[[bin]]
+name = "telemetry_smoke"
+path = "src/bin/telemetry_smoke.rs"
+required-features = ["obs"]
