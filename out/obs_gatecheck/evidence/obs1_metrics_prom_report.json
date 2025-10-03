@@ -1,0 +1,13 @@
+{
+  "timestamp": "2025-10-03T04:56:01+00:00",
+  "bind_addr": "127.0.0.1:46437",
+  "metrics_preview": [
+    "# TYPE test_counter_total counter",
+    "test_counter_total 3",
+    "# TYPE test_histogram_seconds histogram",
+    "test_histogram_seconds_bucket{le=\"0\"} 0",
+    "test_histogram_seconds_bucket{le=\"5\"} 3",
+    "test_histogram_seconds_bucket{le=\"10\"} 3"
+  ],
+  "module_sha256": "a0e50d5efbac626bfc13879c038933421f9c082c207abdb0bfe67133ecf66199"
+}

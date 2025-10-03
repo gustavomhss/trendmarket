@@ -1,0 +1,23 @@
+{
+  "timestamp": "2025-10-03T04:52:54Z",
+  "mock_sink_samples": [
+    {
+      "seconds": 0.002111,
+      "labels": [
+        { "key": "service", "value": "amm.core" },
+        { "key": "env", "value": "dev" },
+        { "key": "version", "value": "v1.0.0" },
+        { "key": "op", "value": "swap" }
+      ],
+      "source": "cargo test --test telemetry_latency_tests wrapper_records_latency_and_labels -- --nocapture"
+    }
+  ],
+  "tests": [
+    {
+      "command": "cargo test",
+      "status": "passed",
+      "evidence_chunk": "dd94a2"
+    }
+  ],
+  "module_sha256": "80b5cbd1f933dd5b49688c74a5844008dfbc8943f08f784745e70f42472aee34"
+}
