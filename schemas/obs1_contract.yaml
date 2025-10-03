@@ -1,0 +1,244 @@
+version: "1.0.0"
+label_policy:
+  regex: "^[a-z0-9_]{1,32}$"
+  allowed:
+    - op
+    - service
+    - env
+    - version
+    - hook_id
+    - status
+    - source
+    - domain
+    - stream
+    - partition
+    - feature
+  forbidden:
+    - user_id
+    - account_id
+    - request_id
+    - session_id
+  forbidden_patterns:
+    - "*_uuid"
+    - "*_hash"
+metrics:
+  - name: amm_op_latency_seconds
+    type: histogram
+    unit: seconds
+    description: "Latência por operação do AMM, em segundos (por op/versão)."
+    labels:
+      required:
+        - op
+        - service
+        - env
+        - version
+      optional: []
+    buckets:
+      - 0.005
+      - 0.01
+      - 0.02
+      - 0.03
+      - 0.05
+      - 0.075
+      - 0.1
+      - 0.15
+      - 0.2
+      - 0.3
+      - 0.5
+      - 0.75
+      - 1.0
+      - 1.5
+      - 2.0
+      - 3.0
+      - 5.0
+    notes: "Usar HistogramDataPoint com temporality cumulativa."
+  - name: hook_executions_total
+    type: counter
+    unit: count
+    description: "Número de execuções de hooks por id e status."
+    labels:
+      required:
+        - hook_id
+        - status
+      optional: []
+    allowed_values:
+      status:
+        - success
+        - error
+    notes: "Sum monotônico cumulativo."
+  - name: data_freshness_seconds
+    type: gauge
+    unit: seconds
+    description: "Freshness de dados por fonte e domínio."
+    labels:
+      required:
+        - source
+        - domain
+      optional: []
+    notes: "Somente valores reais provenientes dos sistemas de ingestão."
+  - name: cdc_lag_seconds
+    type: gauge
+    unit: seconds
+    description: "Atraso de CDC por stream e partição."
+    labels:
+      required:
+        - stream
+        - partition
+      optional: []
+    notes: "Não utilizar partições dinâmicas sem agregação."
+  - name: drift_score
+    type: gauge
+    unit: ratio
+    description: "Indicador de drift de features."
+    labels:
+      required:
+        - feature
+        - domain
+      optional: []
+    notes: "Valor esperado entre 0 e 1; proíbe valores sintéticos."
+spans:
+  operations:
+    - name: amm.swap
+      op: swap
+      required_attributes:
+        amm.k_before: double
+        amm.k_after: double
+        amm.delta_k_ratio: double
+        amm.fee_ppm: integer
+        amm.input: double
+        amm.output: double
+    - name: amm.add_liquidity
+      op: add_liquidity
+      required_attributes:
+        amm.k_before: double
+        amm.k_after: double
+        amm.delta_k_ratio: double
+        amm.fee_ppm: integer
+        amm.input: double
+        amm.output: double
+    - name: amm.remove_liquidity
+      op: remove_liquidity
+      required_attributes:
+        amm.k_before: double
+        amm.k_after: double
+        amm.delta_k_ratio: double
+        amm.fee_ppm: integer
+        amm.input: double
+        amm.output: double
+    - name: pricing.quote
+      op: pricing
+      required_attributes:
+        amm.k_before: double
+        amm.k_after: double
+        amm.delta_k_ratio: double
+        amm.fee_ppm: integer
+        amm.input: double
+        amm.output: double
+    - name: cdc.consume
+      op: cdc_consume
+      required_attributes:
+        amm.k_before: double
+        amm.k_after: double
+        amm.delta_k_ratio: double
+        amm.fee_ppm: integer
+        amm.input: double
+        amm.output: double
+logs:
+  required_fields:
+    ts:
+      type: string
+      format: rfc3339_utc
+      pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"
+    level:
+      type: string
+      enum:
+        - trace
+        - debug
+        - info
+        - warn
+        - error
+    msg:
+      type: string
+    trace_id:
+      type: string
+      pattern: "^[0-9a-f]{32}$"
+    span_id:
+      type: string
+      pattern: "^[0-9a-f]{16}$"
+    service:
+      type: string
+      enum:
+        - ce-amm
+    env:
+      type: string
+      enum:
+        - dev
+        - stg
+        - prod
+    op:
+      type: string
+      enum:
+        - swap
+        - add_liquidity
+        - remove_liquidity
+        - pricing
+        - cdc_consume
+    version:
+      type: string
+      pattern: "^(?:\\d+\\.\\d+\\.\\d+(?:[-+][0-9A-Za-z.-]+)?|[0-9a-f]{7,40})$"
+  optional_fields:
+    hook_id:
+      type: string
+      pattern: "^[a-z0-9]+(?:[-_][a-z0-9]+)*$"
+    error.kind:
+      type: string
+    error.message:
+      type: string
+    extra:
+      type: object
+      property_name_policy: "^(?!(?:email|cpf|phone|address|name|geo|person_)).{1,64}$"
+pii_policy:
+  forbidden_fields:
+    - email
+    - cpf
+    - phone
+    - address
+    - name
+    - geo
+    - person_*
+  description: "Campos que representem PII são rejeitados no schema e na ingestão."
+resource_attributes:
+  service.name: ce-amm
+  service.version: semver_or_git_sha
+  deployment.environment:
+    - dev
+    - stg
+    - prod
+env_flags:
+  - name: OBSERVABILITY_LEVEL
+    values:
+      - off
+      - min
+      - full
+    description: "Controla volume de telemetria."
+  - name: PROM_SCRAPE
+    values:
+      - on
+      - off
+    description: "Expõe /metrics para Prometheus."
+  - name: OTEL_EXPORTER_OTLP_ENDPOINT
+    values:
+      - url
+    description: "Endpoint OTLP em produção."
+operations:
+  canonical:
+    - swap
+    - add_liquidity
+    - remove_liquidity
+    - pricing
+    - cdc_consume
+versioning:
+  semver:
+    major: "Quebra de compatibilidade: renomear/remover métricas ou alterar buckets/semântica obrigatória."
+    minor: "Mudanças compatíveis: adicionar spans/labels opcionais ou buckets complementares."
+    patch: "Correções textuais sem impacto estrutural."
