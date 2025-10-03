@@ -7,8 +7,8 @@ build = "build.rs"
 [dependencies]
 anyhow = "1"
 opentelemetry = { version = "0.29", features = ["trace", "metrics"] }
-opentelemetry-otlp = { version = "0.29", features = ["http-proto"] }
-opentelemetry_sdk = { version = "0.29", features = ["metrics", "rt-tokio"] }
+opentelemetry-otlp = { version = "0.29", features = ["http-proto", "grpc-tonic"] }
+opentelemetry_sdk = { version = "0.29", features = ["metrics", "rt-tokio", "experimental_trace_batch_span_processor_with_async_runtime"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 tracing = "0.1"
 tracing-opentelemetry = "0.30"
@@ -16,6 +16,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 uint = "0.9"
 metrics = { version = "0.21", path = "vendor/metrics" }
 metrics-exporter-prometheus = { version = "0.13", optional = true, path = "vendor/metrics-exporter-prometheus" }
+thiserror = "2"
 
 [dev-dependencies]
 proptest = "1"
