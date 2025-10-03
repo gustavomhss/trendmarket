@@ -13,16 +13,15 @@ hyper-util = { version = "0.1", features = ["server", "http1", "tokio"] }
 httpdate = { version = "1", path = "vendor/httpdate" }
 opentelemetry = { version = "0.29", features = ["trace", "metrics"] }
 opentelemetry-otlp = { version = "0.29", features = ["http-proto"] }
-opentelemetry_sdk = { version = "0.29", features = ["metrics", "rt-tokio", "testing"] }
-tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+opentelemetry_sdk = { version = "0.29", features = ["metrics", "rt-tokio"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "io-util"] }
 tracing = "0.1"
 tracing-opentelemetry = "0.30"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 uint = "0.9"
 metrics = { version = "0.21", path = "vendor/metrics" }
 metrics-exporter-prometheus = { version = "0.13", optional = true, path = "vendor/metrics-exporter-prometheus" }
-once_cell = "1"
-regex = "1"
+serde_json = "1"
 
 [dev-dependencies]
 proptest = "1"

@@ -2,9 +2,7 @@ use std::env;
 use std::str::FromStr;
 use std::sync::{Mutex, MutexGuard, OnceLock};
 
-use credit_engine_core::telemetry_identity::{
-    DeployEnv, IdentityError, ServiceIdentityBuilder,
-};
+use credit_engine_core::telemetry_identity::{DeployEnv, IdentityError, ServiceIdentityBuilder};
 static ENV_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
 
 const FULL_SHA: &str = "4fd0c2a64b7f1a3e9c0b2e1d5a6c7b8f4fd0c2a6";
@@ -114,7 +112,10 @@ fn version_is_composed_from_git_metadata() {
         .build()
         .expect("builder should compose version");
 
-    assert_eq!(identity.service_version, format!("{}+1a2b3c4", env!("CARGO_PKG_VERSION")));
+    assert_eq!(
+        identity.service_version,
+        format!("{}+1a2b3c4", env!("CARGO_PKG_VERSION"))
+    );
 }
 
 #[test]
@@ -144,14 +145,12 @@ struct EnvGuard {
 
 impl EnvGuard {
     fn set(&mut self, key: &str, value: &str) {
-        self.entries
-            .push((key.to_string(), env::var(key).ok()));
+        self.entries.push((key.to_string(), env::var(key).ok()));
         env::set_var(key, value);
     }
 
     fn remove(&mut self, key: &str) {
-        self.entries
-            .push((key.to_string(), env::var(key).ok()));
+        self.entries.push((key.to_string(), env::var(key).ok()));
         env::remove_var(key);
     }
 }
@@ -172,5 +171,7 @@ fn env_lock() -> &'static Mutex<()> {
 }
 
 fn lock_env<'a>() -> MutexGuard<'a, ()> {
-    env_lock().lock().unwrap_or_else(|poison| poison.into_inner())
+    env_lock()
+        .lock()
+        .unwrap_or_else(|poison| poison.into_inner())
 }
