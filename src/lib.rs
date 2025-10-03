@@ -6,3 +6,4 @@ pub mod telemetry;
 pub mod telemetry_cfg;
 pub mod telemetry_identity;
 pub mod telemetry_spans_cdc;
+pub mod obs_policy_lints;

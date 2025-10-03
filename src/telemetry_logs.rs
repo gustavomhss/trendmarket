@@ -1,5 +1,6 @@
 use std::fmt;
 
+use crate::obs_policy_lints::{current_field_action, FieldAction};
 use opentelemetry::trace::TraceContextExt;
 use serde_json::{Map, Value};
 use tracing::{
@@ -354,6 +355,18 @@ impl EventFieldVisitor {
 
         if is_blocked_field(name) {
             return;
+        }
+
+        if let Some(action) = current_field_action(name) {
+            match action {
+                FieldAction::Drop => {
+                    return;
+                }
+                FieldAction::Redact(replacement) => {
+                    self.extra_fields.push((name.to_string(), replacement));
+                    return;
+                }
+            }
         }
 
         if matches!(
