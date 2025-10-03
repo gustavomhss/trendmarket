@@ -2,9 +2,15 @@
 name = "credit-engine-core"
 version = "0.1.0"
 edition = "2021"
+build = "build.rs"
 
 [dependencies]
 anyhow = "1"
+bytes = "1"
+http-body-util = "0.1"
+hyper = { version = "1", features = ["http1", "server"] }
+hyper-util = { version = "0.1", features = ["server", "http1", "tokio"] }
+httpdate = { version = "1", path = "vendor/httpdate" }
 opentelemetry = { version = "0.29", features = ["trace", "metrics"] }
 opentelemetry-otlp = { version = "0.29", features = ["http-proto"] }
 opentelemetry_sdk = { version = "0.29", features = ["metrics", "rt-tokio", "testing"] }
@@ -42,6 +48,9 @@ path = "src/bin/telemetry_smoke.rs"
 required-features = ["obs"]
 
 [features]
-obs = [
-  "metrics-exporter-prometheus"
-]
+obs = []
+
+[[bin]]
+name = "telemetry_smoke"
+path = "src/bin/telemetry_smoke.rs"
+required-features = ["obs"]
