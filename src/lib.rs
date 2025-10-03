@@ -3,4 +3,5 @@ pub mod amm; // existe
 pub mod ce_core; // expõe o namespace ce_core
 
 pub mod telemetry;
-pub mod telemetry_logs;
+pub mod telemetry_contract; // contrato OBS-1 (constantes canônicas)
+pub mod telemetry_spans_amm; // spans canônicos para AMM e pricing (OBS-1/T10)
