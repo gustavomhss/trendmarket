@@ -1,0 +1,47 @@
+{
+  "timestamp_utc": "2025-10-03T05:13:45Z",
+  "service": {
+    "name": "ce-amm",
+    "version": "0.1.0",
+    "env": "dev"
+  },
+  "prom_scrape": true,
+  "metrics": {
+    "amm_op_latency_seconds": {
+      "buckets_nonzero": 16,
+      "sample_extract": "amm_op_latency_seconds_bucket{op=\"swap\",service=\"ce-amm\",env=\"dev\",version=\"0.1.0\",le=\"0.020\"} 1"
+    },
+    "hook_executions_total": {
+      "present": true
+    }
+  },
+  "traces": {
+    "observed_trace_ids": 5,
+    "observed_span_ids": 5
+  },
+  "logs": {
+    "lines_json": 5,
+    "sample": "{\"ts\":\"2025-10-03T05:13:43Z\",\"level\":\"info\",\"msg\":\"swap operation executed\",\"service\":\"ce-amm\",\"env\":\"dev\",\"version\":\"0.1.0\",\"op\":\"swap\",\"trace_id\":\"0000000000000000186ae3359c40c86b\",\"span_id\":\"00000000186ae335\",\"hook_id\":\"swap-latency\",\"latency_ms\":12.000}"
+  },
+  "otlp": {
+    "endpoint": null
+  },
+  "artifacts": {
+    "smoke_log": "out/obs_gatecheck/logs/obs1_smoke.txt",
+    "metrics_sample": "out/obs_gatecheck/logs/obs1_metrics_sample.txt"
+  },
+  "sources_sha256": [
+    {
+      "path": "src/telemetry_cfg.rs",
+      "sha256": "d8e4da8fdb1e41b2c88227ba5989a2c602f1a097948579e439df94a205da6a1c"
+    },
+    {
+      "path": "src/telemetry_identity.rs",
+      "sha256": "cf93bf3bc241103e87e9eb68cd4a6b41b49f0f76640b45fbfe1ad44ff0bd6a45"
+    },
+    {
+      "path": "src/bin/obs_demo.rs",
+      "sha256": "d7171c3ce42ae21ef3dcb1bc711eeb28089dd3b56d773969763b323ae6aebe6a"
+    }
+  ]
+}
