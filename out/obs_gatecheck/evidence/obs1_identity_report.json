@@ -1,0 +1,24 @@
+{
+  "timestamp_utc": "2025-10-03T04:21:07Z",
+  "sample_identity": {
+    "service_name": "ce-amm",
+    "service_version": "0.0.0+abc8a1a",
+    "deployment_environment": "dev",
+    "build_time_utc": "2025-10-03T12:34:56Z",
+    "git_sha": "abc8a1a59694ee1a6babf4ce58cd8441a892f3d1"
+  },
+  "tests": [
+    {
+      "command": "CARGO_NET_OFFLINE=true cargo test --features obs --test telemetry_identity_tests -- --nocapture",
+      "status": "pass"
+    }
+  ],
+  "files_sha256": {
+    "build.rs": "9619a87d68187b8fe4eb3a851892a721a04ed9fb33eb6a10eb938772676d94c0",
+    "src/telemetry_identity.rs": "bedb196b4c4c2e0effefd4f842f00a70cda88fa3de0c01e9c5d1d73731bf7912",
+    "docs/obs1_identity_contract.md": "159c6c05a3c1adeef23d62f48ced0024e82fe1bee5d28b124fac3c8911d5ece1",
+    "tests/telemetry_identity_tests.rs": "221d5b71789949f160d408d042e863b12a5a7e938332721ec5930b989917533a",
+    "out/obs_gatecheck/docs/OBS1_IDENTITY_README.md": "2871eb319522787ed88fa49b8ca40e85863deba0db4d34a223dc4d4da95e5d35",
+    "scripts/obs1_identity_check.sh": "29c0f6f26eb4fbb7c6a765553bb974ac76b3e29544add3a10f33079d48165c2d"
+  }
+}
