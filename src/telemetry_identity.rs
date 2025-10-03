@@ -438,6 +438,9 @@ mod tests {
 
         assert_eq!(identity.service_name, "ce-amm");
         assert_eq!(identity.deploy_env, DeployEnv::Dev);
-        assert_eq!(identity.service_version, format!("{}+4fd0c2a", env!("CARGO_PKG_VERSION")));
+        assert_eq!(
+            identity.service_version,
+            format!("{}+4fd0c2a", env!("CARGO_PKG_VERSION"))
+        );
     }
 }

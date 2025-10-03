@@ -105,7 +105,8 @@ pub const LOG_LEVEL_VALUES: &[&str] = &["trace", "debug", "info", "warn", "error
 pub const LOG_TIMESTAMP_PATTERN_UTC: &str = "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$";
 pub const LOG_TRACE_ID_PATTERN: &str = "^[0-9a-f]{32}$";
 pub const LOG_SPAN_ID_PATTERN: &str = "^[0-9a-f]{16}$";
-pub const LOG_VERSION_PATTERN: &str = "^(?:\\d+\\.\\d+\\.\\d+(?:[-+][0-9A-Za-z.-]+)?|[0-9a-f]{7,40})$";
+pub const LOG_VERSION_PATTERN: &str =
+    "^(?:\\d+\\.\\d+\\.\\d+(?:[-+][0-9A-Za-z.-]+)?|[0-9a-f]{7,40})$";
 pub const LOG_HOOK_ID_PATTERN: &str = "^[a-z0-9]+(?:[-_][a-z0-9]+)*$";
 
 // Resource attributes
@@ -125,14 +126,7 @@ pub const OBSERVABILITY_LEVEL_VALUES: &[&str] = &["off", "min", "full"];
 pub const PROM_SCRAPE_VALUES: &[&str] = &["on", "off"];
 
 // PII forbidden keys
-pub const PII_FORBIDDEN_FIELDS: &[&str] = &[
-    "email",
-    "cpf",
-    "phone",
-    "address",
-    "name",
-    "geo",
-];
+pub const PII_FORBIDDEN_FIELDS: &[&str] = &["email", "cpf", "phone", "address", "name", "geo"];
 
 // File manifest for evidence reports
 pub const CONTRACT_FILES: &[&str] = &[

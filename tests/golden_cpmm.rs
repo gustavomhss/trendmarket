@@ -95,8 +95,9 @@ fn golden_cpmm_contract_v1() {
         .unwrap_or_else(|err| panic!("Falha ao ler fixture {expected_path:?}: {err}"));
 
     let actual_dir = repo_root.join(ACTUAL_DIR);
-    fs::create_dir_all(&actual_dir)
-        .unwrap_or_else(|err| panic!("Falha ao criar diretório de evidências {actual_dir:?}: {err}"));
+    fs::create_dir_all(&actual_dir).unwrap_or_else(|err| {
+        panic!("Falha ao criar diretório de evidências {actual_dir:?}: {err}")
+    });
     let actual_path = actual_dir.join(ACTUAL_FILENAME);
     let actual_sha_path = actual_dir.join(ACTUAL_SHA_FILENAME);
 
@@ -206,7 +207,10 @@ fn write_sha256(actual: &Path, sha_path: &Path, label: &str) -> std::io::Result<
             if !output.status.success() {
                 return Err(std::io::Error::new(
                     std::io::ErrorKind::Other,
-                    format!("Falha ao calcular sha256 usando shasum: status {}", output.status),
+                    format!(
+                        "Falha ao calcular sha256 usando shasum: status {}",
+                        output.status
+                    ),
                 ));
             }
             (
@@ -216,10 +220,12 @@ fn write_sha256(actual: &Path, sha_path: &Path, label: &str) -> std::io::Result<
         }
     };
 
-    let digest = hash
-        .split_whitespace()
-        .next()
-        .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::Other, format!("Saída inválida de {tool}")))?;
+    let digest = hash.split_whitespace().next().ok_or_else(|| {
+        std::io::Error::new(
+            std::io::ErrorKind::Other,
+            format!("Saída inválida de {tool}"),
+        )
+    })?;
     let mut file = fs::File::create(sha_path)?;
     writeln!(file, "{}  {}", digest, label)?;
     Ok(())
@@ -248,7 +254,13 @@ fn check(name: &str, rx: Wad, ry: Wad, dx: Wad) {
     assert!(
         delta <= tol,
         "{}: |Δk|={} > tol={} (rx={}, ry={}, dx={}, dy={})",
-        name, delta, tol, rx, ry, dx, dy
+        name,
+        delta,
+        tol,
+        rx,
+        ry,
+        dx,
+        dy
     );
 }
 
@@ -272,5 +284,10 @@ fn golden_cpmm_all() {
 
     // sequência add→swap→remove (invariância validada no swap)
     let s: Wad = 2u128; // fator de escala (add)
-    check("seq:add→swap→remove", w("2000000") * s, w("3000000") * s, w("500"));
+    check(
+        "seq:add→swap→remove",
+        w("2000000") * s,
+        w("3000000") * s,
+        w("500"),
+    );
 }

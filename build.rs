@@ -68,10 +68,7 @@ fn resolve_git_sha() -> Result<String, Box<dyn Error>> {
 
 fn validate_git_sha(value: &str) -> Result<(), Box<dyn Error>> {
     if value.len() != 40 || !value.chars().all(|c| c.is_ascii_hexdigit()) {
-        return Err(format!(
-            "expected a 40-character hexadecimal git sha, got `{value}`"
-        )
-        .into());
+        return Err(format!("expected a 40-character hexadecimal git sha, got `{value}`").into());
     }
     Ok(())
 }

@@ -13,8 +13,8 @@ hyper-util = { version = "0.1", features = ["server", "http1", "tokio"] }
 httpdate = { version = "1", path = "vendor/httpdate" }
 opentelemetry = { version = "0.29", features = ["trace", "metrics"] }
 opentelemetry-otlp = { version = "0.29", features = ["http-proto"] }
-opentelemetry_sdk = { version = "0.29", features = ["metrics", "rt-tokio", "testing"] }
-tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+opentelemetry_sdk = { version = "0.29", features = ["metrics", "rt-tokio"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "io-util"] }
 tracing = "0.1"
 tracing-opentelemetry = "0.30"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
