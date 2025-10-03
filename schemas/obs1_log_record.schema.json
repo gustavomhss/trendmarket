@@ -1,0 +1,109 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://creditengine.dev/schemas/obs1_log_record.schema.json",
+  "title": "OBS-1 Log Record",
+  "type": "object",
+  "required": [
+    "ts",
+    "level",
+    "msg",
+    "trace_id",
+    "span_id",
+    "service",
+    "env",
+    "op",
+    "version"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "ts": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+      "description": "Timestamp RFC3339 UTC com sufixo Z."
+    },
+    "level": {
+      "type": "string",
+      "enum": ["trace", "debug", "info", "warn", "error"],
+      "description": "Nível de severidade do log."
+    },
+    "msg": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Mensagem humana curta."
+    },
+    "trace_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{32}$",
+      "description": "Trace ID hexadecimal (16 bytes)."
+    },
+    "span_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{16}$",
+      "description": "Span ID hexadecimal (8 bytes)."
+    },
+    "service": {
+      "type": "string",
+      "enum": ["ce-amm"],
+      "description": "Nome do serviço emissor."
+    },
+    "env": {
+      "type": "string",
+      "enum": ["dev", "stg", "prod"],
+      "description": "Ambiente de execução."
+    },
+    "op": {
+      "type": "string",
+      "pattern": "^(swap|add_liquidity|remove_liquidity|pricing|cdc_consume)$",
+      "description": "Operação correlacionada ao span."
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^(?:\\d+\\.\\d+\\.\\d+(?:[-+][0-9A-Za-z.-]+)?|[0-9a-f]{7,40})$",
+      "description": "Versão SemVer ou git SHA."
+    },
+    "hook_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:[-_][a-z0-9]+)*$",
+      "description": "Identificador estável de hook."
+    },
+    "error.kind": {
+      "type": "string",
+      "description": "Tipo curto do erro."
+    },
+    "error.message": {
+      "type": "string",
+      "description": "Mensagem curta do erro."
+    },
+    "extra": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^(?!(?:email|cpf|phone|address|name|geo|person_)).{1,64}$"
+      },
+      "additionalProperties": {
+        "anyOf": [
+          { "type": "string" },
+          { "type": "number" },
+          { "type": "boolean" },
+          { "type": "object" },
+          { "type": "array" }
+        ]
+      },
+      "description": "Objeto para campos adicionais estáveis sem PII."
+    }
+  },
+  "allOf": [
+    {
+      "not": {
+        "anyOf": [
+          { "required": ["email"] },
+          { "required": ["cpf"] },
+          { "required": ["phone"] },
+          { "required": ["address"] },
+          { "required": ["name"] },
+          { "required": ["geo"] }
+        ]
+      }
+    }
+  ]
+}
