@@ -3,4 +3,5 @@ pub mod amm; // existe
 pub mod ce_core; // expõe o namespace ce_core
 
 pub mod telemetry;
+pub mod telemetry_identity; // identidade de telemetria (novo)
 pub mod telemetry_contract; // contrato OBS-1 (constantes canônicas)
