@@ -1,0 +1,17 @@
+# Exceções normativas para documentação OBS-1
+# formato: caminho:substring
+# Log de exemplo contendo email
+docs/obs1_policy_lints_contract.md:cliente@exemplo.com
+# Label proibido citado explicitamente
+docs/obs1_policy_lints_contract.md:request_id
+# README operacional com exemplos
+out/obs_gatecheck/docs/OBS1_POLICY_LINTS_README.md:cliente@exemplo.com
+# Arquivo do notebook com exemplos genéricos
+docs/notebooks/working_backwards_experiments.ipynb
+# Contratos históricos com PII documentado
+docs/obs1_contract.md:cliente@exemplo.com
+docs/obs1_logs_contract.md:cliente@exemplo.com
+docs/obs1_policy_lints_contract.md:+5511988887777
+# Constantes históricas de labels na pipeline existente
+src/telemetry_instruments.rs
+src/telemetry_contract.rs
