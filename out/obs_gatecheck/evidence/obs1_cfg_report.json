@@ -1,0 +1,45 @@
+{
+  "timestamp": "2025-10-03T04:17:56Z",
+  "tests": [
+    {
+      "command": "cargo test --test telemetry_cfg_tests",
+      "status": "failed",
+      "reason": "build blocked by existing binary target telemetry_smoke missing main()",
+      "evidence_chunk": "14b3bf\u2020L1-L8"
+    },
+    {
+      "command": "cargo test --lib telemetry_cfg_tests",
+      "status": "passed",
+      "evidence_chunk": "06b096\u2020L1-L5"
+    }
+  ],
+  "sample_config": {
+    "service_name": "ce-amm",
+    "service_version": "0.0.0-dev",
+    "deploy_env": "Dev",
+    "level": "Min",
+    "prom_scrape": false,
+    "metrics_http_addr": "0.0.0.0:9464",
+    "otlp_endpoint": null,
+    "log_level": "info",
+    "deny_dynamic_labels": true
+  },
+  "env_variables": [
+    "SERVICE_NAME",
+    "SERVICE_VERSION",
+    "DEPLOY_ENV",
+    "OBSERVABILITY_LEVEL",
+    "PROM_SCRAPE",
+    "METRICS_HTTP_ADDR",
+    "OTEL_EXPORTER_OTLP_ENDPOINT",
+    "LOG_LEVEL",
+    "DENY_DYNAMIC_LABELS"
+  ],
+  "file_hashes": {
+    "src/telemetry_cfg.rs": "d8e4da8fdb1e41b2c88227ba5989a2c602f1a097948579e439df94a205da6a1c",
+    "src/lib.rs": "8b10aee5c40d2c5edaecace8380e4e4d85f8dcba39b98503ac59a7c15e4afdc5",
+    "docs/obs1_cfg_contract.md": "f064870cd249c1aef67ceec29cad11a5933b5a0ff2977f35d4bb074a81baec4d",
+    "tests/telemetry_cfg_tests.rs": "1432ac78ac630c8837afe84c3b63df90a0b833b7f3db576a9cdd2e4b30ac6dcf",
+    "out/obs_gatecheck/docs/OBS1_CFG_README.md": "66e56e77e3dc17ba9908b1a5f448a05fb00c3a9aaf18455329da3c1bef34209f"
+  }
+}
