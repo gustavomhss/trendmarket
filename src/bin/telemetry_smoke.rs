@@ -1,13 +1,20 @@
-#![cfg(feature = "obs")]
+#[cfg(feature = "obs")]
 use std::env;
+#[cfg(feature = "obs")]
 use std::io::{Read, Write};
+#[cfg(feature = "obs")]
 use std::net::{SocketAddr, TcpListener};
+#[cfg(feature = "obs")]
 use std::process::Command;
+#[cfg(feature = "obs")]
 use std::thread;
+#[cfg(feature = "obs")]
 use std::time::{Duration, Instant};
 
+#[cfg(feature = "obs")]
 use credit_engine_core::telemetry;
 
+#[cfg(feature = "obs")]
 fn main() {
     if std::env::args().any(|arg| arg == "--serve-metrics") {
         serve_metrics();
@@ -28,6 +35,10 @@ fn main() {
     thread::sleep(Duration::from_millis(800));
 }
 
+#[cfg(not(feature = "obs"))]
+fn main() {}
+
+#[cfg(feature = "obs")]
 fn spawn_server(addr: &str, payload: &str) {
     if let Ok(current_exe) = env::current_exe() {
         let mut cmd = Command::new(current_exe);
@@ -47,6 +58,7 @@ fn spawn_server(addr: &str, payload: &str) {
     }
 }
 
+#[cfg(feature = "obs")]
 fn serve_metrics() {
     let addr = env::var("AMM_METRICS_ADDR").unwrap_or_else(|_| "127.0.0.1:9464".to_string());
     let payload = env::var("TELEMETRY_METRICS_PAYLOAD").unwrap_or_default();
