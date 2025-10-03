@@ -6,6 +6,11 @@ build = "build.rs"
 
 [dependencies]
 anyhow = "1"
+bytes = "1"
+http-body-util = "0.1"
+hyper = { version = "1", features = ["http1", "server"] }
+hyper-util = { version = "0.1", features = ["server", "http1", "tokio"] }
+httpdate = { version = "1", path = "vendor/httpdate" }
 opentelemetry = { version = "0.29", features = ["trace", "metrics"] }
 opentelemetry-otlp = { version = "0.29", features = ["http-proto"] }
 opentelemetry_sdk = { version = "0.29", features = ["metrics", "rt-tokio"] }
@@ -21,12 +26,16 @@ serde_json = "1"
 [dev-dependencies]
 proptest = "1"
 criterion = { version = "0.5", default-features = false }
-once_cell = "1"
-regex = "1"
+serde_json = "1"
 [lib]
 name = "credit_engine_core"
 path = "src/lib.rs"
 crate-type = ["rlib"]
+
+[[bin]]
+name = "telemetry_smoke"
+path = "src/bin/telemetry_smoke.rs"
+required-features = ["obs"]
 
 [[bench]]
 name = "bench_swap"
@@ -42,6 +51,9 @@ path = "src/bin/telemetry_smoke.rs"
 required-features = ["obs"]
 
 [features]
-obs = [
-  "metrics-exporter-prometheus"
-]
+obs = []
+
+[[bin]]
+name = "telemetry_smoke"
+path = "src/bin/telemetry_smoke.rs"
+required-features = ["obs"]
