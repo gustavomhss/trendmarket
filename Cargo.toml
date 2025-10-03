@@ -34,6 +34,11 @@ name = "credit_engine_core"
 path = "src/lib.rs"
 crate-type = ["rlib"]
 
+[[bin]]
+name = "telemetry_smoke"
+path = "src/bin/telemetry_smoke.rs"
+required-features = ["obs"]
+
 [[bench]]
 name = "bench_swap"
 harness = false
