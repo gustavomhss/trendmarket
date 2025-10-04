@@ -11,6 +11,8 @@ use hyper_util::{
     server::conn::auto::Builder as HyperBuilder,
 };
 use prometheus::TextEncoder;
+use opentelemetry_prometheus::PrometheusExporter as OtelPromExporter;
+use prometheus::{Registry, TextEncoder};
 use tokio::net::TcpListener;
 use tokio::runtime::Handle;
 use tokio::sync::oneshot;
@@ -24,14 +26,24 @@ pub struct PromServerConfig {
     pub addr: String,
 }
 
+#[derive(Clone)]
 pub struct PromExporter {
-    pub registry: prometheus::Registry,
-    provider: Arc<SdkMeterProvider>,
+    exporter: opentelemetry_prometheus::PrometheusExporter,
+    inner: OtelPromExporter,
 }
 
 impl PromExporter {
     pub fn meter_provider(&self) -> Arc<SdkMeterProvider> {
-        Arc::clone(&self.provider)
+        self.exporter.provider()
+    }
+
+    fn registry(&self) -> &prometheus::Registry {
+        self.exporter.registry()
+        self.inner.provider()
+    }
+
+    fn registry(&self) -> &Registry {
+        self.inner.registry()
     }
 }
 
@@ -79,15 +91,37 @@ impl Drop for PromServerGuard {
 }
 
 pub fn init_prom_exporter() -> PromExporter {
-    let registry = prometheus::Registry::new();
     let exporter = opentelemetry_prometheus::exporter()
-        .with_registry(registry.clone())
+        .with_registry(prometheus::Registry::new())
+        .build()
+        .expect("failed to build Prometheus exporter");
+
+    PromExporter { exporter }
+        .with_registry(Registry::new())
         .build()
         .expect("failed to build Prometheus exporter");
 
     let provider = exporter.provider();
+    let registry = prometheus::Registry::new();
+    let provider = Arc::new(
+        SdkMeterProvider::builder()
+            .with_reader(
+                opentelemetry_prometheus::exporter()
+                    .with_registry(registry.clone())
+                    .build()
+                    .expect("failed to build Prometheus exporter"),
+            )
+            .build(),
+    );
+    let reader = opentelemetry_prometheus::exporter()
+        .with_registry(registry.clone())
+        .build()
+        .expect("failed to build Prometheus exporter");
 
-    PromExporter { registry, provider }
+    let provider = Arc::new(SdkMeterProvider::builder().with_reader(reader).build());
+    let provider = Arc::new(SdkMeterProvider::builder().with_reader(exporter).build());
+
+    PromExporter { inner: exporter }
 }
 
 pub async fn spawn_metrics_http(
@@ -184,7 +218,7 @@ async fn handle_request(
 }
 
 fn gather_and_encode(exporter: &PromExporter) -> Result<Vec<u8>, String> {
-    let metric_families = exporter.registry.gather();
+    let metric_families = exporter.registry().gather();
     let mut buffer = Vec::new();
     let encoder = TextEncoder::new();
     encoder

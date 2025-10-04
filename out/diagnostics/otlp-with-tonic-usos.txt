@@ -1,0 +1,4 @@
+src/telemetry_trace.rs:239:#[cfg(feature = "grpc-tonic")]
+src/telemetry_trace.rs:248:#[cfg(not(feature = "grpc-tonic"))]
+src/telemetry_metrics_otlp.rs:28:        pub fn tonic(mut self) -> Self {
+src/telemetry_metrics_otlp.rs:54:                            ::opentelemetry_otlp::MetricExporter::builder().with_tonic();
