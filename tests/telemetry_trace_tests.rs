@@ -101,9 +101,13 @@ fn propagator_registration_is_idempotent() -> Result<(), TraceInitError> {
         prop.inject_context(&ctx, &mut carrier);
     });
 
-    assert!(carrier.0.contains_key("traceparent"));
+    assert!(
+        carrier
+            .get("traceparent")
+            .is_some(),
+        "traceparent header should be present"
+    );
     let baggage_header = carrier
-        .0
         .get("baggage")
         .expect("baggage header should be present");
     assert!(baggage_header.contains("feature=enabled"));
