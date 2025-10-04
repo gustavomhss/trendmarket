@@ -22,14 +22,14 @@ fn main() {
     }
 
     let addr = env::var("AMM_METRICS_ADDR").unwrap_or_else(|_| "127.0.0.1:9464".to_string());
-    telemetry::start_prometheus(&addr).expect("start prometheus");
+    let prom_handles = telemetry::start_prometheus(&addr).expect("start prometheus");
 
     telemetry::inc_swap("CE-PAIR-TEST");
     telemetry::inc_liquidity("mint");
     telemetry::inc_error("CE-AMM-0000");
     telemetry::observe_swap_latency_ms(2.4);
 
-    let snapshot = metrics::render_prometheus();
+    let snapshot = prom_handles.render();
     spawn_server(&addr, &snapshot);
 
     thread::sleep(Duration::from_millis(800));
