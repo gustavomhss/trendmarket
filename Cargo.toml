@@ -25,6 +25,8 @@ metrics-exporter-prometheus = { version = "0.13", optional = true, path = "vendo
 once_cell = "1"
 thiserror = "2.0.16"
 regex = "1"
+prometheus = { version = "0.14", path = "vendor/prometheus" }
+opentelemetry-prometheus = { version = "0.29", path = "vendor/opentelemetry-prometheus" }
 prometheus = "0.14"
 opentelemetry-prometheus = "0.29.1"
 serde_json = "1"
@@ -57,6 +59,11 @@ harness = false
 
 [features]
 obs = ["metrics-exporter-prometheus"]
+grpc-tonic = ["opentelemetry-otlp/grpc-tonic"]
+metrics-otlp-grpc = ["grpc-tonic"]
+
+[patch.crates-io]
+hyper-timeout = { path = "vendor/hyper-timeout" }
 metrics-otlp-grpc = ["opentelemetry-otlp/grpc-tonic"]
 
 [patch.crates-io]
