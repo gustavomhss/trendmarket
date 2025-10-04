@@ -60,3 +60,5 @@ default = []
 obs = ["metrics-exporter-prometheus"]
 grpc-tonic = ["opentelemetry-otlp/grpc-tonic"]
 metrics-otlp-grpc = []
+metrics-otlp-grpc = ["grpc-tonic"]
+
