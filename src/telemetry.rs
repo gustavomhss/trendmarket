@@ -13,7 +13,7 @@ use opentelemetry::{
     trace::TracerProvider as _,
     KeyValue,
 };
-use opentelemetry_otlp::{MetricExporter, SpanExporter, WithExportConfig};
+use opentelemetry_otlp::{ExportConfig, MetricExporter, SpanExporter, WithExportConfig};
 use opentelemetry_sdk::{
     metrics::{PeriodicReader, SdkMeterProvider},
     propagation::TraceContextPropagator,
@@ -77,8 +77,11 @@ pub fn init(service_name: &str) -> Result<Telemetry> {
     // ---- Traces (OTLP/HTTP) ----
     let span_exporter = SpanExporter::builder()
         .with_http()
-        .with_endpoint(&traces_endpoint)
-        .with_timeout(traces_timeout)
+        .with_export_config(ExportConfig {
+            endpoint: Some(traces_endpoint),
+            timeout: Some(traces_timeout),
+            ..Default::default()
+        })
         .build()?;
 
     let tracer_provider = SdkTracerProvider::builder()
@@ -91,8 +94,11 @@ pub fn init(service_name: &str) -> Result<Telemetry> {
     // ---- Métricas (OTLP/HTTP) ----
     let metric_exporter = MetricExporter::builder()
         .with_http()
-        .with_endpoint(&metrics_endpoint)
-        .with_timeout(metrics_timeout)
+        .with_export_config(ExportConfig {
+            endpoint: Some(metrics_endpoint),
+            timeout: Some(metrics_timeout),
+            ..Default::default()
+        })
         .build()?;
 
     let reader = PeriodicReader::builder(metric_exporter)
