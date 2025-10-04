@@ -13,15 +13,115 @@ use opentelemetry::{
     trace::TracerProvider as _,
     KeyValue,
 };
-use opentelemetry_otlp::{MetricExporter, SpanExporter, WithExportConfig};
 use opentelemetry_sdk::{
     metrics::{PeriodicReader, SdkMeterProvider},
     propagation::TraceContextPropagator,
     resource::Resource,
     trace::SdkTracerProvider,
 };
+use otlp_exporter::new_exporter;
 use tracing::Level;
 use tracing_subscriber::{layer::SubscriberExt, EnvFilter, Registry};
+
+mod otlp_exporter {
+    use std::mem;
+    use std::time::Duration;
+
+    use opentelemetry_sdk::metrics::Temporality;
+
+    use ::opentelemetry_otlp::WithExportConfig;
+
+    pub struct ExporterBuilderCompat;
+
+    pub fn new_exporter() -> ExporterBuilderCompat {
+        ExporterBuilderCompat
+    }
+
+    pub struct HttpExporterBuilderCompat {
+        builder: ::opentelemetry_otlp::HttpExporterBuilder,
+        temporality: Temporality,
+    }
+
+    #[cfg(feature = "metrics-otlp-grpc")]
+    pub struct TonicExporterBuilderCompat {
+        builder: ::opentelemetry_otlp::TonicExporterBuilder,
+        temporality: Temporality,
+    }
+
+    impl ExporterBuilderCompat {
+        pub fn http(self) -> HttpExporterBuilderCompat {
+            HttpExporterBuilderCompat {
+                builder: ::opentelemetry_otlp::HttpExporterBuilder::default(),
+                temporality: Temporality::Cumulative,
+            }
+        }
+
+        #[cfg(feature = "metrics-otlp-grpc")]
+        pub fn tonic(self) -> TonicExporterBuilderCompat {
+            TonicExporterBuilderCompat {
+                builder: ::opentelemetry_otlp::TonicExporterBuilder::default(),
+                temporality: Temporality::Cumulative,
+            }
+        }
+    }
+
+    impl HttpExporterBuilderCompat {
+        pub fn with_endpoint(mut self, endpoint: String) -> Self {
+            let builder = mem::take(&mut self.builder).with_endpoint(endpoint);
+            self.builder = builder;
+            self
+        }
+
+        pub fn with_timeout(mut self, timeout: Duration) -> Self {
+            let builder = mem::take(&mut self.builder).with_timeout(timeout);
+            self.builder = builder;
+            self
+        }
+
+        pub fn build_span_exporter(
+            self,
+        ) -> Result<::opentelemetry_otlp::SpanExporter, ::opentelemetry_otlp::ExporterBuildError>
+        {
+            self.builder.build_span_exporter()
+        }
+
+        pub fn build_metrics_exporter(
+            self,
+        ) -> Result<::opentelemetry_otlp::MetricExporter, ::opentelemetry_otlp::ExporterBuildError>
+        {
+            self.builder.build_metrics_exporter(self.temporality)
+        }
+    }
+
+    #[cfg(feature = "metrics-otlp-grpc")]
+    impl TonicExporterBuilderCompat {
+        pub fn with_endpoint(mut self, endpoint: String) -> Self {
+            let builder = mem::take(&mut self.builder).with_endpoint(endpoint);
+            self.builder = builder;
+            self
+        }
+
+        pub fn with_timeout(mut self, timeout: Duration) -> Self {
+            let builder = mem::take(&mut self.builder).with_timeout(timeout);
+            self.builder = builder;
+            self
+        }
+
+        pub fn build_span_exporter(
+            self,
+        ) -> Result<::opentelemetry_otlp::SpanExporter, ::opentelemetry_otlp::ExporterBuildError>
+        {
+            self.builder.build_span_exporter()
+        }
+
+        pub fn build_metrics_exporter(
+            self,
+        ) -> Result<::opentelemetry_otlp::MetricExporter, ::opentelemetry_otlp::ExporterBuildError>
+        {
+            self.builder.build_metrics_exporter(self.temporality)
+        }
+    }
+}
 
 pub struct Telemetry {
     pub tracer_provider: SdkTracerProvider,
@@ -75,11 +175,11 @@ pub fn init(service_name: &str) -> Result<Telemetry> {
         .build();
 
     // ---- Traces (OTLP/HTTP) ----
-    let span_exporter = SpanExporter::builder()
-        .with_http()
-        .with_endpoint(&traces_endpoint)
+    let span_exporter = new_exporter()
+        .http()
+        .with_endpoint(traces_endpoint)
         .with_timeout(traces_timeout)
-        .build()?;
+        .build_span_exporter()?;
 
     let tracer_provider = SdkTracerProvider::builder()
         .with_resource(resource.clone())
@@ -89,11 +189,11 @@ pub fn init(service_name: &str) -> Result<Telemetry> {
     let tracer = tracer_provider.tracer("ce_core");
 
     // ---- Métricas (OTLP/HTTP) ----
-    let metric_exporter = MetricExporter::builder()
-        .with_http()
-        .with_endpoint(&metrics_endpoint)
+    let metric_exporter = new_exporter()
+        .http()
+        .with_endpoint(metrics_endpoint)
         .with_timeout(metrics_timeout)
-        .build()?;
+        .build_metrics_exporter()?;
 
     let reader = PeriodicReader::builder(metric_exporter)
         .with_interval(Duration::from_secs(10))
