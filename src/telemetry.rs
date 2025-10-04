@@ -3,7 +3,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 #[cfg(feature = "obs")]
-use metrics_exporter_prometheus::PrometheusBuilder;
+use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
 #[cfg(feature = "obs")]
 use std::net::SocketAddr;
 
@@ -510,12 +510,28 @@ mod otlp_exporter_compat {
 }
 
 #[cfg(feature = "obs")]
-pub fn start_prometheus(addr: &str) -> anyhow::Result<()> {
+pub struct PrometheusHandles {
+    handle: PrometheusHandle,
+}
+
+#[cfg(feature = "obs")]
+impl PrometheusHandles {
+    pub fn render(&self) -> String {
+        self.handle.render()
+    }
+
+    pub fn addr(&self) -> SocketAddr {
+        self.handle.addr()
+    }
+}
+
+#[cfg(feature = "obs")]
+pub fn start_prometheus(addr: &str) -> anyhow::Result<PrometheusHandles> {
     let sock: SocketAddr = addr.parse()?;
-    PrometheusBuilder::new()
+    let handle = PrometheusBuilder::new()
         .with_http_listener(sock)
         .install()?;
-    Ok(())
+    Ok(PrometheusHandles { handle })
 }
 
 #[cfg(feature = "obs")]
