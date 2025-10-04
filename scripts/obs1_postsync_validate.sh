@@ -1,14 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
+
 mkdir -p out/diagnostics
-RUSTFLAGS=-Dwarnings cargo check --all-targets --all-features 2>&1 | tee out/diagnostics/check-sync.txt
-cargo clean
-cargo build -q
-cargo test --no-run 2>&1 | tee out/diagnostics/test-norun-sync.txt || true
-cargo test -q 2>&1 | tee out/diagnostics/test-run-sync.txt || true
-if grep -R "cfg(feature = \"obs\")" -n src tests >/dev/null 2>&1; then
-  cargo test --features obs -q 2>&1 | tee -a out/diagnostics/test-run-sync.txt || true
+status=0
+
+RUSTFLAGS=-Dwarnings cargo check --all-targets --all-features 2>&1 | tee out/diagnostics/check-sync.txt || status=$?
+cargo clean || status=$?
+cargo build -q || status=$?
+cargo test --no-run 2>&1 | tee out/diagnostics/test-norun-sync.txt || status=$?
+cargo test -q 2>&1 | tee out/diagnostics/test-run-sync.txt || status=$?
+if rg --glob '*.rs' --quiet 'cfg\(feature = "obs"\)' src tests; then
+  cargo test --features obs -q 2>&1 | tee -a out/diagnostics/test-run-sync.txt || status=$?
 fi
-sed -n '1,60p' out/diagnostics/check-sync.txt || true
-sed -n '1,60p' out/diagnostics/test-norun-sync.txt || true
-sed -n '1,60p' out/diagnostics/test-run-sync.txt || true
+
+tail -n 80 out/diagnostics/check-sync.txt || true
+tail -n 80 out/diagnostics/test-norun-sync.txt || true
+tail -n 80 out/diagnostics/test-run-sync.txt || true
+
+exit $status

@@ -1,0 +1,85 @@
+   Compiling serde_core v1.0.222
+   Compiling serde v1.0.222
+   Compiling either v1.15.0
+   Compiling bitflags v2.9.4
+   Compiling itertools v0.10.5
+   Compiling opentelemetry v0.29.1
+   Compiling serde_json v1.0.145
+   Compiling prost-derive v0.13.5
+   Compiling opentelemetry_sdk v0.29.0
+   Compiling tower-http v0.6.6
+   Compiling prost v0.13.5
+   Compiling url v2.5.7
+   Compiling serde_urlencoded v0.7.1
+   Compiling rustix v1.1.2
+   Compiling autocfg v1.5.0
+   Compiling num-traits v0.2.19
+   Compiling reqwest v0.12.23
+   Compiling tonic v0.12.3
+   Compiling linux-raw-sys v0.11.0
+   Compiling opentelemetry-proto v0.29.0
+   Compiling opentelemetry-http v0.29.0
+   Compiling half v2.6.0
+   Compiling clap_lex v0.7.5
+   Compiling fastrand v2.3.0
+   Compiling ciborium-io v0.2.2
+   Compiling anstyle v1.0.11
+   Compiling tempfile v3.22.0
+   Compiling clap_builder v4.5.47
+   Compiling ciborium-ll v0.2.2
+   Compiling opentelemetry-prometheus v0.29.1
+   Compiling opentelemetry-otlp v0.29.0
+   Compiling tracing-opentelemetry v0.30.0
+   Compiling wait-timeout v0.2.1
+   Compiling bit-vec v0.8.0
+   Compiling cast v0.3.0
+   Compiling same-file v1.0.6
+   Compiling quick-error v1.2.3
+   Compiling rusty-fork v0.3.0
+   Compiling walkdir v2.5.0
+   Compiling criterion-plot v0.5.0
+   Compiling bit-set v0.8.0
+   Compiling clap v4.5.47
+   Compiling ciborium v0.2.2
+   Compiling tinytemplate v1.2.1
+   Compiling rand_xorshift v0.4.0
+   Compiling is-terminal v0.4.16
+   Compiling anes v0.1.6
+   Compiling oorandom v11.1.5
+   Compiling unarray v0.1.4
+   Compiling criterion v0.5.1
+   Compiling proptest v1.7.0
+   Compiling credit-engine-core v0.1.0 (/workspace/trendmarket)
+error[E0425]: cannot find value `reader` in this scope
+  --> src/telemetry_metrics_prom.rs:87:75
+   |
+87 |     let meter_provider = Arc::new(SdkMeterProvider::builder().with_reader(reader).build());
+   |                                                                           ^^^^^^ not found in this scope
+
+error[E0599]: no method named `with_endpoint` found for struct `opentelemetry_otlp::metric::MetricExporterBuilder` in the current scope
+   --> src/telemetry_metrics_otlp.rs:264:14
+    |
+262 |           OtlpProtocol::Http => opentelemetry_otlp::MetricExporter::builder()
+    |  _______________________________-
+263 | |             .with_http()
+264 | |             .with_endpoint(endpoint.to_string())
+    | |             -^^^^^^^^^^^^^ method not found in `opentelemetry_otlp::metric::MetricExporterBuilder<HttpExporterBuilderSet>`
+    | |_____________|
+    |
+    |
+   ::: /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-otlp-0.29.0/src/exporter/mod.rs:233:8
+    |
+233 |       fn with_endpoint<T: Into<String>>(self, endpoint: T) -> Self;
+    |          ------------- the method is available for `opentelemetry_otlp::metric::MetricExporterBuilder<HttpExporterBuilderSet>` here
+    |
+    = help: items from traits can only be used if the trait is in scope
+help: trait `WithExportConfig` which provides `with_endpoint` is implemented but not in scope; perhaps you want to import it
+    |
+1   + use opentelemetry_otlp::WithExportConfig;
+    |
+
+Some errors have detailed explanations: E0425, E0599.
+For more information about an error, try `rustc --explain E0425`.
+error: could not compile `credit-engine-core` (lib) due to 2 previous errors
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `credit-engine-core` (lib test) due to 2 previous errors
