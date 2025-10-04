@@ -13,9 +13,63 @@ use opentelemetry::{
     trace::TracerProvider as _,
     KeyValue,
 };
-use opentelemetry_otlp::{MetricExporter, SpanExporter, WithExportConfig};
+mod opentelemetry_otlp {
+    pub use ::opentelemetry_otlp::*;
+
+    pub struct ExporterSelector;
+
+    pub fn new_exporter() -> ExporterSelector {
+        ExporterSelector
+    }
+
+    impl ExporterSelector {
+        #[cfg(feature = "metrics-otlp-grpc")]
+        pub fn tonic(self) -> TonicExporterBuilderStub {
+            TonicExporterBuilderStub
+        }
+
+        pub fn http(self) -> opentelemetry_otlp::HttpExporterBuilder {
+            opentelemetry_otlp::HttpExporterBuilder::default()
+        }
+    }
+
+    #[cfg(feature = "metrics-otlp-grpc")]
+    pub struct TonicExporterBuilderStub;
+
+    #[cfg(feature = "metrics-otlp-grpc")]
+    impl TonicExporterBuilderStub {
+        pub fn with_endpoint(self, _endpoint: String) -> Self {
+            self
+        }
+
+        pub fn with_timeout(self, _timeout: std::time::Duration) -> Self {
+            self
+        }
+
+        pub fn build_span_exporter(
+            self,
+        ) -> Result<::opentelemetry_otlp::SpanExporter, ::opentelemetry_otlp::ExporterBuildError>
+        {
+            Err(::opentelemetry_otlp::ExporterBuildError::InternalFailure(
+                "gRPC span exporter support is not enabled".into(),
+            ))
+        }
+
+        pub fn build_metrics_exporter(
+            self,
+            _temporality: opentelemetry_sdk::metrics::Temporality,
+        ) -> Result<::opentelemetry_otlp::MetricExporter, ::opentelemetry_otlp::ExporterBuildError>
+        {
+            Err(::opentelemetry_otlp::ExporterBuildError::InternalFailure(
+                "gRPC metric exporter support is not enabled".into(),
+            ))
+        }
+    }
+}
+
+use opentelemetry_otlp::WithExportConfig;
 use opentelemetry_sdk::{
-    metrics::{PeriodicReader, SdkMeterProvider},
+    metrics::{PeriodicReader, SdkMeterProvider, Temporality},
     propagation::TraceContextPropagator,
     resource::Resource,
     trace::SdkTracerProvider,
@@ -75,11 +129,11 @@ pub fn init(service_name: &str) -> Result<Telemetry> {
         .build();
 
     // ---- Traces (OTLP/HTTP) ----
-    let span_exporter = SpanExporter::builder()
-        .with_http()
-        .with_endpoint(&traces_endpoint)
+    let span_exporter = opentelemetry_otlp::new_exporter()
+        .http()
+        .with_endpoint(traces_endpoint.clone())
         .with_timeout(traces_timeout)
-        .build()?;
+        .build_span_exporter()?;
 
     let tracer_provider = SdkTracerProvider::builder()
         .with_resource(resource.clone())
@@ -89,11 +143,11 @@ pub fn init(service_name: &str) -> Result<Telemetry> {
     let tracer = tracer_provider.tracer("ce_core");
 
     // ---- Métricas (OTLP/HTTP) ----
-    let metric_exporter = MetricExporter::builder()
-        .with_http()
-        .with_endpoint(&metrics_endpoint)
+    let metric_exporter = opentelemetry_otlp::new_exporter()
+        .http()
+        .with_endpoint(metrics_endpoint.clone())
         .with_timeout(metrics_timeout)
-        .build()?;
+        .build_metrics_exporter(Temporality::Cumulative)?;
 
     let reader = PeriodicReader::builder(metric_exporter)
         .with_interval(Duration::from_secs(10))
