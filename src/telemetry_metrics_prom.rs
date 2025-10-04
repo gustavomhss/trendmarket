@@ -10,7 +10,7 @@ use hyper_util::{
     rt::{TokioExecutor, TokioIo},
     server::conn::auto::Builder as HyperBuilder,
 };
-use prometheus::{Encoder, TextEncoder};
+use prometheus::TextEncoder;
 use tokio::net::TcpListener;
 use tokio::runtime::Handle;
 use tokio::sync::oneshot;
@@ -84,13 +84,8 @@ pub fn init_prom_exporter() -> PromExporter {
         .with_registry(registry.clone())
         .build()
         .expect("failed to build Prometheus exporter");
-    let meter_provider = Arc::new(SdkMeterProvider::builder().with_reader(reader).build());
 
-    let provider = Arc::new(
-        SdkMeterProvider::builder()
-            .with_reader(exporter)
-            .build(),
-    );
+    let provider = exporter.provider();
 
     PromExporter { registry, provider }
 }
