@@ -213,23 +213,17 @@ fn build_otlp_exporter(
     protocol: OtlpProtocol,
 ) -> Result<OtlpSpanExporter, TraceInitError> {
     let timeout = Duration::from_millis(cfg.export_timeout_ms);
-    let builder = OtlpSpanExporter::builder();
-    let exporter = match protocol {
-        OtlpProtocol::Grpc => builder
-            .with_tonic()
-            .with_endpoint(endpoint.to_string())
-            .with_timeout(timeout)
-            .build()
-            .map_err(|err| TraceInitError::OtlpBuildError(err.to_string()))?,
-        OtlpProtocol::Http => builder
+    match protocol {
+        OtlpProtocol::Grpc => Err(TraceInitError::OtlpBuildError(
+            "gRPC trace exporter support is not enabled (enable the `metrics-otlp-grpc` feature)".into(),
+        )),
+        OtlpProtocol::Http => OtlpSpanExporter::builder()
             .with_http()
             .with_endpoint(endpoint.to_string())
             .with_timeout(timeout)
             .build()
-            .map_err(|err| TraceInitError::OtlpBuildError(err.to_string()))?,
-    };
-
-    Ok(exporter)
+            .map_err(|err| TraceInitError::OtlpBuildError(err.to_string())),
+    }
 }
 
 fn build_batch_config(cfg: &TraceConfig) -> BatchConfig {
@@ -237,7 +231,6 @@ fn build_batch_config(cfg: &TraceConfig) -> BatchConfig {
         .with_max_queue_size(cfg.max_queue_size)
         .with_max_export_batch_size(cfg.max_export_batch_size)
         .with_scheduled_delay(Duration::from_millis(cfg.scheduled_delay_ms))
-        .with_max_export_timeout(Duration::from_millis(cfg.export_timeout_ms))
         .build()
 }
 

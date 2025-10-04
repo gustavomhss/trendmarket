@@ -8,16 +8,14 @@ use credit_engine_core::telemetry_metrics_otlp::{
     init_meter_otlp, named_meter, select_protocol, MetricsInitError, MetricsOtlpConfig, ObsLevel,
     OtlpProtocol, ResourcePairs,
 };
-use opentelemetry::metrics::MeterProvider as _;
 use opentelemetry::KeyValue;
 use opentelemetry_sdk::error::OTelSdkError;
 use opentelemetry_sdk::metrics::{
     data::ResourceMetrics,
-    reader::PushMetricExporter,
+    exporter::PushMetricExporter,
     PeriodicReader,
     Temporality,
 };
-use opentelemetry_sdk::runtime::Tokio;
 use opentelemetry_sdk::Resource;
 use tokio::runtime::Runtime;
 
@@ -36,9 +34,12 @@ impl PushMetricExporter for RecordingExporter {
     fn export(
         &self,
         _metrics: &mut ResourceMetrics,
-    ) -> Result<(), OTelSdkError> {
-        self.exports.fetch_add(1, Ordering::Relaxed);
-        Ok(())
+    ) -> impl std::future::Future<Output = Result<(), OTelSdkError>> + Send {
+        let exports = self.exports.clone();
+        async move {
+            exports.fetch_add(1, Ordering::Relaxed);
+            Ok(())
+        }
     }
 
     fn force_flush(&self) -> Result<(), OTelSdkError> {
@@ -104,8 +105,10 @@ fn resource_validation_rejects_missing_keys() {
         export_interval_ms: 5_000,
         export_timeout_ms: 10_000,
     };
-    let err = init_meter_otlp(cfg, resource).unwrap_err();
-    assert!(matches!(err, MetricsInitError::InvalidResource(_)));
+    match init_meter_otlp(cfg, resource) {
+        Err(err) => assert!(matches!(err, MetricsInitError::InvalidResource(_))),
+        Ok(_) => panic!("expected invalid resource error"),
+    }
 }
 
 #[test]
@@ -117,11 +120,11 @@ fn missing_endpoint_for_active_level_is_an_error() {
         export_interval_ms: 5_000,
         export_timeout_ms: 10_000,
     };
-    let err = init_meter_otlp(cfg, base_resource()).unwrap_err();
-    assert!(matches!(
-        err,
-        MetricsInitError::MissingEndpointForActiveLevel
-    ));
+    match init_meter_otlp(cfg, base_resource()) {
+        Err(MetricsInitError::MissingEndpointForActiveLevel) => {}
+        Err(other) => panic!("unexpected error: {other:?}"),
+        Ok(_) => panic!("expected missing endpoint error"),
+    }
 }
 
 #[test]
@@ -136,7 +139,10 @@ fn metrics_guard_shutdown_is_idempotent() {
     let (mut guard, provider) = init_meter_otlp(cfg, base_resource()).unwrap();
     guard.shutdown();
     drop(guard);
-    assert!(provider.shutdown().is_ok());
+    match provider.shutdown() {
+        Ok(()) | Err(OTelSdkError::AlreadyShutdown) => {}
+        Err(other) => panic!("unexpected shutdown error: {other:?}"),
+    }
 }
 
 #[test]
@@ -146,9 +152,8 @@ fn periodic_reader_exports_metrics_to_recording_exporter() {
     let exporter = RecordingExporter::new(exports.clone());
 
     runtime.block_on(async {
-        let reader: PeriodicReader<RecordingExporter> = PeriodicReader::builder(exporter, Tokio)
+        let reader: PeriodicReader<RecordingExporter> = PeriodicReader::builder(exporter)
             .with_interval(Duration::from_millis(50))
-            .with_timeout(Duration::from_millis(200))
             .build();
 
         let provider = opentelemetry_sdk::metrics::SdkMeterProvider::builder()

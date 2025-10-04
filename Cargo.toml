@@ -53,5 +53,5 @@ name = "bench_liquidity"
 harness = false
 
 [features]
-obs = []
+obs = ["metrics-exporter-prometheus"]
 metrics-otlp-grpc = []

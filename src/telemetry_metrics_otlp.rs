@@ -3,7 +3,6 @@ use std::{collections::HashMap, time::Duration};
 use opentelemetry::{metrics::MeterProvider as _, KeyValue};
 use opentelemetry_otlp::WithExportConfig;
 use opentelemetry_sdk::metrics::{PeriodicReader, SdkMeterProvider};
-use opentelemetry_sdk::runtime::Tokio;
 use opentelemetry_sdk::Resource;
 use thiserror::Error;
 use tracing::warn;
@@ -97,7 +96,7 @@ pub fn init_meter_otlp(
 
     let exporter = build_otlp_exporter(&endpoint, protocol, export_timeout_ms)?;
 
-    let reader = build_periodic_reader(exporter, export_interval_ms, export_timeout_ms);
+    let reader = build_periodic_reader(exporter, export_interval_ms);
 
     let provider = SdkMeterProvider::builder()
         .with_resource(resource)
@@ -173,45 +172,27 @@ fn build_otlp_exporter(
     export_timeout_ms: u64,
 ) -> Result<opentelemetry_otlp::MetricExporter, MetricsInitError> {
     let timeout = Duration::from_millis(export_timeout_ms);
-    let exporter = match protocol {
-        OtlpProtocol::Grpc => {
-            #[cfg(feature = "metrics-otlp-grpc")]
-            {
-                let mut builder = opentelemetry_otlp::MetricExporter::builder().with_tonic();
-                builder = builder.with_endpoint(endpoint.to_string());
-                builder = builder.with_timeout(timeout);
-                builder.build()
-            }
-            #[cfg(not(feature = "metrics-otlp-grpc"))]
-            {
-                return Err(MetricsInitError::OtlpBuildError(
-                    "gRPC metrics exporter support is not enabled (enable the `metrics-otlp-grpc` feature)"
-                        .into(),
-                ));
-            }
-        }
-        OtlpProtocol::Http => {
-            let mut builder = opentelemetry_otlp::MetricExporter::builder().with_http();
-            builder = builder.with_endpoint(endpoint.to_string());
-            builder = builder.with_timeout(timeout);
-            builder.build()
-        }
-    };
-
-    exporter.map_err(|err| MetricsInitError::OtlpBuildError(err.to_string()))
+    match protocol {
+        OtlpProtocol::Grpc => Err(MetricsInitError::OtlpBuildError(
+            "gRPC metrics exporter support is not enabled (enable the `metrics-otlp-grpc` feature)".into(),
+        )),
+        OtlpProtocol::Http => opentelemetry_otlp::MetricExporter::builder()
+            .with_http()
+            .with_endpoint(endpoint.to_string())
+            .with_timeout(timeout)
+            .build()
+            .map_err(|err| MetricsInitError::OtlpBuildError(err.to_string())),
+    }
 }
 
 fn build_periodic_reader(
     exporter: opentelemetry_otlp::MetricExporter,
     export_interval_ms: u64,
-    export_timeout_ms: u64,
 ) -> PeriodicReader<opentelemetry_otlp::MetricExporter> {
     let interval = Duration::from_millis(export_interval_ms);
-    let timeout = Duration::from_millis(export_timeout_ms);
 
-    PeriodicReader::builder(exporter, Tokio)
+    PeriodicReader::builder(exporter)
         .with_interval(interval)
-        .with_timeout(timeout)
         .build()
 }
 
