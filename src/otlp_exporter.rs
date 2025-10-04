@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use opentelemetry_otlp as otlp_crate;
 
-pub use otlp_crate::{ExporterBuildError, MetricExporter, SpanExporter, WithExportConfig};
+pub use otlp_crate::{ExporterBuildError, MetricExporter, Protocol, SpanExporter};
 
 #[derive(Default, Clone, Copy)]
 pub struct ExporterBuilderCompat;
@@ -93,6 +93,22 @@ impl TonicExporterBuilderCompat {
     }
 }
 
+#[cfg(feature = "metrics-otlp-grpc")]
+fn build_tonic_span_exporter(
+    endpoint: Option<String>,
+    timeout: Option<Duration>,
+) -> Result<SpanExporter, ExporterBuildError> {
+    let mut builder = otlp_crate::SpanExporter::builder().with_grpc();
+    if let Some(endpoint) = endpoint {
+        builder = builder.with_endpoint(endpoint);
+    }
+    if let Some(timeout) = timeout {
+        builder = builder.with_timeout(timeout);
+    }
+    builder.build()
+}
+
+#[cfg(not(feature = "metrics-otlp-grpc"))]
 fn build_tonic_span_exporter(
     _endpoint: Option<String>,
     _timeout: Option<Duration>,
@@ -102,12 +118,27 @@ fn build_tonic_span_exporter(
     ))
 }
 
+#[cfg(feature = "metrics-otlp-grpc")]
+fn build_tonic_metric_exporter(
+    endpoint: Option<String>,
+    timeout: Option<Duration>,
+) -> Result<MetricExporter, ExporterBuildError> {
+    let mut builder = otlp_crate::MetricExporter::builder().with_grpc();
+    if let Some(endpoint) = endpoint {
+        builder = builder.with_endpoint(endpoint);
+    }
+    if let Some(timeout) = timeout {
+        builder = builder.with_timeout(timeout);
+    }
+    builder.build()
+}
+
+#[cfg(not(feature = "metrics-otlp-grpc"))]
 fn build_tonic_metric_exporter(
     _endpoint: Option<String>,
     _timeout: Option<Duration>,
 ) -> Result<MetricExporter, ExporterBuildError> {
     Err(ExporterBuildError::InternalFailure(
-        "gRPC metrics exporter support is not enabled (enable the `metrics-otlp-grpc` feature)"
-            .into(),
+        "gRPC metrics exporter support is not enabled (enable the `metrics-otlp-grpc` feature)".into(),
     ))
 }
