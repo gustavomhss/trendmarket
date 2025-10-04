@@ -502,6 +502,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "hyper-timeout"
+version = "0.5.0"
+dependencies = [
+ "http",
+ "tower-service",
+]
+
+[[package]]
 name = "hyper-util"
 version = "0.1.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -865,6 +873,7 @@ dependencies = [
  "opentelemetry_sdk",
  "prost",
  "reqwest",
+ "tonic",
  "thiserror 2.0.16",
  "tracing",
 ]
@@ -1532,10 +1541,16 @@ dependencies = [
  "http",
  "http-body",
  "http-body-util",
+ "hyper",
+ "hyper-timeout",
+ "hyper-util",
  "percent-encoding",
  "pin-project",
  "prost",
+ "socket2",
+ "tokio",
  "tokio-stream",
+ "tower",
  "tower-layer",
  "tower-service",
  "tracing",
