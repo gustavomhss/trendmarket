@@ -1,3 +1,4 @@
+use anyhow::{bail, Result};
 use anyhow::{anyhow, Result};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
@@ -13,6 +14,7 @@ use opentelemetry::{
     trace::TracerProvider as _,
     KeyValue,
 };
+use opentelemetry_otlp::{MetricExporter, SpanExporter};
 use opentelemetry_otlp::{SpanExporter, WithExportConfig};
 use opentelemetry_sdk::{
     metrics::{PeriodicReader, SdkMeterProvider},
@@ -56,15 +58,13 @@ pub fn init(service_name: &str) -> Result<Telemetry> {
         .unwrap_or_else(|_| "http://localhost:4318".to_string());
     let traces_endpoint =
         std::env::var("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT").unwrap_or_else(|_| endpoint.clone());
-    let metrics_endpoint =
-        std::env::var("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT").unwrap_or_else(|_| endpoint.clone());
+    let metrics_endpoint = std::env::var("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT")
+        .unwrap_or_else(|_| endpoint.clone());
 
     let default_timeout =
         env_timeout("OTEL_EXPORTER_OTLP_TIMEOUT").unwrap_or_else(|| Duration::from_secs(10));
-    let traces_timeout =
-        env_timeout("OTEL_EXPORTER_OTLP_TRACES_TIMEOUT").unwrap_or(default_timeout);
-    let metrics_timeout =
-        env_timeout("OTEL_EXPORTER_OTLP_METRICS_TIMEOUT").unwrap_or(default_timeout);
+    let traces_timeout = env_timeout("OTEL_EXPORTER_OTLP_TRACES_TIMEOUT").unwrap_or(default_timeout);
+    let metrics_timeout = env_timeout("OTEL_EXPORTER_OTLP_METRICS_TIMEOUT").unwrap_or(default_timeout);
 
     let commit = std::env::var("CE_COMMIT_SHA").unwrap_or_else(|_| "unknown".into());
 
@@ -76,6 +76,31 @@ pub fn init(service_name: &str) -> Result<Telemetry> {
         ])
         .build();
 
+    // ---- Traces ----
+    let trace_protocol = select_otlp_protocol("OTEL_EXPORTER_OTLP_TRACES_PROTOCOL");
+    let span_exporter = match trace_protocol {
+        OtlpProtocol::Grpc => {
+            #[cfg(feature = "metrics-otlp-grpc")]
+            {
+                SpanExporter::builder()
+                    .with_grpc()
+                    .with_endpoint(traces_endpoint.clone())
+                    .with_timeout(traces_timeout)
+                    .build()?
+            }
+            #[cfg(not(feature = "metrics-otlp-grpc"))]
+            {
+                bail!(
+                    "gRPC trace exporter support is not enabled (enable the `metrics-otlp-grpc` feature)"
+                );
+            }
+        }
+        OtlpProtocol::Http => SpanExporter::builder()
+            .with_http()
+            .with_endpoint(traces_endpoint.clone())
+            .with_timeout(traces_timeout)
+            .build()?,
+    };
     let trace_protocol = select_otlp_protocol("OTEL_EXPORTER_OTLP_TRACES_PROTOCOL");
     let span_exporter = build_span_exporter(&traces_endpoint, trace_protocol, traces_timeout)?;
 
@@ -86,6 +111,31 @@ pub fn init(service_name: &str) -> Result<Telemetry> {
 
     let tracer = tracer_provider.tracer("ce_core");
 
+    // ---- Metrics ----
+    let metrics_protocol = select_otlp_protocol("OTEL_EXPORTER_OTLP_METRICS_PROTOCOL");
+    let metric_exporter = match metrics_protocol {
+        OtlpProtocol::Grpc => {
+            #[cfg(feature = "metrics-otlp-grpc")]
+            {
+                MetricExporter::builder()
+                    .with_grpc()
+                    .with_endpoint(metrics_endpoint.clone())
+                    .with_timeout(metrics_timeout)
+                    .build()?
+            }
+            #[cfg(not(feature = "metrics-otlp-grpc"))]
+            {
+                bail!(
+                    "gRPC metric exporter support is not enabled (enable the `metrics-otlp-grpc` feature)"
+                );
+            }
+        }
+        OtlpProtocol::Http => MetricExporter::builder()
+            .with_http()
+            .with_endpoint(metrics_endpoint.clone())
+            .with_timeout(metrics_timeout)
+            .build()?,
+    };
     let metrics_protocol = select_otlp_protocol("OTEL_EXPORTER_OTLP_METRICS_PROTOCOL");
     let metric_exporter =
         build_metrics_exporter(&metrics_endpoint, metrics_protocol, metrics_timeout)
