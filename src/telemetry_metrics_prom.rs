@@ -25,12 +25,19 @@ pub struct PromServerConfig {
     pub addr: String,
 }
 
+#[derive(Clone)]
 pub struct PromExporter {
+    exporter: opentelemetry_prometheus::PrometheusExporter,
     inner: OtelPromExporter,
 }
 
 impl PromExporter {
     pub fn meter_provider(&self) -> Arc<SdkMeterProvider> {
+        self.exporter.provider()
+    }
+
+    fn registry(&self) -> &prometheus::Registry {
+        self.exporter.registry()
         self.inner.provider()
     }
 
@@ -84,6 +91,11 @@ impl Drop for PromServerGuard {
 
 pub fn init_prom_exporter() -> PromExporter {
     let exporter = opentelemetry_prometheus::exporter()
+        .with_registry(prometheus::Registry::new())
+        .build()
+        .expect("failed to build Prometheus exporter");
+
+    PromExporter { exporter }
         .with_registry(Registry::new())
         .build()
         .expect("failed to build Prometheus exporter");
