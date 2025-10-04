@@ -1,0 +1,11 @@
+telemetry_cfg
+telemetry_contract
+telemetry_identity
+telemetry_instruments
+telemetry_latency
+telemetry_logs
+telemetry_metrics_otlp
+telemetry_metrics_prom
+telemetry_spans_amm
+telemetry_spans_cdc
+telemetry_trace
