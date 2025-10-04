@@ -1,5 +1,6 @@
 use std::{collections::HashMap, time::Duration};
 
+use ::opentelemetry_otlp::WithExportConfig;
 use opentelemetry::{metrics::MeterProvider as _, KeyValue};
 use opentelemetry_otlp::WithExportConfig;
 use opentelemetry_sdk::metrics::{PeriodicReader, SdkMeterProvider, Temporality};

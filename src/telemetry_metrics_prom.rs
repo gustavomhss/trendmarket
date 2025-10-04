@@ -87,6 +87,7 @@ pub fn init_prom_exporter() -> PromExporter {
         .with_registry(Registry::new())
         .build()
         .expect("failed to build Prometheus exporter");
+
     let registry = prometheus::Registry::new();
     let provider = Arc::new(
         SdkMeterProvider::builder()
