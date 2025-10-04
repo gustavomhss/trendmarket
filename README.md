@@ -66,6 +66,10 @@ Badges e links para workflows/pipelines.
 
 This repository now ships with first-class governance artifacts to guarantee that the mandatory watchers and A110 hooks defined in `agents.md` stay green across environments.
 
+## Observabilidade OBS-1
+
+- Consulte o runbook pós-sync em [`docs/OBS-1.md`](docs/OBS-1.md) para executar o fluxo canônico (`cargo check`, `cargo test`, `make obs.test` e `./scripts/obs1_postsync_validate.sh`) e revisar troubleshooting e checklist de métricas/traces/Prometheus.
+
 ### Inventory
 
 * **Watchers:** Domain-specific configurations live under [`ops/watchers/`](ops/watchers). Each `.yml` file describes the KPI, window, action, owner, and rollback policy for the mandatory watches covering DEC, PM, ML, DATA, PLAT, FE, SEC/PRIV and INT domains. These inventories are the single source of truth consumed by `ops/scripts/watchers_dry_run.py`, which now enumerates every `.yml` file in that directory when generating `ops/reports/watchers_dry.json`.
