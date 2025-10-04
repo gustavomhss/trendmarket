@@ -11,10 +11,7 @@ use credit_engine_core::telemetry_metrics_otlp::{
 use opentelemetry::KeyValue;
 use opentelemetry_sdk::error::OTelSdkError;
 use opentelemetry_sdk::metrics::{
-    data::ResourceMetrics,
-    exporter::PushMetricExporter,
-    PeriodicReader,
-    Temporality,
+    data::ResourceMetrics, exporter::PushMetricExporter, PeriodicReader, Temporality,
 };
 use opentelemetry_sdk::Resource;
 use tokio::runtime::Runtime;

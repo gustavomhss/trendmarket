@@ -143,10 +143,8 @@ impl tracing_core::field::Visit for CollectVisitor {
             self.values
                 .insert(field.name().to_string(), Value::Number(number));
         } else {
-            self.values.insert(
-                field.name().to_string(),
-                Value::String(value.to_string()),
-            );
+            self.values
+                .insert(field.name().to_string(), Value::String(value.to_string()));
         }
     }
 
