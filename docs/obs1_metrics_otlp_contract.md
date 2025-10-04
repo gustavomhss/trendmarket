@@ -54,8 +54,9 @@ pub fn select_protocol(endpoint: &str, explicit: Option<OtlpProtocol>) -> OtlpPr
    * Port `4318` or path `/v1/metrics` → `OtlpProtocol::Http`.
    * Otherwise → `OtlpProtocol::Grpc`.
 3. Supports TLS endpoints transparently (`https://` URLs are forwarded to the OTLP client).
-4. Enabling real gRPC transport requires the crate feature `metrics-otlp-grpc`. Without it, `init_meter_otlp` returns
-   `MetricsInitError::OtlpBuildError` for gRPC endpoints.
+4. Enabling real gRPC transport requires the crate feature `metrics-otlp-grpc`, which now activates
+   `opentelemetry-otlp`'s `grpc-tonic` support so the `.with_tonic()` exporter builder is compiled. Without the feature,
+   `init_meter_otlp` returns `MetricsInitError::OtlpBuildError` for gRPC endpoints.
 
 ## 4. Periodic Export & Shutdown
 
