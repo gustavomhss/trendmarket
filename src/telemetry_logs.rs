@@ -414,11 +414,19 @@ impl Visit for EventFieldVisitor {
     }
 
     fn record_i64(&mut self, field: &Field, value: i64) {
-        self.record_value(field, Value::Number(value.into()));
+        if let Some(number) = serde_json::Number::from_i128(value as i128) {
+            self.record_value(field, Value::Number(number));
+        } else {
+            self.record_value(field, Value::String(value.to_string()));
+        }
     }
 
     fn record_u64(&mut self, field: &Field, value: u64) {
-        self.record_value(field, Value::Number(value.into()));
+        if let Some(number) = serde_json::Number::from_u128(value as u128) {
+            self.record_value(field, Value::Number(number));
+        } else {
+            self.record_value(field, Value::String(value.to_string()));
+        }
     }
 
     fn record_f64(&mut self, field: &Field, value: f64) {

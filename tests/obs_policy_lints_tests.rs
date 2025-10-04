@@ -142,7 +142,11 @@ impl tracing_core::field::Visit for TestVisitor {
     }
 
     fn record_i64(&mut self, field: &tracing_core::Field, value: i64) {
-        self.record_value(field, Value::Number(value.into()));
+        if let Some(number) = serde_json::Number::from_i128(value as i128) {
+            self.record_value(field, Value::Number(number));
+        } else {
+            self.record_value(field, Value::String(value.to_string()));
+        }
     }
 
     fn record_u64(&mut self, field: &tracing_core::Field, value: u64) {
