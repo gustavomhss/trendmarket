@@ -9,7 +9,7 @@ use credit_engine_core::telemetry_trace::{
     OtlpProtocol, ResourcePairs, TraceConfig, TraceInitError,
 };
 use opentelemetry::baggage::BaggageExt;
-use opentelemetry::propagation::TextMapCarrier;
+use opentelemetry::propagation::{Extractor, Injector};
 use opentelemetry::testing::trace::TestSpan;
 use opentelemetry::trace::{SpanContext, TraceContextExt, TraceFlags, TraceId, TraceState};
 use opentelemetry::Context;
@@ -164,11 +164,17 @@ fn test_resource() -> ResourcePairs {
 #[derive(Default)]
 struct HeaderCarrier(HashMap<String, String>);
 
-impl TextMapCarrier for HeaderCarrier {
+impl Extractor for HeaderCarrier {
     fn get(&self, key: &str) -> Option<&str> {
         self.0.get(key).map(|value| value.as_str())
     }
 
+    fn keys(&self) -> Vec<&str> {
+        self.0.keys().map(|key| key.as_str()).collect()
+    }
+}
+
+impl Injector for HeaderCarrier {
     fn set(&mut self, key: &str, value: String) {
         self.0.insert(key.to_string(), value);
     }
