@@ -1,9 +1,9 @@
 [package]
 name = "opentelemetry-prometheus"
-version = "0.29.0"
+version = "0.29.1"
 edition = "2021"
 
 [dependencies]
 opentelemetry = { version = "0.29", features = ["metrics"] }
 opentelemetry_sdk = { version = "0.29", features = ["metrics"] }
-prometheus = { path = "../prometheus", version = "0.13" }
+prometheus = { path = "../prometheus", version = "0.14" }

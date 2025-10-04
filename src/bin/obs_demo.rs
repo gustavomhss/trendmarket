@@ -5,6 +5,7 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use anyhow::{anyhow, Context, Result};
+use credit_engine_core::otlp_exporter as opentelemetry_otlp;
 use credit_engine_core::telemetry_cfg::{DeployEnv as CfgDeployEnv, ObsLevel, TelemetryConfig};
 use credit_engine_core::telemetry_contract as contract;
 use credit_engine_core::telemetry_identity::{
@@ -13,7 +14,7 @@ use credit_engine_core::telemetry_identity::{
 use opentelemetry::metrics::{Counter, Histogram, Meter, MeterProvider};
 use opentelemetry::trace::{TraceContextExt, TracerProvider};
 use opentelemetry::{global, KeyValue};
-use opentelemetry_otlp::{MetricExporter, SpanExporter, WithExportConfig};
+use opentelemetry_otlp::{MetricExporter, SpanExporter};
 use opentelemetry_sdk::{
     metrics::{PeriodicReader, SdkMeterProvider},
     propagation::TraceContextPropagator,
@@ -124,11 +125,7 @@ impl TelemetryRuntime {
         let mut tracer_builder = SdkTracerProvider::builder().with_resource(resource.clone());
         if level != ObsLevel::Off {
             if let Some(endpoint) = cfg.otlp_endpoint.as_deref() {
-                let exporter = SpanExporter::builder()
-                    .with_http()
-                    .with_endpoint(endpoint)
-                    .build()
-                    .context("failed to build OTLP span exporter")?;
+                let exporter = build_otlp_span_exporter(endpoint, cfg.otlp_timeout)?;
                 tracer_builder = tracer_builder.with_batch_exporter(exporter);
             }
         }
@@ -170,11 +167,7 @@ impl TelemetryRuntime {
         let meter_provider = if level == ObsLevel::Off {
             None
         } else if let Some(endpoint) = cfg.otlp_endpoint.as_deref() {
-            let exporter = MetricExporter::builder()
-                .with_http()
-                .with_endpoint(endpoint)
-                .build()
-                .context("failed to build OTLP metric exporter")?;
+            let exporter = build_otlp_metric_exporter(endpoint, cfg.otlp_timeout)?;
             let reader = PeriodicReader::builder(exporter)
                 .with_interval(Duration::from_secs(10))
                 .build();
@@ -285,6 +278,66 @@ impl TelemetryRuntime {
         let _ = self.tracer_provider.force_flush();
         let _ = self.tracer_provider.shutdown();
     }
+}
+
+#[derive(Clone, Copy)]
+enum OtlpExportProtocol {
+    Http,
+    Grpc,
+}
+
+fn build_otlp_span_exporter(endpoint: &str, timeout: Duration) -> Result<SpanExporter> {
+    match detect_otlp_protocol(endpoint) {
+        OtlpExportProtocol::Http => opentelemetry_otlp::new_exporter()
+            .http()
+            .with_endpoint(endpoint.to_string())
+            .with_timeout(timeout)
+            .build_span_exporter()
+            .context("failed to build OTLP HTTP span exporter"),
+        OtlpExportProtocol::Grpc => build_grpc_span_exporter(endpoint, timeout),
+    }
+}
+
+fn build_otlp_metric_exporter(endpoint: &str, timeout: Duration) -> Result<MetricExporter> {
+    match detect_otlp_protocol(endpoint) {
+        OtlpExportProtocol::Http => opentelemetry_otlp::new_exporter()
+            .http()
+            .with_endpoint(endpoint.to_string())
+            .with_timeout(timeout)
+            .build_metrics_exporter()
+            .context("failed to build OTLP HTTP metric exporter"),
+        OtlpExportProtocol::Grpc => build_grpc_metric_exporter(endpoint, timeout),
+    }
+}
+
+fn detect_otlp_protocol(endpoint: &str) -> OtlpExportProtocol {
+    let normalized = endpoint.trim().trim_end_matches('/').to_ascii_lowercase();
+    if normalized.ends_with("/v1/traces")
+        || normalized.ends_with("/v1/metrics")
+        || normalized.contains(":4318")
+    {
+        OtlpExportProtocol::Http
+    } else {
+        OtlpExportProtocol::Grpc
+    }
+}
+
+fn build_grpc_span_exporter(endpoint: &str, timeout: Duration) -> Result<SpanExporter> {
+    opentelemetry_otlp::new_exporter()
+        .tonic()
+        .with_endpoint(endpoint.to_string())
+        .with_timeout(timeout)
+        .build_span_exporter()
+        .context("failed to build OTLP gRPC span exporter")
+}
+
+fn build_grpc_metric_exporter(endpoint: &str, timeout: Duration) -> Result<MetricExporter> {
+    opentelemetry_otlp::new_exporter()
+        .tonic()
+        .with_endpoint(endpoint.to_string())
+        .with_timeout(timeout)
+        .build_metrics_exporter()
+        .context("failed to build OTLP gRPC metric exporter")
 }
 
 fn register_instruments(
