@@ -10,26 +10,22 @@ use hyper_util::{
     rt::{TokioExecutor, TokioIo},
     server::conn::auto::Builder as HyperBuilder,
 };
-use prometheus::TextEncoder;
 use opentelemetry_prometheus::PrometheusExporter as OtelPromExporter;
-use prometheus::{Registry, TextEncoder};
+use opentelemetry_sdk::metrics::SdkMeterProvider;
+use prometheus::{Encoder, TextEncoder};
+use thiserror::Error;
 use tokio::net::TcpListener;
 use tokio::runtime::Handle;
 use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
-
-use opentelemetry_sdk::metrics::SdkMeterProvider;
-use thiserror::Error;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PromServerConfig {
     pub addr: String,
 }
 
-#[derive(Clone)]
 pub struct PromExporter {
-    exporter: opentelemetry_prometheus::PrometheusExporter,
-    inner: OtelPromExporter,
+    exporter: Arc<OtelPromExporter>,
 }
 
 impl PromExporter {
@@ -39,11 +35,14 @@ impl PromExporter {
 
     fn registry(&self) -> &prometheus::Registry {
         self.exporter.registry()
-        self.inner.provider()
     }
+}
 
-    fn registry(&self) -> &Registry {
-        self.inner.registry()
+impl Clone for PromExporter {
+    fn clone(&self) -> Self {
+        Self {
+            exporter: Arc::clone(&self.exporter),
+        }
     }
 }
 
@@ -96,32 +95,9 @@ pub fn init_prom_exporter() -> PromExporter {
         .build()
         .expect("failed to build Prometheus exporter");
 
-    PromExporter { exporter }
-        .with_registry(Registry::new())
-        .build()
-        .expect("failed to build Prometheus exporter");
-
-    let provider = exporter.provider();
-    let registry = prometheus::Registry::new();
-    let provider = Arc::new(
-        SdkMeterProvider::builder()
-            .with_reader(
-                opentelemetry_prometheus::exporter()
-                    .with_registry(registry.clone())
-                    .build()
-                    .expect("failed to build Prometheus exporter"),
-            )
-            .build(),
-    );
-    let reader = opentelemetry_prometheus::exporter()
-        .with_registry(registry.clone())
-        .build()
-        .expect("failed to build Prometheus exporter");
-
-    let provider = Arc::new(SdkMeterProvider::builder().with_reader(reader).build());
-    let provider = Arc::new(SdkMeterProvider::builder().with_reader(exporter).build());
-
-    PromExporter { inner: exporter }
+    PromExporter {
+        exporter: Arc::new(exporter),
+    }
 }
 
 pub async fn spawn_metrics_http(
@@ -142,7 +118,7 @@ pub async fn spawn_metrics_http(
 
     let exporter = Arc::new(exporter);
     let (shutdown_tx, shutdown_rx) = oneshot::channel();
-    let server_exporter = exporter.clone();
+    let server_exporter = Arc::clone(&exporter);
 
     let handle =
         tokio::spawn(async move { run_server(listener, server_exporter, shutdown_rx).await });
@@ -169,9 +145,9 @@ async fn run_server(
             }
             accept_result = listener.accept() => {
                 let (stream, _) = accept_result.map_err(|err| PromHttpError::Serve(err.to_string()))?;
-                let service_exporter = exporter.clone();
+                let service_exporter = Arc::clone(&exporter);
                 let service = service_fn(move |req| {
-                    let exporter = service_exporter.clone();
+                    let exporter = Arc::clone(&service_exporter);
                     async move { handle_request(req, exporter).await }
                 });
                 let io = TokioIo::new(stream);

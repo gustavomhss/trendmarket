@@ -1,4 +1,5 @@
 use anyhow::{bail, Result};
+use anyhow::{anyhow, Result};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
@@ -14,6 +15,7 @@ use opentelemetry::{
     KeyValue,
 };
 use opentelemetry_otlp::{MetricExporter, SpanExporter};
+use opentelemetry_otlp::{SpanExporter, WithExportConfig};
 use opentelemetry_sdk::{
     metrics::{PeriodicReader, SdkMeterProvider},
     propagation::TraceContextPropagator,
@@ -22,6 +24,8 @@ use opentelemetry_sdk::{
 };
 use tracing::Level;
 use tracing_subscriber::{layer::SubscriberExt, EnvFilter, Registry};
+
+use crate::telemetry_metrics_otlp::{build_metrics_exporter, OtlpProtocol};
 
 pub struct Telemetry {
     pub tracer_provider: SdkTracerProvider,
@@ -97,6 +101,8 @@ pub fn init(service_name: &str) -> Result<Telemetry> {
             .with_timeout(traces_timeout)
             .build()?,
     };
+    let trace_protocol = select_otlp_protocol("OTEL_EXPORTER_OTLP_TRACES_PROTOCOL");
+    let span_exporter = build_span_exporter(&traces_endpoint, trace_protocol, traces_timeout)?;
 
     let tracer_provider = SdkTracerProvider::builder()
         .with_resource(resource.clone())
@@ -130,6 +136,10 @@ pub fn init(service_name: &str) -> Result<Telemetry> {
             .with_timeout(metrics_timeout)
             .build()?,
     };
+    let metrics_protocol = select_otlp_protocol("OTEL_EXPORTER_OTLP_METRICS_PROTOCOL");
+    let metric_exporter =
+        build_metrics_exporter(&metrics_endpoint, metrics_protocol, metrics_timeout)
+            .map_err(|err| anyhow!(err.to_string()))?;
 
     let reader = PeriodicReader::builder(metric_exporter)
         .with_interval(Duration::from_secs(10))
@@ -140,12 +150,10 @@ pub fn init(service_name: &str) -> Result<Telemetry> {
         .with_reader(reader)
         .build();
 
-    // Globais
     global::set_text_map_propagator(TraceContextPropagator::new());
     global::set_tracer_provider(tracer_provider.clone());
     global::set_meter_provider(meter_provider.clone());
 
-    // tracing -> OTel
     let otel_layer = tracing_opentelemetry::layer().with_tracer(tracer);
     let fmt_layer = tracing_subscriber::fmt::layer().with_target(false);
     let subscriber = Registry::default()
@@ -154,7 +162,6 @@ pub fn init(service_name: &str) -> Result<Telemetry> {
         .with(otel_layer);
     let _ = tracing::subscriber::set_global_default(subscriber);
 
-    // Instrumentos (histogramas)
     let meter = meter_provider.meter("ce_core");
     let swap_latency_ms = meter
         .f64_histogram("swap_latency_ms")
@@ -177,10 +184,34 @@ pub fn init(service_name: &str) -> Result<Telemetry> {
     })
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum OtlpProtocol {
-    Grpc,
-    Http,
+fn build_span_exporter(
+    endpoint: &str,
+    protocol: OtlpProtocol,
+    timeout: Duration,
+) -> Result<SpanExporter> {
+    let mut builder = SpanExporter::builder();
+
+    #[allow(unused_mut)]
+    let mut builder = match protocol {
+        OtlpProtocol::Grpc => {
+            #[cfg(feature = "metrics-otlp-grpc")]
+            {
+                builder.with_grpc()
+            }
+            #[cfg(not(feature = "metrics-otlp-grpc"))]
+            {
+                return Err(anyhow!(
+                    "gRPC trace exporter support is not enabled (enable the `metrics-otlp-grpc` feature)"
+                ));
+            }
+        }
+        OtlpProtocol::Http => builder.with_http(),
+    };
+
+    builder = builder.with_endpoint(endpoint.to_string());
+    builder = builder.with_timeout(timeout);
+
+    builder.build().map_err(|err| anyhow!(err.to_string()))
 }
 
 fn select_otlp_protocol(specific_env_var: &str) -> OtlpProtocol {
