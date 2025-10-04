@@ -139,9 +139,14 @@ impl tracing_core::field::Visit for CollectVisitor {
     }
 
     fn record_u64(&mut self, field: &tracing_core::Field, value: u64) {
-        if let Some(number) = serde_json::Number::from_u64(value) {
+        if let Some(number) = serde_json::Number::from_u128(value as u128) {
             self.values
                 .insert(field.name().to_string(), Value::Number(number));
+        } else {
+            self.values.insert(
+                field.name().to_string(),
+                Value::String(value.to_string()),
+            );
         }
     }
 

@@ -146,8 +146,10 @@ impl tracing_core::field::Visit for TestVisitor {
     }
 
     fn record_u64(&mut self, field: &tracing_core::Field, value: u64) {
-        if let Some(number) = serde_json::Number::from_u64(value) {
+        if let Some(number) = serde_json::Number::from_u128(value as u128) {
             self.record_value(field, Value::Number(number));
+        } else {
+            self.record_value(field, Value::String(value.to_string()));
         }
     }
 
