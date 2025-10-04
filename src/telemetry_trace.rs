@@ -11,6 +11,30 @@ use opentelemetry::global;
 use opentelemetry::propagation::TextMapCompositePropagator;
 use opentelemetry::trace::TracerProvider;
 use opentelemetry::KeyValue;
+mod opentelemetry_otlp {
+    pub use ::opentelemetry_otlp::{SpanExporter, WithExportConfig};
+
+    pub struct SpanExporterBuilderCompat;
+
+    impl SpanExporterBuilderCompat {
+        pub fn http(self) -> ::opentelemetry_otlp::HttpExporterBuilder {
+            ::opentelemetry_otlp::HttpExporterBuilder::default()
+        }
+    }
+
+    #[cfg(feature = "metrics-otlp-grpc")]
+    impl SpanExporterBuilderCompat {
+        pub fn tonic(self) -> ::opentelemetry_otlp::TonicExporterBuilder {
+            ::opentelemetry_otlp::TonicExporterBuilder::default()
+        }
+    }
+
+    pub fn new_exporter() -> SpanExporterBuilderCompat {
+        SpanExporterBuilderCompat
+    }
+}
+
+use opentelemetry_otlp::{SpanExporter as OtlpSpanExporter, WithExportConfig};
 use opentelemetry_sdk::error::OTelSdkError;
 use opentelemetry_sdk::propagation::{BaggagePropagator, TraceContextPropagator};
 use opentelemetry_sdk::resource::Resource;
@@ -306,6 +330,7 @@ fn build_otlp_exporter(
                 opentelemetry_otlp::new_exporter()
                     .tonic()
                     .with_endpoint(endpoint.to_string())
+                    .with_endpoint(endpoint.to_owned())
                     .with_timeout(timeout)
                     .build_span_exporter()
                     .map_err(|err| TraceInitError::OtlpBuildError(err.to_string()))
@@ -314,12 +339,15 @@ fn build_otlp_exporter(
             {
                 Err(TraceInitError::OtlpBuildError(
                     "gRPC trace exporter support is not enabled (enable the `metrics-otlp-grpc` feature)".into(),
+                    "gRPC trace exporter support is not enabled (enable the `metrics-otlp-grpc` feature)"
+                        .into(),
                 ))
             }
         }
         OtlpProtocol::Http => opentelemetry_otlp::new_exporter()
             .http()
             .with_endpoint(endpoint.to_string())
+            .with_endpoint(endpoint.to_owned())
             .with_timeout(timeout)
             .build_span_exporter()
             .map_err(|err| TraceInitError::OtlpBuildError(err.to_string())),
