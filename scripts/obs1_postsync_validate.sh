@@ -4,30 +4,33 @@ set -euo pipefail
 mkdir -p out/diagnostics
 status=0
 
-RUSTFLAGS=-Dwarnings cargo check --all-targets --all-features 2>&1 | tee out/diagnostics/check-sync.txt || status=$?
-cargo clean || status=$?
-cargo build -q || status=$?
-cargo test --no-run 2>&1 | tee out/diagnostics/test-norun-sync.txt || status=$?
-cargo test -q 2>&1 | tee out/diagnostics/test-run-sync.txt || status=$?
-if rg --glob '*.rs' --quiet 'cfg\(feature = "obs"\)' src tests; then
-  cargo test --features obs -q 2>&1 | tee -a out/diagnostics/test-run-sync.txt || status=$?
+run_with_log() {
+  local logfile=$1
+  shift
 
-RUSTFLAGS=-Dwarnings cargo check --all-targets --all-features 2>&1 | tee out/diagnostics/check-sync.txt || true
-cargo test --no-run 2>&1 | tee out/diagnostics/test-norun-sync.txt || true
-cargo test -q 2>&1 | tee out/diagnostics/test-run-sync.txt || true
-if rg --quiet 'cfg\(feature = "obs"\)' src tests; then
-RUSTFLAGS=-Dwarnings cargo check --all-targets --all-features 2>&1 | tee out/diagnostics/check-sync.txt
-cargo clean
-cargo build -q
-cargo test --no-run 2>&1 | tee out/diagnostics/test-norun-sync.txt || true
-cargo test -q 2>&1 | tee out/diagnostics/test-run-sync.txt || true
+  set +e
+  "$@" 2>&1 | tee "$logfile"
+  local cmd_status=${PIPESTATUS[0]}
+  set -e
+
+  if (( cmd_status != 0 )) && (( status == 0 )); then
+    status=$cmd_status
+  fi
+}
+
+run_with_log out/diagnostics/check-sync.txt env RUSTFLAGS=-Dwarnings cargo check --all-targets --all-features
+run_with_log out/diagnostics/test-norun-sync.txt cargo test --no-run
+run_with_log out/diagnostics/test-run-sync.txt cargo test -q
 
 if rg --files-with-matches 'cfg\(feature = "obs"\)' src tests >/dev/null 2>&1; then
-  cargo test --features obs -q 2>&1 | tee -a out/diagnostics/test-run-sync.txt || true
+  run_with_log out/diagnostics/test-run-obs-sync.txt cargo test --features obs -q
 fi
 
 tail -n 80 out/diagnostics/check-sync.txt || true
 tail -n 80 out/diagnostics/test-norun-sync.txt || true
 tail -n 80 out/diagnostics/test-run-sync.txt || true
+if [[ -f out/diagnostics/test-run-obs-sync.txt ]]; then
+  tail -n 80 out/diagnostics/test-run-obs-sync.txt || true
+fi
 
 exit $status
