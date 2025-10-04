@@ -1,5 +1,6 @@
 use std::env;
 use std::sync::Mutex;
+use std::time::Duration;
 
 use credit_engine_core::telemetry_cfg::{DeployEnv, ObsLevel, TelemetryConfig, TelemetryError};
 use once_cell::sync::Lazy;
@@ -13,6 +14,7 @@ const ALL_ENV_VARS: &[&str] = &[
     "PROM_SCRAPE",
     "METRICS_HTTP_ADDR",
     "OTEL_EXPORTER_OTLP_ENDPOINT",
+    "OTEL_EXPORTER_OTLP_TIMEOUT",
     "LOG_LEVEL",
     "DENY_DYNAMIC_LABELS",
 ];
@@ -58,6 +60,7 @@ fn defaults_are_applied() {
         assert!(!cfg.prom_scrape);
         assert_eq!(cfg.metrics_http_addr, "0.0.0.0:9464");
         assert!(cfg.otlp_endpoint.is_none());
+        assert_eq!(cfg.otlp_timeout, Duration::from_secs(10));
         assert_eq!(cfg.log_level, "info");
         assert!(cfg.deny_dynamic_labels);
     });
@@ -77,6 +80,7 @@ fn env_values_override_defaults_and_normalize() {
                 "OTEL_EXPORTER_OTLP_ENDPOINT",
                 Some("https://otel.example:4317/"),
             ),
+            ("OTEL_EXPORTER_OTLP_TIMEOUT", Some("15000")),
             ("LOG_LEVEL", Some("DEBUG")),
             ("DENY_DYNAMIC_LABELS", Some("0")),
         ],
@@ -92,6 +96,7 @@ fn env_values_override_defaults_and_normalize() {
                 cfg.otlp_endpoint.as_deref(),
                 Some("https://otel.example:4317")
             );
+            assert_eq!(cfg.otlp_timeout, Duration::from_millis(15_000));
             assert_eq!(cfg.log_level, "debug");
             assert!(!cfg.deny_dynamic_labels);
         },
@@ -117,6 +122,7 @@ fn builder_precedence_and_normalization() {
                 .with_prom_scrape(true)
                 .with_metrics_http_addr("0.0.0.0:9999")
                 .with_otlp_endpoint(Some("http://builder:4317/".to_string()))
+                .with_otlp_timeout(Duration::from_secs(30))
                 .with_log_level("WARN")
                 .with_deny_dynamic_labels(false)
                 .build()
@@ -128,6 +134,7 @@ fn builder_precedence_and_normalization() {
             assert!(cfg.prom_scrape);
             assert_eq!(cfg.metrics_http_addr, "0.0.0.0:9999");
             assert_eq!(cfg.otlp_endpoint.as_deref(), Some("http://builder:4317"));
+            assert_eq!(cfg.otlp_timeout, Duration::from_secs(30));
             assert_eq!(cfg.log_level, "warn");
             assert!(!cfg.deny_dynamic_labels);
         },
@@ -179,6 +186,20 @@ fn invalid_bool_env_reports_error() {
 }
 
 #[test]
+fn invalid_otlp_timeout_env_reports_error() {
+    with_env(&[("OTEL_EXPORTER_OTLP_TIMEOUT", Some("-5"))], || {
+        let err = TelemetryConfig::from_env().expect_err("invalid timeout");
+        match err {
+            TelemetryError::InvalidEnvValue { var, message } => {
+                assert_eq!(var, "OTEL_EXPORTER_OTLP_TIMEOUT");
+                assert!(message.contains("positive integer"));
+            }
+            other => panic!("unexpected error: {other:?}"),
+        }
+    });
+}
+
+#[test]
 fn invalid_metrics_addr_from_builder_errors() {
     with_env(&[], || {
         let err = TelemetryConfig::builder()
@@ -189,6 +210,23 @@ fn invalid_metrics_addr_from_builder_errors() {
             TelemetryError::InvalidBuilderValue { field, message } => {
                 assert_eq!(field, "metrics_http_addr");
                 assert!(message.contains("host:port"));
+            }
+            other => panic!("unexpected error: {other:?}"),
+        }
+    });
+}
+
+#[test]
+fn invalid_otlp_timeout_from_builder_errors() {
+    with_env(&[], || {
+        let err = TelemetryConfig::builder()
+            .with_otlp_timeout(Duration::from_millis(0))
+            .build()
+            .expect_err("zero timeout must fail");
+        match err {
+            TelemetryError::InvalidBuilderValue { field, message } => {
+                assert_eq!(field, "otlp_timeout");
+                assert!(message.contains("positive integer"));
             }
             other => panic!("unexpected error: {other:?}"),
         }
