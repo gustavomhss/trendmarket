@@ -6,21 +6,130 @@ use std::panic;
 use std::sync::OnceLock;
 use std::time::Duration;
 
+use self::opentelemetry_otlp::SpanExporter as OtlpSpanExporter;
 use opentelemetry::global;
 use opentelemetry::propagation::TextMapCompositePropagator;
 use opentelemetry::trace::TracerProvider;
 use opentelemetry::KeyValue;
 use opentelemetry_otlp::{ExportConfig, SpanExporter as OtlpSpanExporter, WithExportConfig};
+mod opentelemetry_otlp {
+    pub use ::opentelemetry_otlp::{SpanExporter, WithExportConfig};
+
+    pub struct SpanExporterBuilderCompat;
+
+    impl SpanExporterBuilderCompat {
+        pub fn http(self) -> ::opentelemetry_otlp::HttpExporterBuilder {
+            ::opentelemetry_otlp::HttpExporterBuilder::default()
+        }
+    }
+
+    #[cfg(feature = "metrics-otlp-grpc")]
+    impl SpanExporterBuilderCompat {
+        pub fn tonic(self) -> ::opentelemetry_otlp::TonicExporterBuilder {
+            ::opentelemetry_otlp::TonicExporterBuilder::default()
+        }
+    }
+
+    pub fn new_exporter() -> SpanExporterBuilderCompat {
+        SpanExporterBuilderCompat
+    }
+}
+
+use opentelemetry_otlp::{SpanExporter as OtlpSpanExporter, WithExportConfig};
 use opentelemetry_sdk::error::OTelSdkError;
+use opentelemetry_sdk::propagation::{BaggagePropagator, TraceContextPropagator};
 use opentelemetry_sdk::resource::Resource;
 use opentelemetry_sdk::trace::{
     BatchConfig, BatchConfigBuilder, BatchSpanProcessor, Sampler, SdkTracerProvider,
     SpanExporter as SdkSpanExporter, Tracer,
 };
-use opentelemetry_sdk::propagation::{BaggagePropagator, TraceContextPropagator};
 use thiserror::Error;
 use tracing_opentelemetry::OpenTelemetryLayer;
 use tracing_subscriber::Registry;
+
+mod opentelemetry_otlp {
+    use std::time::Duration;
+
+    pub use ::opentelemetry_otlp::*;
+
+    #[derive(Clone, Copy)]
+    enum ExporterKind {
+        Grpc,
+        Http,
+    }
+
+    pub struct SpanExporterBuilderCompat {
+        kind: Option<ExporterKind>,
+        endpoint: Option<String>,
+        timeout: Option<Duration>,
+    }
+
+    impl SpanExporterBuilderCompat {
+        pub fn tonic(mut self) -> Self {
+            self.kind = Some(ExporterKind::Grpc);
+            self
+        }
+
+        pub fn http(mut self) -> Self {
+            self.kind = Some(ExporterKind::Http);
+            self
+        }
+
+        pub fn with_endpoint(mut self, endpoint: String) -> Self {
+            self.endpoint = Some(endpoint);
+            self
+        }
+
+        pub fn with_timeout(mut self, timeout: Duration) -> Self {
+            self.timeout = Some(timeout);
+            self
+        }
+
+        pub fn build_span_exporter(self) -> Result<SpanExporter, ExporterBuildError> {
+            match self.kind.unwrap_or(ExporterKind::Http) {
+                ExporterKind::Grpc => {
+                    #[cfg(feature = "metrics-otlp-grpc")]
+                    {
+                        let mut builder =
+                            ::opentelemetry_otlp::SpanExporter::builder().with_tonic();
+                        if let Some(endpoint) = self.endpoint {
+                            builder = builder.with_endpoint(endpoint);
+                        }
+                        if let Some(timeout) = self.timeout {
+                            builder = builder.with_timeout(timeout);
+                        }
+                        builder.build_span_exporter()
+                    }
+                    #[cfg(not(feature = "metrics-otlp-grpc"))]
+                    {
+                        Err(ExporterBuildError::InternalFailure(
+                            "gRPC trace exporter support is not enabled (enable the `metrics-otlp-grpc` feature)"
+                                .into(),
+                        ))
+                    }
+                }
+                ExporterKind::Http => {
+                    let mut builder = ::opentelemetry_otlp::SpanExporter::builder().with_http();
+                    if let Some(endpoint) = self.endpoint {
+                        builder = builder.with_endpoint(endpoint);
+                    }
+                    if let Some(timeout) = self.timeout {
+                        builder = builder.with_timeout(timeout);
+                    }
+                    builder.build_span_exporter()
+                }
+            }
+        }
+    }
+
+    pub fn new_exporter() -> SpanExporterBuilderCompat {
+        SpanExporterBuilderCompat {
+            kind: None,
+            endpoint: None,
+            timeout: None,
+        }
+    }
+}
 
 const REQUIRED_RESOURCE_KEYS: [&str; 3] =
     ["service.name", "service.version", "deployment.environment"];
@@ -217,7 +326,8 @@ fn build_otlp_exporter(
     let timeout = Duration::from_millis(cfg.export_timeout_ms);
     match protocol {
         OtlpProtocol::Grpc => Err(TraceInitError::OtlpBuildError(
-            "gRPC trace exporter support is not enabled (enable the `metrics-otlp-grpc` feature)".into(),
+            "gRPC trace exporter support is not enabled (enable the `metrics-otlp-grpc` feature)"
+                .into(),
         )),
         OtlpProtocol::Http => {
             let mut export_config = ExportConfig::default();
@@ -229,22 +339,56 @@ fn build_otlp_exporter(
                 .build()
                 .map_err(|err| TraceInitError::OtlpBuildError(err.to_string()))
         }
+        OtlpProtocol::Http => OtlpSpanExporter::builder()
+            .with_http()
+        OtlpProtocol::Grpc => {
+            #[cfg(feature = "metrics-otlp-grpc")]
+            {
+                opentelemetry_otlp::TonicExporterBuilder::default()
+                    .with_endpoint(endpoint.to_string())
+                opentelemetry_otlp::new_exporter()
+                    .tonic()
+                    .with_endpoint(endpoint.to_string())
+                    .with_endpoint(endpoint.to_owned())
+                    .with_timeout(timeout)
+                    .build_span_exporter()
+                    .map_err(|err| TraceInitError::OtlpBuildError(err.to_string()))
+            }
+            #[cfg(not(feature = "metrics-otlp-grpc"))]
+            {
+                Err(TraceInitError::OtlpBuildError(
+                    "gRPC trace exporter support is not enabled (enable the `metrics-otlp-grpc` feature)".into(),
+                    "gRPC trace exporter support is not enabled (enable the `metrics-otlp-grpc` feature)"
+                        .into(),
+                ))
+            }
+        }
+        OtlpProtocol::Http => opentelemetry_otlp::HttpExporterBuilder::default()
+        OtlpProtocol::Http => opentelemetry_otlp::new_exporter()
+            .http()
+            .with_endpoint(endpoint.to_string())
+            .with_endpoint(endpoint.to_owned())
+            .with_timeout(timeout)
+            .build_span_exporter()
+            .map_err(|err| TraceInitError::OtlpBuildError(err.to_string())),
     }
 }
 
 fn build_batch_config(cfg: &TraceConfig) -> BatchConfig {
-    BatchConfigBuilder::default()
+    let builder = BatchConfigBuilder::default()
         .with_max_queue_size(cfg.max_queue_size)
         .with_max_export_batch_size(cfg.max_export_batch_size)
-        .with_scheduled_delay(Duration::from_millis(cfg.scheduled_delay_ms))
-        .build()
-}
+        .with_scheduled_delay(Duration::from_millis(cfg.scheduled_delay_ms));
 
 #[cfg(feature = "grpc-tonic")]
 fn build_grpc_exporter(endpoint: &str, timeout: Duration) -> Result<OtlpSpanExporter, TraceInitError> {
     let mut export_config = ExportConfig::default();
     export_config.endpoint = Some(endpoint.to_string());
     export_config.timeout = Some(timeout);
+fn build_grpc_exporter(
+    endpoint: &str,
+    timeout: Duration,
+) -> Result<OtlpSpanExporter, TraceInitError> {
     opentelemetry_otlp::TonicExporterBuilder::default()
         .with_export_config(export_config)
         .build_span_exporter()
@@ -252,7 +396,10 @@ fn build_grpc_exporter(endpoint: &str, timeout: Duration) -> Result<OtlpSpanExpo
 }
 
 #[cfg(not(feature = "grpc-tonic"))]
-fn build_grpc_exporter(_endpoint: &str, _timeout: Duration) -> Result<OtlpSpanExporter, TraceInitError> {
+fn build_grpc_exporter(
+    _endpoint: &str,
+    _timeout: Duration,
+) -> Result<OtlpSpanExporter, TraceInitError> {
     Err(TraceInitError::OtlpBuildError(
         "opentelemetry-otlp built without gRPC support".to_string(),
     ))
@@ -262,10 +409,18 @@ fn build_http_exporter(endpoint: &str, timeout: Duration) -> Result<OtlpSpanExpo
     let mut export_config = ExportConfig::default();
     export_config.endpoint = Some(endpoint.to_string());
     export_config.timeout = Some(timeout);
+fn build_http_exporter(
+    endpoint: &str,
+    timeout: Duration,
+) -> Result<OtlpSpanExporter, TraceInitError> {
     opentelemetry_otlp::HttpExporterBuilder::default()
         .with_export_config(export_config)
         .build_span_exporter()
         .map_err(|err| TraceInitError::OtlpBuildError(err.to_string()))
+    #[cfg(feature = "opentelemetry_sdk/experimental_trace_batch_span_processor_with_async_runtime")]
+    let builder = builder.with_max_export_timeout(Duration::from_millis(cfg.export_timeout_ms));
+
+    builder.build()
 }
 
 fn build_resource(pairs: ResourcePairs) -> Result<Resource, TraceInitError> {
