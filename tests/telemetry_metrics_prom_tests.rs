@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::sync::Arc;
 use std::time::Duration;
 
 use credit_engine_core::telemetry_metrics_prom::{
@@ -29,6 +30,13 @@ async fn prometheus_http_server_exposes_metrics() -> Result<(), Box<dyn Error>> 
     .await?;
 
     tokio::time::sleep(Duration::from_millis(50)).await;
+
+    let guard_exporter = guard.exporter();
+    let guard_provider = guard_exporter.meter_provider();
+    assert!(Arc::ptr_eq(&provider, &guard_provider));
+    let guard_meter = guard_provider.meter("test-prom-guard");
+    let late_counter = guard_meter.u64_counter("late_counter_total").build();
+    late_counter.add(1, &[]);
 
     let addr = guard.local_addr();
     println!("bound on {}", addr);
@@ -65,6 +73,7 @@ async fn prometheus_http_server_exposes_metrics() -> Result<(), Box<dyn Error>> 
     assert!(body.contains("test_histogram_seconds_sum"));
     assert!(body.contains("test_histogram_seconds_count"));
     assert!(body.contains("le=\"+Inf\""));
+    assert!(body.contains("late_counter_total"));
 
     guard.shutdown().await;
 
