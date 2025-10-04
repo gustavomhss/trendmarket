@@ -229,11 +229,15 @@ fn build_otlp_exporter(
 }
 
 fn build_batch_config(cfg: &TraceConfig) -> BatchConfig {
-    BatchConfigBuilder::default()
+    let builder = BatchConfigBuilder::default()
         .with_max_queue_size(cfg.max_queue_size)
         .with_max_export_batch_size(cfg.max_export_batch_size)
-        .with_scheduled_delay(Duration::from_millis(cfg.scheduled_delay_ms))
-        .build()
+        .with_scheduled_delay(Duration::from_millis(cfg.scheduled_delay_ms));
+
+    #[cfg(feature = "opentelemetry_sdk/experimental_trace_batch_span_processor_with_async_runtime")]
+    let builder = builder.with_max_export_timeout(Duration::from_millis(cfg.export_timeout_ms));
+
+    builder.build()
 }
 
 #[cfg(feature = "grpc-tonic")]
