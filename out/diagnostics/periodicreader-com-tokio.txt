@@ -1,0 +1,7 @@
+src/telemetry_metrics_otlp.rs:4:use opentelemetry_sdk::metrics::{PeriodicReader, SdkMeterProvider};
+src/telemetry_metrics_otlp.rs:274:) -> PeriodicReader<opentelemetry_otlp::MetricExporter> {
+src/telemetry_metrics_otlp.rs:277:    PeriodicReader::builder(exporter)
+src/bin/obs_demo.rs:18:    metrics::{PeriodicReader, SdkMeterProvider},
+src/bin/obs_demo.rs:178:            let reader = PeriodicReader::builder(exporter)
+src/telemetry.rs:18:    metrics::{PeriodicReader, SdkMeterProvider},
+src/telemetry.rs:98:    let reader = PeriodicReader::builder(metric_exporter)

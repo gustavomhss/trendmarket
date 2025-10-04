@@ -1,0 +1,4 @@
+tests/obs_policy_lints_tests.rs:149:        if let Some(number) = serde_json::Number::from_u128(value as u128) {
+tests/telemetry_spans_cdc_tests.rs:125:        Value::F64(v) => serde_json::Number::from_f64(*v)
+src/telemetry_logs.rs:425:        if let Some(number) = serde_json::Number::from_f64(value) {
+src/obs_policy_lints.rs:142:        if let Some(number) = serde_json::Number::from_u128(value as u128) {
