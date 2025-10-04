@@ -501,13 +501,6 @@ dependencies = [
  "want",
 ]
 
-[[package]]
-name = "hyper-timeout"
-version = "0.5.0"
-dependencies = [
- "http",
- "tower-service",
-]
 
 [[package]]
 name = "hyper-util"
