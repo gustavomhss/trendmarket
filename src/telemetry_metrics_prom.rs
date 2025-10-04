@@ -24,14 +24,18 @@ pub struct PromServerConfig {
     pub addr: String,
 }
 
+#[derive(Clone)]
 pub struct PromExporter {
-    pub registry: prometheus::Registry,
-    provider: Arc<SdkMeterProvider>,
+    exporter: opentelemetry_prometheus::PrometheusExporter,
 }
 
 impl PromExporter {
     pub fn meter_provider(&self) -> Arc<SdkMeterProvider> {
-        Arc::clone(&self.provider)
+        self.exporter.provider()
+    }
+
+    fn registry(&self) -> &prometheus::Registry {
+        self.exporter.registry()
     }
 }
 
@@ -79,20 +83,12 @@ impl Drop for PromServerGuard {
 }
 
 pub fn init_prom_exporter() -> PromExporter {
-    let registry = prometheus::Registry::new();
     let exporter = opentelemetry_prometheus::exporter()
-        .with_registry(registry.clone())
+        .with_registry(prometheus::Registry::new())
         .build()
         .expect("failed to build Prometheus exporter");
-    let meter_provider = Arc::new(SdkMeterProvider::builder().with_reader(reader).build());
 
-    let provider = Arc::new(
-        SdkMeterProvider::builder()
-            .with_reader(exporter)
-            .build(),
-    );
-
-    PromExporter { registry, provider }
+    PromExporter { exporter }
 }
 
 pub async fn spawn_metrics_http(
@@ -189,7 +185,7 @@ async fn handle_request(
 }
 
 fn gather_and_encode(exporter: &PromExporter) -> Result<Vec<u8>, String> {
-    let metric_families = exporter.registry.gather();
+    let metric_families = exporter.registry().gather();
     let mut buffer = Vec::new();
     let encoder = TextEncoder::new();
     encoder
