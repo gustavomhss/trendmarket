@@ -2,6 +2,7 @@
 
 use std::{collections::HashMap, time::Duration};
 
+use crate::otlp_exporter as opentelemetry_otlp;
 use ::opentelemetry_otlp::WithExportConfig;
 use opentelemetry::{metrics::MeterProvider as _, KeyValue};
 use opentelemetry_otlp::WithExportConfig;
