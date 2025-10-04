@@ -9,6 +9,12 @@ use opentelemetry_sdk::Resource;
 use thiserror::Error;
 use tracing::warn;
 
+use self::opentelemetry_otlp::WithExportConfig;
+
+mod opentelemetry_otlp {
+    pub use ::opentelemetry_otlp::*;
+    pub use ::opentelemetry_otlp::WithExportConfig;
+}
 use opentelemetry_sdk::metrics::{PeriodicReader, SdkMeterProvider};
 use opentelemetry_sdk::Resource;
 use thiserror::Error;
@@ -237,6 +243,11 @@ fn build_otlp_exporter(
                 builder
                     .build()
         OtlpProtocol::Grpc => Err(MetricsInitError::OtlpBuildError(
+            if cfg!(feature = "metrics-otlp-grpc") {
+                "gRPC metrics exporter support is not available in this build".into()
+            } else {
+                "gRPC metrics exporter support is not enabled (enable the `metrics-otlp-grpc` feature)".into()
+            },
             "gRPC metrics exporter support is not enabled (enable the `metrics-otlp-grpc` feature)"
                 .into(),
         )),

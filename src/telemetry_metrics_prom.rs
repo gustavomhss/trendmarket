@@ -10,7 +10,8 @@ use hyper_util::{
     rt::{TokioExecutor, TokioIo},
     server::conn::auto::Builder as HyperBuilder,
 };
-use prometheus::{Encoder, TextEncoder};
+use opentelemetry_prometheus::PrometheusExporter as OtelPromExporter;
+use prometheus::{Registry, TextEncoder};
 use tokio::net::TcpListener;
 use tokio::runtime::Handle;
 use tokio::sync::oneshot;
@@ -25,13 +26,16 @@ pub struct PromServerConfig {
 }
 
 pub struct PromExporter {
-    pub registry: prometheus::Registry,
-    provider: Arc<SdkMeterProvider>,
+    inner: OtelPromExporter,
 }
 
 impl PromExporter {
     pub fn meter_provider(&self) -> Arc<SdkMeterProvider> {
-        Arc::clone(&self.provider)
+        self.inner.provider()
+    }
+
+    fn registry(&self) -> &Registry {
+        self.inner.registry()
     }
 }
 
@@ -79,6 +83,10 @@ impl Drop for PromServerGuard {
 }
 
 pub fn init_prom_exporter() -> PromExporter {
+    let exporter = opentelemetry_prometheus::exporter()
+        .with_registry(Registry::new())
+        .build()
+        .expect("failed to build Prometheus exporter");
     let registry = prometheus::Registry::new();
     let provider = Arc::new(
         SdkMeterProvider::builder()
@@ -98,7 +106,7 @@ pub fn init_prom_exporter() -> PromExporter {
     let provider = Arc::new(SdkMeterProvider::builder().with_reader(reader).build());
     let provider = Arc::new(SdkMeterProvider::builder().with_reader(exporter).build());
 
-    PromExporter { registry, provider }
+    PromExporter { inner: exporter }
 }
 
 pub async fn spawn_metrics_http(
@@ -195,7 +203,7 @@ async fn handle_request(
 }
 
 fn gather_and_encode(exporter: &PromExporter) -> Result<Vec<u8>, String> {
-    let metric_families = exporter.registry.gather();
+    let metric_families = exporter.registry().gather();
     let mut buffer = Vec::new();
     let encoder = TextEncoder::new();
     encoder
