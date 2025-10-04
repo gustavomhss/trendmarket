@@ -17,10 +17,30 @@ use opentelemetry_sdk::metrics::{PeriodicReader, SdkMeterProvider};
 use opentelemetry_sdk::Resource;
 use thiserror::Error;
 
+        pub fn build_metric_exporter(self) -> Result<MetricExporter, ExporterBuildError> {
+            match self.kind.unwrap_or(ExporterKind::Http) {
+                ExporterKind::Grpc => Err(ExporterBuildError::InternalFailure(
+                    "gRPC metrics exporter support is not enabled".into(),
+                )),
+                ExporterKind::Http => {
+                    let mut builder = ::opentelemetry_otlp::MetricExporter::builder().with_http();
+                    if let Some(endpoint) = self.endpoint {
+                        builder = builder.with_endpoint(endpoint);
+                    }
+                    if let Some(timeout) = self.timeout {
+                        builder = builder.with_timeout(timeout);
+                    }
+                    builder.build()
+                }
+            }
+        }
+    }
 use ::opentelemetry_otlp::WithExportConfig;
 use tracing::warn;
 
 use self::opentelemetry_otlp::WithExportConfig;
+
+use ::opentelemetry_otlp::WithExportConfig;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ObsLevel {
