@@ -54,4 +54,7 @@ harness = false
 
 [features]
 obs = ["metrics-exporter-prometheus"]
-metrics-otlp-grpc = []
+metrics-otlp-grpc = ["opentelemetry-otlp/grpc-tonic"]
+
+[patch.crates-io]
+hyper-timeout = { path = "vendor/hyper-timeout" }
