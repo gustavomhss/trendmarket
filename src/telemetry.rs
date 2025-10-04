@@ -74,8 +74,110 @@ use opentelemetry_sdk::{
     resource::Resource,
     trace::SdkTracerProvider,
 };
+use otlp_exporter::new_exporter;
 use tracing::Level;
 use tracing_subscriber::{layer::SubscriberExt, EnvFilter, Registry};
+
+use self::otlp_exporter_compat as opentelemetry_otlp;
+mod otlp_exporter {
+    use std::mem;
+    use std::time::Duration;
+
+    use opentelemetry_sdk::metrics::Temporality;
+
+    use ::opentelemetry_otlp::WithExportConfig;
+
+    pub struct ExporterBuilderCompat;
+
+    pub fn new_exporter() -> ExporterBuilderCompat {
+        ExporterBuilderCompat
+    }
+
+    pub struct HttpExporterBuilderCompat {
+        builder: ::opentelemetry_otlp::HttpExporterBuilder,
+        temporality: Temporality,
+    }
+
+    #[cfg(feature = "metrics-otlp-grpc")]
+    pub struct TonicExporterBuilderCompat {
+        builder: ::opentelemetry_otlp::TonicExporterBuilder,
+        temporality: Temporality,
+    }
+
+    impl ExporterBuilderCompat {
+        pub fn http(self) -> HttpExporterBuilderCompat {
+            HttpExporterBuilderCompat {
+                builder: ::opentelemetry_otlp::HttpExporterBuilder::default(),
+                temporality: Temporality::Cumulative,
+            }
+        }
+
+        #[cfg(feature = "metrics-otlp-grpc")]
+        pub fn tonic(self) -> TonicExporterBuilderCompat {
+            TonicExporterBuilderCompat {
+                builder: ::opentelemetry_otlp::TonicExporterBuilder::default(),
+                temporality: Temporality::Cumulative,
+            }
+        }
+    }
+
+    impl HttpExporterBuilderCompat {
+        pub fn with_endpoint(mut self, endpoint: String) -> Self {
+            let builder = mem::take(&mut self.builder).with_endpoint(endpoint);
+            self.builder = builder;
+            self
+        }
+
+        pub fn with_timeout(mut self, timeout: Duration) -> Self {
+            let builder = mem::take(&mut self.builder).with_timeout(timeout);
+            self.builder = builder;
+            self
+        }
+
+        pub fn build_span_exporter(
+            self,
+        ) -> Result<::opentelemetry_otlp::SpanExporter, ::opentelemetry_otlp::ExporterBuildError>
+        {
+            self.builder.build_span_exporter()
+        }
+
+        pub fn build_metrics_exporter(
+            self,
+        ) -> Result<::opentelemetry_otlp::MetricExporter, ::opentelemetry_otlp::ExporterBuildError>
+        {
+            self.builder.build_metrics_exporter(self.temporality)
+        }
+    }
+
+    #[cfg(feature = "metrics-otlp-grpc")]
+    impl TonicExporterBuilderCompat {
+        pub fn with_endpoint(mut self, endpoint: String) -> Self {
+            let builder = mem::take(&mut self.builder).with_endpoint(endpoint);
+            self.builder = builder;
+            self
+        }
+
+        pub fn with_timeout(mut self, timeout: Duration) -> Self {
+            let builder = mem::take(&mut self.builder).with_timeout(timeout);
+            self.builder = builder;
+            self
+        }
+
+        pub fn build_span_exporter(
+            self,
+        ) -> Result<::opentelemetry_otlp::SpanExporter, ::opentelemetry_otlp::ExporterBuildError>
+        {
+            self.builder.build_span_exporter()
+        }
+
+        pub fn build_metrics_exporter(
+            self,
+        ) -> Result<::opentelemetry_otlp::MetricExporter, ::opentelemetry_otlp::ExporterBuildError>
+        {
+            self.builder.build_metrics_exporter(self.temporality)
+        }
+    }
+}
 
 pub struct Telemetry {
     pub tracer_provider: SdkTracerProvider,
@@ -132,6 +234,15 @@ pub fn init(service_name: &str) -> Result<Telemetry> {
     let span_exporter = opentelemetry_otlp::new_exporter()
         .http()
         .with_endpoint(traces_endpoint.clone())
+    let trace_protocol = select_otlp_protocol("OTEL_EXPORTER_OTLP_TRACES_PROTOCOL");
+    let trace_exporter_builder = match trace_protocol {
+        OtlpProtocol::Grpc => opentelemetry_otlp::new_exporter().tonic(),
+        OtlpProtocol::Http => opentelemetry_otlp::new_exporter().http(),
+    };
+    let span_exporter = trace_exporter_builder
+    let span_exporter = new_exporter()
+        .http()
+        .with_endpoint(traces_endpoint)
         .with_timeout(traces_timeout)
         .build_span_exporter()?;
 
@@ -148,6 +259,20 @@ pub fn init(service_name: &str) -> Result<Telemetry> {
         .with_endpoint(metrics_endpoint.clone())
         .with_timeout(metrics_timeout)
         .build_metrics_exporter(Temporality::Cumulative)?;
+    let metrics_protocol = select_otlp_protocol("OTEL_EXPORTER_OTLP_METRICS_PROTOCOL");
+    let metric_exporter_builder = match metrics_protocol {
+        OtlpProtocol::Grpc => opentelemetry_otlp::new_exporter().tonic(),
+        OtlpProtocol::Http => opentelemetry_otlp::new_exporter().http(),
+    };
+    let metric_exporter = metric_exporter_builder
+        .with_endpoint(metrics_endpoint)
+        .with_timeout(metrics_timeout)
+        .build_metric_exporter()?;
+    let metric_exporter = new_exporter()
+        .http()
+        .with_endpoint(metrics_endpoint)
+        .with_timeout(metrics_timeout)
+        .build_metrics_exporter()?;
 
     let reader = PeriodicReader::builder(metric_exporter)
         .with_interval(Duration::from_secs(10))
@@ -195,6 +320,34 @@ pub fn init(service_name: &str) -> Result<Telemetry> {
     })
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum OtlpProtocol {
+    Grpc,
+    Http,
+}
+
+fn select_otlp_protocol(specific_env_var: &str) -> OtlpProtocol {
+    env_otlp_protocol(specific_env_var)
+        .or_else(|| env_otlp_protocol("OTEL_EXPORTER_OTLP_PROTOCOL"))
+        .unwrap_or(OtlpProtocol::Http)
+}
+
+fn env_otlp_protocol(var: &str) -> Option<OtlpProtocol> {
+    std::env::var(var)
+        .ok()
+        .and_then(|value| parse_otlp_protocol(&value))
+}
+
+fn parse_otlp_protocol(raw: &str) -> Option<OtlpProtocol> {
+    let normalized = raw.trim().to_ascii_lowercase();
+    match normalized.as_str() {
+        "grpc" => Some(OtlpProtocol::Grpc),
+        "http" | "http/proto" | "http/protobuf" | "http-proto" | "http-protobuf" | "http_json"
+        | "http/json" => Some(OtlpProtocol::Http),
+        _ => None,
+    }
+}
+
 fn env_timeout(var: &str) -> Option<Duration> {
     std::env::var(var).ok().and_then(|value| {
         let trimmed = value.trim();
@@ -219,6 +372,124 @@ pub fn make_info_span(name: &str, op_id: u32, component: &str) -> tracing::Span 
         op_id = op_id,
         component = component
     )
+}
+
+mod otlp_exporter_compat {
+    use std::time::Duration;
+
+    use ::opentelemetry_otlp::{
+        ExporterBuildError, MetricExporter, SpanExporter, WithExportConfig,
+    };
+
+    #[derive(Clone, Copy)]
+    enum ExporterKind {
+        Grpc,
+        Http,
+    }
+
+    pub struct ExporterBuilderCompat {
+        kind: Option<ExporterKind>,
+        endpoint: Option<String>,
+        timeout: Option<Duration>,
+    }
+
+    impl ExporterBuilderCompat {
+        pub fn tonic(mut self) -> Self {
+            self.kind = Some(ExporterKind::Grpc);
+            self
+        }
+
+        pub fn http(mut self) -> Self {
+            self.kind = Some(ExporterKind::Http);
+            self
+        }
+
+        pub fn with_endpoint(mut self, endpoint: String) -> Self {
+            self.endpoint = Some(endpoint);
+            self
+        }
+
+        pub fn with_timeout(mut self, timeout: Duration) -> Self {
+            self.timeout = Some(timeout);
+            self
+        }
+
+        pub fn build_span_exporter(self) -> Result<SpanExporter, ExporterBuildError> {
+            match self.kind.unwrap_or(ExporterKind::Http) {
+                ExporterKind::Grpc => {
+                    #[cfg(feature = "metrics-otlp-grpc")]
+                    {
+                        let mut builder = SpanExporter::builder().with_tonic();
+                        if let Some(endpoint) = self.endpoint {
+                            builder = builder.with_endpoint(endpoint);
+                        }
+                        if let Some(timeout) = self.timeout {
+                            builder = builder.with_timeout(timeout);
+                        }
+                        builder.build()
+                    }
+                    #[cfg(not(feature = "metrics-otlp-grpc"))]
+                    {
+                        Err(ExporterBuildError::InternalFailure(
+                            "gRPC trace exporter support is not enabled".into(),
+                        ))
+                    }
+                }
+                ExporterKind::Http => {
+                    let mut builder = SpanExporter::builder().with_http();
+                    if let Some(endpoint) = self.endpoint {
+                        builder = builder.with_endpoint(endpoint);
+                    }
+                    if let Some(timeout) = self.timeout {
+                        builder = builder.with_timeout(timeout);
+                    }
+                    builder.build()
+                }
+            }
+        }
+
+        pub fn build_metric_exporter(self) -> Result<MetricExporter, ExporterBuildError> {
+            match self.kind.unwrap_or(ExporterKind::Http) {
+                ExporterKind::Grpc => {
+                    #[cfg(feature = "metrics-otlp-grpc")]
+                    {
+                        let mut builder = MetricExporter::builder().with_tonic();
+                        if let Some(endpoint) = self.endpoint {
+                            builder = builder.with_endpoint(endpoint);
+                        }
+                        if let Some(timeout) = self.timeout {
+                            builder = builder.with_timeout(timeout);
+                        }
+                        builder.build()
+                    }
+                    #[cfg(not(feature = "metrics-otlp-grpc"))]
+                    {
+                        Err(ExporterBuildError::InternalFailure(
+                            "gRPC metrics exporter support is not enabled".into(),
+                        ))
+                    }
+                }
+                ExporterKind::Http => {
+                    let mut builder = MetricExporter::builder().with_http();
+                    if let Some(endpoint) = self.endpoint {
+                        builder = builder.with_endpoint(endpoint);
+                    }
+                    if let Some(timeout) = self.timeout {
+                        builder = builder.with_timeout(timeout);
+                    }
+                    builder.build()
+                }
+            }
+        }
+    }
+
+    pub fn new_exporter() -> ExporterBuilderCompat {
+        ExporterBuilderCompat {
+            kind: None,
+            endpoint: None,
+            timeout: None,
+        }
+    }
 }
 
 #[cfg(feature = "obs")]
