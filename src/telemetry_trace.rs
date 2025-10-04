@@ -1,3 +1,5 @@
+#![allow(unexpected_cfgs)]
+
 use std::collections::HashMap;
 use std::fmt;
 use std::panic;
@@ -232,6 +234,30 @@ fn build_batch_config(cfg: &TraceConfig) -> BatchConfig {
         .with_max_export_batch_size(cfg.max_export_batch_size)
         .with_scheduled_delay(Duration::from_millis(cfg.scheduled_delay_ms))
         .build()
+}
+
+#[cfg(feature = "grpc-tonic")]
+fn build_grpc_exporter(endpoint: &str, timeout: Duration) -> Result<OtlpSpanExporter, TraceInitError> {
+    opentelemetry_otlp::TonicExporterBuilder::default()
+        .with_endpoint(endpoint.to_string())
+        .with_timeout(timeout)
+        .build_span_exporter()
+        .map_err(|err| TraceInitError::OtlpBuildError(err.to_string()))
+}
+
+#[cfg(not(feature = "grpc-tonic"))]
+fn build_grpc_exporter(_endpoint: &str, _timeout: Duration) -> Result<OtlpSpanExporter, TraceInitError> {
+    Err(TraceInitError::OtlpBuildError(
+        "opentelemetry-otlp built without gRPC support".to_string(),
+    ))
+}
+
+fn build_http_exporter(endpoint: &str, timeout: Duration) -> Result<OtlpSpanExporter, TraceInitError> {
+    opentelemetry_otlp::HttpExporterBuilder::default()
+        .with_endpoint(endpoint.to_string())
+        .with_timeout(timeout)
+        .build_span_exporter()
+        .map_err(|err| TraceInitError::OtlpBuildError(err.to_string()))
 }
 
 fn build_resource(pairs: ResourcePairs) -> Result<Resource, TraceInitError> {
