@@ -134,8 +134,13 @@ struct CollectVisitor {
 
 impl tracing_core::field::Visit for CollectVisitor {
     fn record_i64(&mut self, field: &tracing_core::Field, value: i64) {
-        self.values
-            .insert(field.name().to_string(), Value::Number(value.into()));
+        if let Some(number) = serde_json::Number::from_i128(value as i128) {
+            self.values
+                .insert(field.name().to_string(), Value::Number(number));
+        } else {
+            self.values
+                .insert(field.name().to_string(), Value::String(value.to_string()));
+        }
     }
 
     fn record_u64(&mut self, field: &tracing_core::Field, value: u64) {
@@ -143,10 +148,8 @@ impl tracing_core::field::Visit for CollectVisitor {
             self.values
                 .insert(field.name().to_string(), Value::Number(number));
         } else {
-            self.values.insert(
-                field.name().to_string(),
-                Value::String(value.to_string()),
-            );
+            self.values
+                .insert(field.name().to_string(), Value::String(value.to_string()));
         }
     }
 
