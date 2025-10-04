@@ -90,6 +90,13 @@ pub fn init_prom_exporter() -> PromExporter {
             )
             .build(),
     );
+    let reader = opentelemetry_prometheus::exporter()
+        .with_registry(registry.clone())
+        .build()
+        .expect("failed to build Prometheus exporter");
+
+    let provider = Arc::new(SdkMeterProvider::builder().with_reader(reader).build());
+    let provider = Arc::new(SdkMeterProvider::builder().with_reader(exporter).build());
 
     PromExporter { registry, provider }
 }
