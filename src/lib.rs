@@ -2,6 +2,7 @@
 pub mod amm; // existe
 pub mod ce_core; // expõe o namespace ce_core
 
+// Telemetry modules (auto-exported from src diagnostics)
 pub mod telemetry;
 pub mod telemetry_cfg;
 pub mod telemetry_contract;
