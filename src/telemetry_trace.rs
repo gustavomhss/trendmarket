@@ -327,6 +327,8 @@ fn build_otlp_exporter(
         OtlpProtocol::Grpc => {
             #[cfg(feature = "metrics-otlp-grpc")]
             {
+                opentelemetry_otlp::TonicExporterBuilder::default()
+                    .with_endpoint(endpoint.to_string())
                 opentelemetry_otlp::new_exporter()
                     .tonic()
                     .with_endpoint(endpoint.to_string())
@@ -344,6 +346,7 @@ fn build_otlp_exporter(
                 ))
             }
         }
+        OtlpProtocol::Http => opentelemetry_otlp::HttpExporterBuilder::default()
         OtlpProtocol::Http => opentelemetry_otlp::new_exporter()
             .http()
             .with_endpoint(endpoint.to_string())

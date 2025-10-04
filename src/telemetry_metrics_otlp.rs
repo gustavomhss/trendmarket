@@ -1,6 +1,8 @@
 use std::{collections::HashMap, time::Duration};
 
 use opentelemetry::{metrics::MeterProvider as _, KeyValue};
+use opentelemetry_otlp::WithExportConfig;
+use opentelemetry_sdk::metrics::{PeriodicReader, SdkMeterProvider, Temporality};
 use opentelemetry_otlp::{MetricExporter, WithExportConfig};
 use opentelemetry_sdk::metrics::{PeriodicReader, SdkMeterProvider};
 use opentelemetry_sdk::Resource;
@@ -190,6 +192,10 @@ fn build_otlp_exporter(
         OtlpProtocol::Grpc => {
             #[cfg(feature = "metrics-otlp-grpc")]
             {
+                opentelemetry_otlp::TonicExporterBuilder::default()
+                    .with_endpoint(endpoint.to_string())
+                    .with_timeout(timeout)
+                    .build_metrics_exporter(Temporality::Cumulative)
                 MetricExporter::builder()
                     .with_tonic()
                     .with_endpoint(endpoint.to_string())
@@ -234,6 +240,10 @@ fn build_otlp_exporter(
                 ))
             }
         }
+        OtlpProtocol::Http => opentelemetry_otlp::HttpExporterBuilder::default()
+            .with_endpoint(endpoint.to_string())
+            .with_timeout(timeout)
+            .build_metrics_exporter(Temporality::Cumulative)
         OtlpProtocol::Http => {
             let mut builder = MetricExporter::builder().with_http();
             builder = builder.with_endpoint(endpoint.to_string());
