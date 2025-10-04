@@ -80,6 +80,16 @@ impl Drop for PromServerGuard {
 
 pub fn init_prom_exporter() -> PromExporter {
     let registry = prometheus::Registry::new();
+    let provider = Arc::new(
+        SdkMeterProvider::builder()
+            .with_reader(
+                opentelemetry_prometheus::exporter()
+                    .with_registry(registry.clone())
+                    .build()
+                    .expect("failed to build Prometheus exporter"),
+            )
+            .build(),
+    );
     let reader = opentelemetry_prometheus::exporter()
         .with_registry(registry.clone())
         .build()
