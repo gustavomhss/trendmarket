@@ -90,6 +90,8 @@ mod opentelemetry_otlp {
     }
 }
 
+use self::opentelemetry_otlp::WithExportConfig;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ObsLevel {
     Off,
