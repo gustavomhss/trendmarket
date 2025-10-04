@@ -12,7 +12,7 @@ hyper = { version = "1", features = ["http1", "server"] }
 hyper-util = { version = "0.1", features = ["server", "http1", "tokio"] }
 httpdate = { version = "1", path = "vendor/httpdate" }
 opentelemetry = { version = "0.29.1", features = ["trace", "metrics"] }
-opentelemetry-otlp = { version = "0.29", features = ["http-proto"] }
+opentelemetry-otlp = { version = "0.29", default-features = false, features = ["http-proto"] }
 opentelemetry_sdk = { version = "0.29.0", features = ["metrics", "rt-tokio"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "io-util"] }
 tracing = "0.1"
@@ -54,4 +54,4 @@ harness = false
 
 [features]
 obs = ["metrics-exporter-prometheus"]
-metrics-otlp-grpc = []
+metrics-otlp-grpc = ["opentelemetry-otlp/grpc-tonic"]
