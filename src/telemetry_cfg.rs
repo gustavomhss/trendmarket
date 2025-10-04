@@ -1,5 +1,6 @@
 use std::env::{self, VarError};
 use std::fmt;
+use std::time::Duration;
 
 const DEFAULT_SERVICE_NAME: &str = "ce-amm";
 const DEFAULT_SERVICE_VERSION: &str = "0.0.0-dev";
@@ -12,6 +13,8 @@ const SERVICE_VERSION_EXPECTED: &str = "non-empty version string up to 64 charac
 const METRICS_ADDR_EXPECTED: &str =
     "host:port with host as IPv4 or alphanumeric/._- and port between 10 and 65535";
 const OTLP_ENDPOINT_EXPECTED: &str = "URL starting with http:// or https:// followed by host:port";
+const OTLP_TIMEOUT_EXPECTED: &str =
+    "positive integer number of milliseconds (OTLP exporter timeout)";
 const LOG_LEVEL_EXPECTED: &str = "one of trace, debug, info, warn, error";
 const BOOL_EXPECTED: &str = "one of on, off, true, false, 1, 0";
 
@@ -81,6 +84,7 @@ pub struct TelemetryConfig {
     pub prom_scrape: bool,
     pub metrics_http_addr: String,
     pub otlp_endpoint: Option<String>,
+    pub otlp_timeout: Duration,
     pub log_level: String,
     pub deny_dynamic_labels: bool,
 }
@@ -104,6 +108,7 @@ pub struct TelemetryConfigBuilder {
     prom_scrape: Option<bool>,
     metrics_http_addr: Option<String>,
     otlp_endpoint: Option<Option<String>>,
+    otlp_timeout: Option<Duration>,
     log_level: Option<String>,
     deny_dynamic_labels: Option<bool>,
 }
@@ -144,6 +149,11 @@ impl TelemetryConfigBuilder {
         self
     }
 
+    pub fn with_otlp_timeout(mut self, value: Duration) -> Self {
+        self.otlp_timeout = Some(value);
+        self
+    }
+
     pub fn with_log_level<S: Into<String>>(mut self, value: S) -> Self {
         self.log_level = Some(value.into());
         self
@@ -162,6 +172,7 @@ impl TelemetryConfigBuilder {
         let prom_scrape = resolve_bool(self.prom_scrape, EnvKey::new("PROM_SCRAPE", false))?;
         let metrics_http_addr = resolve_metrics_http_addr(self.metrics_http_addr)?;
         let otlp_endpoint = resolve_otlp_endpoint(self.otlp_endpoint)?;
+        let otlp_timeout = resolve_otlp_timeout(self.otlp_timeout)?;
         let log_level = resolve_log_level(self.log_level)?;
         let deny_dynamic_labels = resolve_bool(
             self.deny_dynamic_labels,
@@ -176,6 +187,7 @@ impl TelemetryConfigBuilder {
             prom_scrape,
             metrics_http_addr,
             otlp_endpoint,
+            otlp_timeout,
             log_level,
             deny_dynamic_labels,
         })
@@ -367,6 +379,30 @@ fn resolve_otlp_endpoint(
     }
 }
 
+fn resolve_otlp_timeout(builder_value: Option<Duration>) -> Result<Duration, TelemetryError> {
+    if let Some(value) = builder_value {
+        if value.is_zero() {
+            return Err(TelemetryError::InvalidBuilderValue {
+                field: "otlp_timeout",
+                message: format!("{OTLP_TIMEOUT_EXPECTED}; received '0'"),
+            });
+        }
+        return Ok(value);
+    }
+
+    match read_env("OTEL_EXPORTER_OTLP_TIMEOUT")? {
+        Some(raw) => {
+            let duration =
+                parse_timeout_ms(&raw).map_err(|msg| TelemetryError::InvalidEnvValue {
+                    var: "OTEL_EXPORTER_OTLP_TIMEOUT",
+                    message: format!("{msg}; received '{raw}'"),
+                })?;
+            Ok(duration)
+        }
+        None => Ok(Duration::from_secs(10)),
+    }
+}
+
 fn resolve_log_level(builder_value: Option<String>) -> Result<String, TelemetryError> {
     if let Some(value) = builder_value {
         let trimmed = value.trim();
@@ -512,6 +548,20 @@ fn validate_hostname(value: &str) -> bool {
         && value
             .chars()
             .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.'))
+}
+
+fn parse_timeout_ms(value: &str) -> Result<Duration, &'static str> {
+    if value.is_empty() {
+        return Err(OTLP_TIMEOUT_EXPECTED);
+    }
+
+    let parsed: u64 = value.parse().map_err(|_| OTLP_TIMEOUT_EXPECTED)?;
+
+    if parsed == 0 {
+        return Err(OTLP_TIMEOUT_EXPECTED);
+    }
+
+    Ok(Duration::from_millis(parsed))
 }
 
 fn parse_bool(value: &str) -> Result<bool, ()> {
