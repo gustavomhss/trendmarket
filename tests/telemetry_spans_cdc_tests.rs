@@ -121,7 +121,9 @@ fn expect_invalid(attrs: CdcConsumeAttrs, needle: &str) {
 fn otel_value_to_json(value: &Value) -> JsonValue {
     match value {
         Value::Bool(v) => JsonValue::Bool(*v),
-        Value::I64(v) => JsonValue::Number((*v).into()),
+        Value::I64(v) => serde_json::Number::from_i128((*v) as i128)
+            .map(JsonValue::Number)
+            .unwrap_or_else(|| JsonValue::String(v.to_string())),
         Value::F64(v) => serde_json::Number::from_f64(*v)
             .map(JsonValue::Number)
             .unwrap_or(JsonValue::Null),
