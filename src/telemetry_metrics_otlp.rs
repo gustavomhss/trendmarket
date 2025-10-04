@@ -2,9 +2,7 @@ use std::{collections::HashMap, time::Duration};
 
 use opentelemetry::{metrics::MeterProvider as _, KeyValue};
 use opentelemetry_otlp::WithExportConfig;
-use opentelemetry_sdk::metrics::{
-    periodic_reader_with_async_runtime::PeriodicReader, SdkMeterProvider,
-};
+use opentelemetry_sdk::metrics::{reader::PeriodicReader, SdkMeterProvider};
 use opentelemetry_sdk::runtime::Tokio;
 use opentelemetry_sdk::Resource;
 use thiserror::Error;
