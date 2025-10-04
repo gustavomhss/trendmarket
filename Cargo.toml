@@ -15,6 +15,10 @@ metrics = { version = "0.21", path = "vendor/metrics" }
 metrics-exporter-prometheus = { version = "0.13", optional = true, path = "vendor/metrics-exporter-prometheus" }
 once_cell = "1"
 opentelemetry = { version = "0.29.1", features = ["trace", "metrics"] }
+opentelemetry-otlp = { version = "0.29", default-features = false, features = ["grpc-tonic", "http-proto"] }
+opentelemetry-prometheus = { version = "0.29.1", path = "vendor/opentelemetry-prometheus" }
+opentelemetry_sdk = { version = "0.29.0", features = ["trace", "metrics", "rt-tokio"] }
+prometheus = { version = "0.14", path = "vendor/prometheus" }
 opentelemetry-otlp = { version = "0.29", default-features = false, features = ["http-proto"] }
 opentelemetry-prometheus = { version = "0.29.1", path = "vendor/opentelemetry-prometheus" }
 opentelemetry_sdk = { version = "0.29.0", features = ["metrics", "rt-tokio"] }
