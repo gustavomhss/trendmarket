@@ -13,6 +13,7 @@ use opentelemetry::{
     trace::TracerProvider as _,
     KeyValue,
 };
+use opentelemetry_otlp::{ExportConfig, MetricExporter, SpanExporter, WithExportConfig};
 mod opentelemetry_otlp {
     pub use ::opentelemetry_otlp::*;
 
@@ -231,6 +232,14 @@ pub fn init(service_name: &str) -> Result<Telemetry> {
         .build();
 
     // ---- Traces (OTLP/HTTP) ----
+    let span_exporter = SpanExporter::builder()
+        .with_http()
+        .with_export_config(ExportConfig {
+            endpoint: Some(traces_endpoint),
+            timeout: Some(traces_timeout),
+            ..Default::default()
+        })
+        .build()?;
     let span_exporter = opentelemetry_otlp::new_exporter()
         .http()
         .with_endpoint(traces_endpoint.clone())
@@ -254,6 +263,14 @@ pub fn init(service_name: &str) -> Result<Telemetry> {
     let tracer = tracer_provider.tracer("ce_core");
 
     // ---- Métricas (OTLP/HTTP) ----
+    let metric_exporter = MetricExporter::builder()
+        .with_http()
+        .with_export_config(ExportConfig {
+            endpoint: Some(metrics_endpoint),
+            timeout: Some(metrics_timeout),
+            ..Default::default()
+        })
+        .build()?;
     let metric_exporter = opentelemetry_otlp::new_exporter()
         .http()
         .with_endpoint(metrics_endpoint.clone())

@@ -14,6 +14,83 @@ use ::opentelemetry_otlp::WithExportConfig;
 use thiserror::Error;
 use tracing::warn;
 
+use ::opentelemetry_otlp::WithExportConfig as _;
+
+mod opentelemetry_otlp {
+    use std::time::Duration;
+
+    use ::opentelemetry_otlp::{ExportConfig, WithExportConfig};
+    pub use ::opentelemetry_otlp::*;
+
+    #[derive(Clone, Copy)]
+    enum ExporterKind {
+        Grpc,
+        Http,
+    }
+
+    pub struct MetricExporterBuilderCompat {
+        kind: Option<ExporterKind>,
+        endpoint: Option<String>,
+        timeout: Option<Duration>,
+    }
+
+    fn apply_export_config<B>(
+        builder: B,
+        endpoint: Option<String>,
+        timeout: Option<Duration>,
+    ) -> B
+    where
+        B: WithExportConfig,
+    {
+        if endpoint.is_none() && timeout.is_none() {
+            builder
+        } else {
+            let mut export_config = ExportConfig::default();
+            export_config.endpoint = endpoint;
+            export_config.timeout = timeout;
+            builder.with_export_config(export_config)
+        }
+    }
+
+    impl MetricExporterBuilderCompat {
+        pub fn tonic(mut self) -> Self {
+            self.kind = Some(ExporterKind::Grpc);
+            self
+        }
+
+        pub fn http(mut self) -> Self {
+            self.kind = Some(ExporterKind::Http);
+            self
+        }
+
+        pub fn with_endpoint(mut self, endpoint: String) -> Self {
+            self.endpoint = Some(endpoint);
+            self
+        }
+
+        pub fn with_timeout(mut self, timeout: Duration) -> Self {
+            self.timeout = Some(timeout);
+            self
+        }
+
+        pub fn build_metric_exporter(self) -> Result<MetricExporter, ExporterBuildError> {
+            let MetricExporterBuilderCompat {
+                kind,
+                endpoint,
+                timeout,
+            } = self;
+
+            match (kind.unwrap_or(ExporterKind::Http), endpoint, timeout) {
+                (ExporterKind::Grpc, endpoint, timeout) => {
+                    let _ = endpoint;
+                    let _ = timeout;
+                    Err(ExporterBuildError::InternalFailure(
+                        "gRPC metrics exporter support is not enabled (enable the `metrics-otlp-grpc` feature)".into(),
+                    ))
+                }
+                (ExporterKind::Http, endpoint, timeout) => {
+                    let builder = ::opentelemetry_otlp::MetricExporter::builder().with_http();
+                    let builder = apply_export_config(builder, endpoint, timeout);
 use self::opentelemetry_otlp::WithExportConfig;
 
 mod opentelemetry_otlp {
@@ -305,6 +382,16 @@ fn build_otlp_exporter(
             "gRPC metrics exporter support is not enabled (enable the `metrics-otlp-grpc` feature)"
                 .into(),
         )),
+        OtlpProtocol::Http => {
+            let mut export_config = ::opentelemetry_otlp::ExportConfig::default();
+            export_config.endpoint = Some(endpoint.to_string());
+            export_config.timeout = Some(timeout);
+            ::opentelemetry_otlp::MetricExporter::builder()
+                .with_http()
+                .with_export_config(export_config)
+                .build()
+                .map_err(|err| MetricsInitError::OtlpBuildError(err.to_string()))
+        }
         OtlpProtocol::Http => opentelemetry_otlp::MetricExporter::builder()
             .with_http()
         OtlpProtocol::Grpc => {

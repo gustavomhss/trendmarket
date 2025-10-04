@@ -11,6 +11,7 @@ use opentelemetry::global;
 use opentelemetry::propagation::TextMapCompositePropagator;
 use opentelemetry::trace::TracerProvider;
 use opentelemetry::KeyValue;
+use opentelemetry_otlp::{ExportConfig, SpanExporter as OtlpSpanExporter, WithExportConfig};
 mod opentelemetry_otlp {
     pub use ::opentelemetry_otlp::{SpanExporter, WithExportConfig};
 
@@ -328,6 +329,16 @@ fn build_otlp_exporter(
             "gRPC trace exporter support is not enabled (enable the `metrics-otlp-grpc` feature)"
                 .into(),
         )),
+        OtlpProtocol::Http => {
+            let mut export_config = ExportConfig::default();
+            export_config.endpoint = Some(endpoint.to_string());
+            export_config.timeout = Some(timeout);
+            OtlpSpanExporter::builder()
+                .with_http()
+                .with_export_config(export_config)
+                .build()
+                .map_err(|err| TraceInitError::OtlpBuildError(err.to_string()))
+        }
         OtlpProtocol::Http => OtlpSpanExporter::builder()
             .with_http()
         OtlpProtocol::Grpc => {
@@ -370,13 +381,16 @@ fn build_batch_config(cfg: &TraceConfig) -> BatchConfig {
         .with_scheduled_delay(Duration::from_millis(cfg.scheduled_delay_ms));
 
 #[cfg(feature = "grpc-tonic")]
+fn build_grpc_exporter(endpoint: &str, timeout: Duration) -> Result<OtlpSpanExporter, TraceInitError> {
+    let mut export_config = ExportConfig::default();
+    export_config.endpoint = Some(endpoint.to_string());
+    export_config.timeout = Some(timeout);
 fn build_grpc_exporter(
     endpoint: &str,
     timeout: Duration,
 ) -> Result<OtlpSpanExporter, TraceInitError> {
     opentelemetry_otlp::TonicExporterBuilder::default()
-        .with_endpoint(endpoint.to_string())
-        .with_timeout(timeout)
+        .with_export_config(export_config)
         .build_span_exporter()
         .map_err(|err| TraceInitError::OtlpBuildError(err.to_string()))
 }
@@ -391,13 +405,16 @@ fn build_grpc_exporter(
     ))
 }
 
+fn build_http_exporter(endpoint: &str, timeout: Duration) -> Result<OtlpSpanExporter, TraceInitError> {
+    let mut export_config = ExportConfig::default();
+    export_config.endpoint = Some(endpoint.to_string());
+    export_config.timeout = Some(timeout);
 fn build_http_exporter(
     endpoint: &str,
     timeout: Duration,
 ) -> Result<OtlpSpanExporter, TraceInitError> {
     opentelemetry_otlp::HttpExporterBuilder::default()
-        .with_endpoint(endpoint.to_string())
-        .with_timeout(timeout)
+        .with_export_config(export_config)
         .build_span_exporter()
         .map_err(|err| TraceInitError::OtlpBuildError(err.to_string()))
     #[cfg(feature = "opentelemetry_sdk/experimental_trace_batch_span_processor_with_async_runtime")]
