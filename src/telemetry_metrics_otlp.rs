@@ -5,6 +5,12 @@ use opentelemetry_otlp::{MetricExporter, WithExportConfig};
 use opentelemetry_sdk::metrics::{PeriodicReader, SdkMeterProvider};
 use opentelemetry_sdk::Resource;
 use thiserror::Error;
+use opentelemetry_otlp::WithExportConfig;
+use opentelemetry_sdk::metrics::{PeriodicReader, SdkMeterProvider};
+use opentelemetry_sdk::Resource;
+use thiserror::Error;
+
+use ::opentelemetry_otlp::WithExportConfig;
 use tracing::warn;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -181,6 +187,20 @@ fn build_otlp_exporter(
                 builder = builder.with_timeout(timeout);
                 builder
                     .build()
+        OtlpProtocol::Grpc => Err(MetricsInitError::OtlpBuildError(
+            "gRPC metrics exporter support is not enabled (enable the `metrics-otlp-grpc` feature)"
+                .into(),
+        )),
+        OtlpProtocol::Http => opentelemetry_otlp::MetricExporter::builder()
+            .with_http()
+        OtlpProtocol::Grpc => {
+            #[cfg(feature = "metrics-otlp-grpc")]
+            {
+                opentelemetry_otlp::new_exporter()
+                    .tonic()
+                    .with_endpoint(endpoint.to_string())
+                    .with_timeout(timeout)
+                    .build_metrics_exporter()
                     .map_err(|err| MetricsInitError::OtlpBuildError(err.to_string()))
             }
             #[cfg(not(feature = "metrics-otlp-grpc"))]
@@ -199,6 +219,16 @@ fn build_otlp_exporter(
                 .build()
                 .map_err(|err| MetricsInitError::OtlpBuildError(err.to_string()))
         }
+                    "gRPC metrics exporter support is not enabled (enable the `metrics-otlp-grpc` feature)".into(),
+                ))
+            }
+        }
+        OtlpProtocol::Http => opentelemetry_otlp::new_exporter()
+            .http()
+            .with_endpoint(endpoint.to_string())
+            .with_timeout(timeout)
+            .build_metrics_exporter()
+            .map_err(|err| MetricsInitError::OtlpBuildError(err.to_string())),
     }
 }
 
