@@ -10,8 +10,10 @@ use credit_engine_core::telemetry_metrics_otlp::{
 };
 use opentelemetry::metrics::MeterProvider as _;
 use opentelemetry::KeyValue;
+use opentelemetry_sdk::error::OTelSdkError;
 use opentelemetry_sdk::metrics::{
-    exporter::{Context, MetricsError, PushMetricExporter},
+    data::ResourceMetrics,
+    reader::PushMetricExporter,
     PeriodicReader,
     Temporality,
 };
@@ -33,18 +35,17 @@ impl RecordingExporter {
 impl PushMetricExporter for RecordingExporter {
     fn export(
         &self,
-        _cx: &Context,
-        _metrics: &mut opentelemetry_sdk::metrics::data::ResourceMetrics,
-    ) -> Result<(), MetricsError> {
+        _metrics: &mut ResourceMetrics,
+    ) -> Result<(), OTelSdkError> {
         self.exports.fetch_add(1, Ordering::Relaxed);
         Ok(())
     }
 
-    fn force_flush(&self, _cx: &Context) -> Result<(), MetricsError> {
+    fn force_flush(&self) -> Result<(), OTelSdkError> {
         Ok(())
     }
 
-    fn shutdown(&self, _cx: &Context) -> Result<(), MetricsError> {
+    fn shutdown(&self) -> Result<(), OTelSdkError> {
         Ok(())
     }
 
