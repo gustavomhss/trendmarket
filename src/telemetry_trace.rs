@@ -216,15 +216,18 @@ fn build_otlp_exporter(
 ) -> Result<OtlpSpanExporter, TraceInitError> {
     let timeout = Duration::from_millis(cfg.export_timeout_ms);
     match protocol {
-        OtlpProtocol::Grpc => Err(TraceInitError::OtlpBuildError(
-            "gRPC trace exporter support is not enabled (enable the `metrics-otlp-grpc` feature)".into(),
-        )),
-        OtlpProtocol::Http => OtlpSpanExporter::builder()
-            .with_http()
-            .with_endpoint(endpoint.to_string())
-            .with_timeout(timeout)
-            .build()
-            .map_err(|err| TraceInitError::OtlpBuildError(err.to_string())),
+        OtlpProtocol::Grpc => build_grpc_exporter(endpoint, timeout).map_err(|err| {
+            if let TraceInitError::OtlpBuildError(message) = &err {
+                if message.contains("not enabled") {
+                    return TraceInitError::OtlpBuildError(
+                        "gRPC trace exporter support is not enabled (enable the `metrics-otlp-grpc` feature)"
+                            .into(),
+                    );
+                }
+            }
+            err
+        }),
+        OtlpProtocol::Http => build_http_exporter(endpoint, timeout),
     }
 }
 
@@ -248,7 +251,7 @@ fn build_grpc_exporter(endpoint: &str, timeout: Duration) -> Result<OtlpSpanExpo
 #[cfg(not(feature = "grpc-tonic"))]
 fn build_grpc_exporter(_endpoint: &str, _timeout: Duration) -> Result<OtlpSpanExporter, TraceInitError> {
     Err(TraceInitError::OtlpBuildError(
-        "opentelemetry-otlp built without gRPC support".to_string(),
+        "gRPC trace exporter support is not enabled".to_string(),
     ))
 }
 
