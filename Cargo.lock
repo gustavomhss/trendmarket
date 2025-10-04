@@ -502,14 +502,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "hyper-timeout"
-version = "0.5.0"
-dependencies = [
- "http",
- "tower-service",
-]
-
-[[package]]
 name = "hyper-util"
 version = "0.1.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -880,7 +872,6 @@ dependencies = [
 
 [[package]]
 name = "opentelemetry-prometheus"
-version = "0.29.0"
 version = "0.29.1"
 dependencies = [
  "opentelemetry",
@@ -987,7 +978,6 @@ dependencies = [
 
 [[package]]
 name = "prometheus"
-version = "0.13.0"
 version = "0.14.0"
 
 [[package]]
