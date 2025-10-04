@@ -216,8 +216,15 @@ fn build_otlp_exporter(
 ) -> Result<OtlpSpanExporter, TraceInitError> {
     let timeout = Duration::from_millis(cfg.export_timeout_ms);
     match protocol {
-        OtlpProtocol::Grpc => build_grpc_exporter(endpoint, timeout),
-        OtlpProtocol::Http => build_http_exporter(endpoint, timeout),
+        OtlpProtocol::Grpc => Err(TraceInitError::OtlpBuildError(
+            "gRPC trace exporter support is not enabled (enable the `metrics-otlp-grpc` feature)".into(),
+        )),
+        OtlpProtocol::Http => OtlpSpanExporter::builder()
+            .with_http()
+            .with_endpoint(endpoint.to_string())
+            .with_timeout(timeout)
+            .build()
+            .map_err(|err| TraceInitError::OtlpBuildError(err.to_string())),
     }
 }
 

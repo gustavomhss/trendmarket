@@ -26,12 +26,12 @@ pub struct PromServerConfig {
 
 pub struct PromExporter {
     pub registry: prometheus::Registry,
-    meter_provider: Arc<SdkMeterProvider>,
+    provider: Arc<SdkMeterProvider>,
 }
 
 impl PromExporter {
     pub fn meter_provider(&self) -> Arc<SdkMeterProvider> {
-        Arc::clone(&self.meter_provider)
+        Arc::clone(&self.provider)
     }
 }
 
@@ -80,16 +80,19 @@ impl Drop for PromServerGuard {
 
 pub fn init_prom_exporter() -> PromExporter {
     let registry = prometheus::Registry::new();
-    let reader = opentelemetry_prometheus::exporter()
+    let exporter = opentelemetry_prometheus::exporter()
         .with_registry(registry.clone())
         .build()
         .expect("failed to build Prometheus exporter");
     let meter_provider = Arc::new(SdkMeterProvider::builder().with_reader(reader).build());
 
-    PromExporter {
-        registry,
-        meter_provider,
-    }
+    let provider = Arc::new(
+        SdkMeterProvider::builder()
+            .with_reader(exporter)
+            .build(),
+    );
+
+    PromExporter { registry, provider }
 }
 
 pub async fn spawn_metrics_http(

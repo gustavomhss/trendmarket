@@ -1,7 +1,7 @@
 use once_cell::sync::Lazy;
 use regex::Regex;
 use std::fmt;
-use tracing::{field, Level, Span};
+use tracing::{callsite, field, Level, Span};
 
 const OPERATION_NAME: &str = "cdc_consume";
 const SPAN_NAME: &str = "cdc.consume";
@@ -105,7 +105,17 @@ pub fn span_cdc_consume(attrs: &CdcConsumeAttrs) -> Span {
         panic!("invalid cdc.consume attributes: {}", err);
     }
 
-    let span = tracing::span!(
+    let span = new_span(attrs);
+    if span.is_disabled() {
+        callsite::rebuild_interest_cache();
+        return new_span(attrs);
+    }
+
+    span
+}
+
+fn new_span(attrs: &CdcConsumeAttrs) -> Span {
+    tracing::span!(
         target: "obs.cdc",
         Level::INFO,
         SPAN_NAME,
@@ -116,9 +126,7 @@ pub fn span_cdc_consume(attrs: &CdcConsumeAttrs) -> Span {
         "cdc.offset_after" = attrs.offset_after,
         "cdc.records" = attrs.records,
         "cdc.lag_seconds" = attrs.lag_seconds
-    );
-
-    span
+    )
 }
 
 pub fn in_cdc_consume<F, T>(attrs: &CdcConsumeAttrs, f: F) -> T
