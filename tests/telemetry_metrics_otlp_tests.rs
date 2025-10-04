@@ -12,7 +12,7 @@ use opentelemetry::metrics::MeterProvider as _;
 use opentelemetry::KeyValue;
 use opentelemetry_sdk::metrics::{
     exporter::{Context, MetricsError, PushMetricExporter},
-    reader::PeriodicReader,
+    PeriodicReader,
     Temporality,
 };
 use opentelemetry_sdk::runtime::Tokio;
