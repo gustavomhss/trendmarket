@@ -13,6 +13,8 @@ use thiserror::Error;
 use ::opentelemetry_otlp::WithExportConfig;
 use tracing::warn;
 
+use self::opentelemetry_otlp::WithExportConfig;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ObsLevel {
     Off,
