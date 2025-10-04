@@ -381,6 +381,10 @@ fn build_otlp_exporter(
                 builder
                     .build()
         OtlpProtocol::Grpc => Err(MetricsInitError::OtlpBuildError(
+            "gRPC metrics exporter support is not enabled (enable the `metrics-otlp-grpc` feature)"
+                .into(),
+        )),
+        OtlpProtocol::Http => MetricExporter::builder()
             if cfg!(feature = "metrics-otlp-grpc") {
                 "gRPC metrics exporter support is not available in this build".into()
             } else {

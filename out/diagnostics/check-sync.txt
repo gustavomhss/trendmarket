@@ -1,4 +1,6 @@
     Checking credit-engine-core v0.1.0 (/workspace/trendmarket)
+    Checking proptest v1.7.0
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 10.58s
     Checking oorandom v11.1.5
     Checking criterion v0.5.1
 error[E0425]: cannot find value `reader` in this scope
