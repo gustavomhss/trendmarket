@@ -1,0 +1,25 @@
+150: "serde",
+215: "serde_json",
+242: "serde",
+243: "serde_derive",
+244: "serde_json",
+659: "serde",
+910: "serde_json",
+1200: "serde",
+1201: "serde_json",
+1202: "serde_urlencoded",
+1273:name = "serde"
+1278: "serde_core",
+1279: "serde_derive",
+1283:name = "serde_core"
+1288: "serde_derive",
+1292:name = "serde_derive"
+1303:name = "serde_json"
+1311: "serde",
+1312: "serde_core",
+1316:name = "serde_urlencoded"
+1324: "serde",
+1479: "serde",
+1480: "serde_json",
+1707: "serde",
+1990: "serde",
