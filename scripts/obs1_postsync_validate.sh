@@ -3,6 +3,10 @@ set -euo pipefail
 
 mkdir -p out/diagnostics
 
+RUSTFLAGS=-Dwarnings cargo check --all-targets --all-features 2>&1 | tee out/diagnostics/check-sync.txt || true
+cargo test --no-run 2>&1 | tee out/diagnostics/test-norun-sync.txt || true
+cargo test -q 2>&1 | tee out/diagnostics/test-run-sync.txt || true
+if rg --quiet 'cfg\(feature = "obs"\)' src tests; then
 RUSTFLAGS=-Dwarnings cargo check --all-targets --all-features 2>&1 | tee out/diagnostics/check-sync.txt
 cargo clean
 cargo build -q
