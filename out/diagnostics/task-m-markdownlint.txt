@@ -1,5 +1,0 @@
-markdownlint docs/OBS-1.md README.md
-bash: command not found: markdownlint
-
-Fallback: cargo fmt --all
-error: duplicate key `opentelemetry-otlp` in table `dependencies` (Cargo.toml:17)

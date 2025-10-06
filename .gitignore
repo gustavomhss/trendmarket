@@ -4,3 +4,5 @@
 out/**/*.zip
 /.idea
 /.vscode
+/out/
+Cargo.toml.bak.*

@@ -1,4 +1,0 @@
-out/docs/sweep_report.json
-out/docs/validation_report.json
-out/logs/sub08/diff_preview.patch
-out/logs/sub08/triple_review.md

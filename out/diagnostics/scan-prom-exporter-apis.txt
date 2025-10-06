@@ -1,3 +1,0 @@
-src/telemetry_metrics_prom.rs:33:        self.exporter.provider()
-tests/telemetry_metrics_prom_tests.rs:14:    let provider = exporter.meter_provider();
-tests/telemetry_metrics_prom_tests.rs:35:    let guard_provider = guard_exporter.meter_provider();

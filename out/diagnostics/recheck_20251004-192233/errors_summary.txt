@@ -1,9 +1,0 @@
-
-== out/diagnostics/recheck_20251004-192233/check.txt ==
-(sem erros de compilação)
-
-== out/diagnostics/recheck_20251004-192233/test-norun.txt ==
-(sem erros de compilação)
-
-== out/diagnostics/recheck_20251004-192233/test-run.txt ==
-(sem erros de compilação)

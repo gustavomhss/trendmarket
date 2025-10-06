@@ -1,7 +1,0 @@
-variant,code,message,http_status,source
-ZeroAmount,CE-AMM-0001,Input amount must be greater than zero.,400,src/amm/errors.rs:79
-ZeroReserve,CE-AMM-0002,Reserves must stay above zero.,400,src/amm/errors.rs:84
-MinReserveBreached,CE-AMM-0003,Operation would breach the minimum reserve.,409,src/amm/errors.rs:89
-Overflow,CE-AMM-0004,Numerical overflow or underflow detected.,500,src/amm/errors.rs:94
-InputTooSmall,CE-AMM-0005,Effective input amount is too small.,400,src/amm/errors.rs:99
-InvalidFee,CE-AMM-0006,"Fee ppm must be at most 1,000,000.",400,src/amm/errors.rs:104

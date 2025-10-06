@@ -1,2 +1,0 @@
-README.md
-out/logs/sub09/name_status_sub09.txt

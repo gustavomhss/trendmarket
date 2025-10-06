@@ -1,3 +1,0 @@
-[features]
-obs = []
-metrics-otlp-grpc = []

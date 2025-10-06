@@ -1,6 +1,0 @@
-{
-  "markdownlint": ["NA", "CHECK"],
-  "link_check": ["NA", "CHECK"],
-  "tests": ["NA", "CHECK"],
-  "validation": ["CHECK", "PASS"]
-}

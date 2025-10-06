@@ -1,6 +1,0 @@
-error: duplicate key `opentelemetry-otlp` in table `dependencies`
-  --> Cargo.toml:17:1
-   |
-17 | opentelemetry-otlp = { version = "0.29", features = ["grpc-tonic", "http-proto"] }
-   | ^
-   |

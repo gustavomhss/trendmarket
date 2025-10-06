@@ -1,8 +1,0 @@
-out/docs/btb_detect.json
-out/logs/threadE/bench.log
-out/logs/threadE/build.log
-out/logs/threadE/link_check.log
-out/logs/threadE/markdownlint.log
-out/logs/threadE/summary.json
-out/logs/threadE/test.log
-out/logs/threadE/triple_review.md

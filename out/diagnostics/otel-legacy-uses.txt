@@ -1,2 +1,0 @@
-tests/telemetry_metrics_otlp_tests.rs:14:    exporter::{Context, MetricsError, PushMetricExporter},
-tests/telemetry_metrics_otlp_tests.rs:33:impl PushMetricExporter for RecordingExporter {

@@ -1,5 +1,0 @@
-Montagem final do README concluída: Notação, Fórmulas, Política de Rounding e exemplos (didático/realista) alinhados com os artefatos das threads.
-Inventário consolidado em `out/docs/final_inventory.json` e validações sincronizadas (`validation_report.json`, `sweep_report.json`).
-Logs atualizados em `out/logs/sub09/` + registros históricos das threads A–F e SUB-08.
-PR kit pronto (`pr_title.txt`, `pr_body.md`, labels) e diff pré-visualizado em `out/docs/final_readme_diff.patch`.
-Sem alterações de lógica: apenas documentação e evidências auxiliares.

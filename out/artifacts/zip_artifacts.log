@@ -1,7 +1,0 @@
-  adding: ops/errors/catalog_amm.yaml (deflated 61%)
-  adding: ops/errors/README.md (deflated 49%)
-  adding: ops/reports/amm_error_index.json (deflated 65%)
-  adding: tests/amm_error_contract.rs (deflated 64%)
-  adding: out/logs/ (stored 0%)
-  adding: out/logs/cargo_test.log (deflated 72%)
-  adding: out/logs/rustfmt.log (stored 0%)
