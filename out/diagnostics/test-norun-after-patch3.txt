@@ -1,0 +1,148 @@
+   Compiling credit-engine-core v0.1.0 (/Users/gustavoschneiter/Documents/credit-engine-core)
+warning: unused import: `runtime::Tokio`
+ --> src/bin/otel_http_custom.rs:8:5
+  |
+8 |     runtime::Tokio,
+  |     ^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `opentelemetry::trace::TracerProvider`
+ --> src/bin/otel_http_custom_client.rs:2:5
+  |
+2 | use opentelemetry::trace::TracerProvider;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `runtime::Tokio`
+ --> src/bin/otel_http_custom_client.rs:6:54
+  |
+6 | use opentelemetry_sdk::{Resource, trace as sdktrace, runtime::Tokio};
+  |                                                      ^^^^^^^^^^^^^^
+
+error[E0308]: `match` arms have incompatible types
+  --> src/bin/otel_http_custom.rs:34:13
+   |
+31 |       let span_exporter = match trace_protocol {
+   |                           -------------------- `match` arms have incompatible types
+32 |           OtlpProtocol::Grpc => Err(anyhow!("gRPC trace exporter não habilitado (use a feature `grpc-tonic`)")),
+   |                                 ------------------------------------------------------------------------------- this is found to be of type `Result<_, anyhow::Error>`
+33 |           OtlpProtocol::Http => {
+34 | /             SpanExporter::builder()
+35 | |                 .with_http()
+36 | |                 .with_http_client(Client::new())
+37 | |                 .with_endpoint(traces_endpoint.clone())
+38 | |                 .with_protocol(Protocol::HttpBinary)
+39 | |                 .with_timeout(traces_timeout)
+40 | |                 .build()
+   | |________________________^ expected `Result<_, Error>`, found `Result<SpanExporter, ExporterBuildError>`
+   |
+   = note: expected enum `Result<_, anyhow::Error>`
+              found enum `Result<opentelemetry_otlp::SpanExporter, ExporterBuildError>`
+help: try wrapping the expression in `Ok`
+   |
+34 ~             Ok(SpanExporter::builder()
+35 |                 .with_http()
+...
+39 |                 .with_timeout(traces_timeout)
+40 ~                 .build())
+   |
+
+error[E0308]: `match` arms have incompatible types
+  --> src/bin/otel_http_custom.rs:47:13
+   |
+44 |       let metric_exporter = match metrics_protocol {
+   |                             ---------------------- `match` arms have incompatible types
+45 |           OtlpProtocol::Grpc => Err(anyhow!("gRPC metric exporter não habilitado (use a feature `grpc-tonic`)")),
+   |                                 -------------------------------------------------------------------------------- this is found to be of type `Result<_, anyhow::Error>`
+46 |           OtlpProtocol::Http => {
+47 | /             MetricExporter::builder()
+48 | |                 .with_http()
+49 | |                 .with_http_client(Client::new())
+50 | |                 .with_endpoint(metrics_endpoint.clone())
+51 | |                 .with_protocol(Protocol::HttpBinary)
+52 | |                 .with_timeout(metrics_timeout)
+53 | |                 .build()
+   | |________________________^ expected `Result<_, Error>`, found `Result<MetricExporter, ...>`
+   |
+   = note: expected enum `Result<_, anyhow::Error>`
+              found enum `Result<MetricExporter, ExporterBuildError>`
+help: try wrapping the expression in `Ok`
+   |
+47 ~             Ok(MetricExporter::builder()
+48 |                 .with_http()
+...
+52 |                 .with_timeout(metrics_timeout)
+53 ~                 .build())
+   |
+
+error[E0599]: no method named `build` found for struct `KeyValue` in the current scope
+  --> src/bin/otel_http_custom_client.rs:37:117
+   |
+37 |         .with_resource(Resource::builder().with_attributes(vec![KeyValue::new("service.name", "credit-engine-core").build()]))
+   |                                                                                                                     ^^^^^ method not found in `KeyValue`
+
+error[E0599]: no method named `build` found for struct `KeyValue` in the current scope
+  --> src/bin/otel_http_custom.rs:60:117
+   |
+60 |         .with_resource(Resource::builder().with_attributes(vec![KeyValue::new("service.name", "credit-engine-core").build()]))
+   |                                                                                                                     ^^^^^ method not found in `KeyValue`
+
+error[E0308]: mismatched types
+   --> src/bin/otel_http_custom_client.rs:37:24
+    |
+ 37 |         .with_resource(Resource::builder().with_attributes(vec![KeyValue::new("service.name", "credit-engine-core").build()]))
+    |          ------------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `Resource`, found `ResourceBuilder`
+    |          |
+    |          arguments to this method are incorrect
+    |
+note: method defined here
+   --> /Users/gustavoschneiter/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry_sdk-0.29.0/src/trace/provider.rs:407:12
+    |
+407 |     pub fn with_resource(self, resource: Resource) -> Self {
+    |            ^^^^^^^^^^^^^
+
+error[E0308]: mismatched types
+   --> src/bin/otel_http_custom.rs:60:24
+    |
+ 60 |         .with_resource(Resource::builder().with_attributes(vec![KeyValue::new("service.name", "credit-engine-core").build()]))
+    |          ------------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `Resource`, found `ResourceBuilder`
+    |          |
+    |          arguments to this method are incorrect
+    |
+note: method defined here
+   --> /Users/gustavoschneiter/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry_sdk-0.29.0/src/trace/provider.rs:407:12
+    |
+407 |     pub fn with_resource(self, resource: Resource) -> Self {
+    |            ^^^^^^^^^^^^^
+
+Some errors have detailed explanations: E0308, E0599.
+For more information about an error, try `rustc --explain E0308`.
+warning: `credit-engine-core` (bin "otel_http_custom_client" test) generated 2 warnings
+error: could not compile `credit-engine-core` (bin "otel_http_custom_client" test) due to 2 previous errors; 2 warnings emitted
+warning: build failed, waiting for other jobs to finish...
+warning: `credit-engine-core` (bin "otel_http_custom_client") generated 2 warnings (2 duplicates)
+error: could not compile `credit-engine-core` (bin "otel_http_custom_client") due to 2 previous errors; 2 warnings emitted
+error[E0599]: no method named `build` found for struct `KeyValue` in the current scope
+  --> src/bin/otel_http_custom.rs:67:117
+   |
+67 |         .with_resource(Resource::builder().with_attributes(vec![KeyValue::new("service.name", "credit-engine-core").build()]))
+   |                                                                                                                     ^^^^^ method not found in `KeyValue`
+
+error[E0308]: mismatched types
+   --> src/bin/otel_http_custom.rs:67:24
+    |
+ 67 |         .with_resource(Resource::builder().with_attributes(vec![KeyValue::new("service.name", "credit-engine-core").build()]))
+    |          ------------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `Resource`, found `ResourceBuilder`
+    |          |
+    |          arguments to this method are incorrect
+    |
+note: method defined here
+   --> /Users/gustavoschneiter/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry_sdk-0.29.0/src/metrics/meter_provider.rs:240:12
+    |
+240 |     pub fn with_resource(mut self, resource: Resource) -> Self {
+    |            ^^^^^^^^^^^^^
+
+warning: `credit-engine-core` (bin "otel_http_custom" test) generated 1 warning
+error: could not compile `credit-engine-core` (bin "otel_http_custom" test) due to 6 previous errors; 1 warning emitted

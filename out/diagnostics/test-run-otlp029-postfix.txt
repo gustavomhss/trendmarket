@@ -1,0 +1,66 @@
+warning: unused variable: `span_exporter`
+  --> src/telemetry.rs:80:9
+   |
+80 |     let span_exporter = match trace_protocol {
+   |         ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_span_exporter`
+   |
+   = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `metric_exporter`
+   --> src/telemetry.rs:115:9
+    |
+115 |     let metric_exporter = match metrics_protocol {
+    |         ^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_metric_exporter`
+
+
+running 53 tests
+.................................................. 50/53
+telemetry::tests::trace_context_propagator_injects_and_extracts_after_init --- FAILED
+..
+failures:
+
+---- telemetry::tests::trace_context_propagator_injects_and_extracts_after_init stdout ----
+
+thread 'telemetry::tests::trace_context_propagator_injects_and_extracts_after_init' panicked at src/telemetry.rs:341:46:
+telemetry init: no http client specified
+
+
+failures:
+    telemetry::tests::trace_context_propagator_injects_and_extracts_after_init
+
+test result: FAILED. 52 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `--lib`
+warning: unused variable: `span_exporter`
+  --> src/telemetry.rs:80:9
+   |
+80 |     let span_exporter = match trace_protocol {
+   |         ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_span_exporter`
+   |
+   = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `metric_exporter`
+   --> src/telemetry.rs:115:9
+    |
+115 |     let metric_exporter = match metrics_protocol {
+    |         ^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_metric_exporter`
+
+
+running 53 tests
+.................................................. 50/53
+telemetry::tests::trace_context_propagator_injects_and_extracts_after_init --- FAILED
+..
+failures:
+
+---- telemetry::tests::trace_context_propagator_injects_and_extracts_after_init stdout ----
+
+thread 'telemetry::tests::trace_context_propagator_injects_and_extracts_after_init' panicked at src/telemetry.rs:341:46:
+telemetry init: no http client specified
+
+
+failures:
+    telemetry::tests::trace_context_propagator_injects_and_extracts_after_init
+
+test result: FAILED. 52 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `--lib`

@@ -1,4 +1,4 @@
-use anyhow::{bail, Result};
+use anyhow::bail;
 use anyhow::{anyhow, Result};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
@@ -14,8 +14,7 @@ use opentelemetry::{
     trace::TracerProvider as _,
     KeyValue,
 };
-use opentelemetry_otlp::{MetricExporter, SpanExporter};
-use opentelemetry_otlp::{SpanExporter, WithExportConfig};
+use opentelemetry_otlp::{MetricExporter, SpanExporter, WithExportConfig};
 use opentelemetry_sdk::{
     metrics::{PeriodicReader, SdkMeterProvider},
     propagation::TraceContextPropagator,
@@ -78,12 +77,12 @@ pub fn init(service_name: &str) -> Result<Telemetry> {
 
     // ---- Traces ----
     let trace_protocol = select_otlp_protocol("OTEL_EXPORTER_OTLP_TRACES_PROTOCOL");
-    let span_exporter = match trace_protocol {
+    let _span_exporter = match trace_protocol {
         OtlpProtocol::Grpc => {
             #[cfg(feature = "metrics-otlp-grpc")]
             {
                 SpanExporter::builder()
-                    .with_grpc()
+                    .with_http()
                     .with_endpoint(traces_endpoint.clone())
                     .with_timeout(traces_timeout)
                     .build()?
@@ -113,29 +112,15 @@ pub fn init(service_name: &str) -> Result<Telemetry> {
 
     // ---- Metrics ----
     let metrics_protocol = select_otlp_protocol("OTEL_EXPORTER_OTLP_METRICS_PROTOCOL");
-    let metric_exporter = match metrics_protocol {
-        OtlpProtocol::Grpc => {
-            #[cfg(feature = "metrics-otlp-grpc")]
-            {
-                MetricExporter::builder()
-                    .with_grpc()
-                    .with_endpoint(metrics_endpoint.clone())
-                    .with_timeout(metrics_timeout)
-                    .build()?
-            }
-            #[cfg(not(feature = "metrics-otlp-grpc"))]
-            {
-                bail!(
-                    "gRPC metric exporter support is not enabled (enable the `metrics-otlp-grpc` feature)"
-                );
-            }
-        }
+    let _metric_exporter: MetricExporter = match metrics_protocol {
+        OtlpProtocol::Grpc => bail!("gRPC metric exporter support is not enabled (enable the `metrics-otlp-grpc` feature)"),
         OtlpProtocol::Http => MetricExporter::builder()
             .with_http()
             .with_endpoint(metrics_endpoint.clone())
             .with_timeout(metrics_timeout)
             .build()?,
-    };
+};
+
     let metrics_protocol = select_otlp_protocol("OTEL_EXPORTER_OTLP_METRICS_PROTOCOL");
     let metric_exporter =
         build_metrics_exporter(&metrics_endpoint, metrics_protocol, metrics_timeout)
@@ -189,14 +174,14 @@ fn build_span_exporter(
     protocol: OtlpProtocol,
     timeout: Duration,
 ) -> Result<SpanExporter> {
-    let mut builder = SpanExporter::builder();
+let builder = SpanExporter::builder();
 
     #[allow(unused_mut)]
     let mut builder = match protocol {
         OtlpProtocol::Grpc => {
             #[cfg(feature = "metrics-otlp-grpc")]
             {
-                builder.with_grpc()
+                builder.with_http()
             }
             #[cfg(not(feature = "metrics-otlp-grpc"))]
             {

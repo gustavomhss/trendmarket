@@ -1,0 +1,52 @@
+    Checking credit-engine-core v0.1.0 (/Users/gustavoschneiter/Documents/credit-engine-core)
+error: unused import: `opentelemetry_otlp::WithHttpConfig`
+ --> src/telemetry.rs:1:5
+  |
+1 | use opentelemetry_otlp::WithHttpConfig;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `-D unused-imports` implied by `-D warnings`
+  = help: to override `-D warnings` add `#[allow(unused_imports)]`
+
+error: unused import: `bail`
+ --> src/telemetry.rs:2:22
+  |
+2 | use anyhow::{anyhow, bail, Result};
+  |                      ^^^^
+
+error: unused import: `reqwest::Client`
+ --> src/telemetry.rs:4:5
+  |
+4 | use reqwest::Client;
+  |     ^^^^^^^^^^^^^^^
+
+error: unused import: `opentelemetry_otlp::WithHttpConfig`
+ --> src/telemetry_trace.rs:1:5
+  |
+1 | use opentelemetry_otlp::WithHttpConfig;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: unused import: `reqwest::Client`
+ --> src/telemetry_trace.rs:2:5
+  |
+2 | use reqwest::Client;
+  |     ^^^^^^^^^^^^^^^
+
+error: unused variable: `span_exporter`
+  --> src/telemetry.rs:82:9
+   |
+82 |     let span_exporter = match trace_protocol {
+   |         ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_span_exporter`
+   |
+   = note: `-D unused-variables` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(unused_variables)]`
+
+error: unused variable: `metric_exporter`
+   --> src/telemetry.rs:117:9
+    |
+117 |     let metric_exporter = match metrics_protocol {
+    |         ^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_metric_exporter`
+
+error: could not compile `credit-engine-core` (lib) due to 7 previous errors
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `credit-engine-core` (lib test) due to 7 previous errors

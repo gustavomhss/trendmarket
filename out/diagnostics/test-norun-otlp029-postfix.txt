@@ -1,0 +1,41 @@
+   Compiling credit-engine-core v0.1.0 (/Users/gustavoschneiter/Documents/credit-engine-core)
+warning: unused variable: `span_exporter`
+  --> src/telemetry.rs:80:9
+   |
+80 |     let span_exporter = match trace_protocol {
+   |         ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_span_exporter`
+   |
+   = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `metric_exporter`
+   --> src/telemetry.rs:115:9
+    |
+115 |     let metric_exporter = match metrics_protocol {
+    |         ^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_metric_exporter`
+
+warning: `credit-engine-core` (lib) generated 2 warnings
+warning: `credit-engine-core` (lib test) generated 2 warnings (2 duplicates)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 13.39s
+  Executable unittests src/lib.rs (target/debug/deps/credit_engine_core-7a3df378961e14a6)
+  Executable unittests src/bin/obs_demo.rs (target/debug/deps/obs_demo-c80af6748f2d5346)
+  Executable tests/amm_error_catalog.rs (target/debug/deps/amm_error_catalog-1cf8867d6a45e2f3)
+  Executable tests/amm_error_contract.rs (target/debug/deps/amm_error_contract-ab80bece860f03ff)
+  Executable tests/catalog_utils.rs (target/debug/deps/catalog_utils-2f9d0d0e5affff54)
+  Executable tests/fuzz_invariants.rs (target/debug/deps/fuzz_invariants-7c42e964cf6137b3)
+  Executable tests/golden_cpmm.rs (target/debug/deps/golden_cpmm-ed2f84f18a6342c9)
+  Executable tests/obs_demo_smoke_tests.rs (target/debug/deps/obs_demo_smoke_tests-ea1331134b9793e4)
+  Executable tests/obs_policy_lints_tests.rs (target/debug/deps/obs_policy_lints_tests-b094b24d1f3f87f9)
+  Executable tests/property.rs (target/debug/deps/property-4aa88dc925e95825)
+  Executable tests/readme_examples_didactic.rs (target/debug/deps/readme_examples_didactic-185441b8aa997f2c)
+  Executable tests/readme_examples_realistic.rs (target/debug/deps/readme_examples_realistic-9ae3769b3166341e)
+  Executable tests/rounding.rs (target/debug/deps/rounding-c4c2b924a3f76ab3)
+  Executable tests/telemetry_cfg_tests.rs (target/debug/deps/telemetry_cfg_tests-0e69d41e3cb9431d)
+  Executable tests/telemetry_identity_tests.rs (target/debug/deps/telemetry_identity_tests-dbae258f831b2729)
+  Executable tests/telemetry_instruments_tests.rs (target/debug/deps/telemetry_instruments_tests-d6dd8e714e8c711c)
+  Executable tests/telemetry_latency_tests.rs (target/debug/deps/telemetry_latency_tests-7f5980f8c7d794ce)
+  Executable tests/telemetry_logs_tests.rs (target/debug/deps/telemetry_logs_tests-162928c265010de8)
+  Executable tests/telemetry_metrics_otlp_tests.rs (target/debug/deps/telemetry_metrics_otlp_tests-dbe777a4e29cb7a4)
+  Executable tests/telemetry_metrics_prom_tests.rs (target/debug/deps/telemetry_metrics_prom_tests-953f1faf438c427a)
+  Executable tests/telemetry_spans_amm_tests.rs (target/debug/deps/telemetry_spans_amm_tests-13c2e4df892e0102)
+  Executable tests/telemetry_spans_cdc_tests.rs (target/debug/deps/telemetry_spans_cdc_tests-8dd5889b96642ee7)
+  Executable tests/telemetry_trace_tests.rs (target/debug/deps/telemetry_trace_tests-2a433a6939349c31)

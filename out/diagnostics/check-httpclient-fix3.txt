@@ -1,0 +1,70 @@
+    Checking credit-engine-core v0.1.0 (/Users/gustavoschneiter/Documents/credit-engine-core)
+error[E0603]: module `exporter` is private
+   --> src/telemetry_metrics_otlp.rs:1:50
+    |
+  1 | #[allow(unused_imports)] use opentelemetry_otlp::exporter::http::WithHttpConfig;
+    |                                                  ^^^^^^^^ private module
+    |
+note: the module `exporter` is defined here
+   --> /Users/gustavoschneiter/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-otlp-0.29.0/src/lib.rs:317:1
+    |
+317 | mod exporter;
+    | ^^^^^^^^^^^^
+help: consider importing this trait instead
+    |
+  1 - #[allow(unused_imports)] use opentelemetry_otlp::exporter::http::WithHttpConfig;
+  1 + #[allow(unused_imports)] use opentelemetry_otlp::WithHttpConfig;
+    |
+
+error: unused import: `bail`
+ --> src/telemetry.rs:1:22
+  |
+1 | use anyhow::{anyhow, bail, Result};
+  |                      ^^^^
+  |
+  = note: `-D unused-imports` implied by `-D warnings`
+  = help: to override `-D warnings` add `#[allow(unused_imports)]`
+
+error[E0599]: no method named `with_http_client` found for struct `opentelemetry_otlp::metric::MetricExporterBuilder` in the current scope
+   --> src/telemetry_metrics_otlp.rs:184:3
+    |
+183 | /                 builder.with_http()
+184 | |  .with_http_client(Client::new())
+    | |__-^^^^^^^^^^^^^^^^
+    |
+   ::: /Users/gustavoschneiter/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-otlp-0.29.0/src/exporter/http/mod.rs:428:8
+    |
+428 |       fn with_http_client<T: HttpClient + 'static>(self, client: T) -> Self;
+    |          ---------------- the method is available for `opentelemetry_otlp::metric::MetricExporterBuilder<HttpExporterBuilderSet>` here
+    |
+    = help: items from traits can only be used if the trait is in scope
+help: there is a method `with_http` with a similar name, but with different arguments
+   --> /Users/gustavoschneiter/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-otlp-0.29.0/src/metric.rs:61:5
+    |
+ 61 |     pub fn with_http(self) -> MetricExporterBuilder<HttpExporterBuilderSet> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: trait `WithHttpConfig` which provides `with_http_client` is implemented but not in scope; perhaps you want to import it
+    |
+  1 + use opentelemetry_otlp::WithHttpConfig;
+    |
+
+error: unused variable: `span_exporter`
+  --> src/telemetry.rs:80:9
+   |
+80 |     let span_exporter = match trace_protocol {
+   |         ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_span_exporter`
+   |
+   = note: `-D unused-variables` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(unused_variables)]`
+
+error: unused variable: `metric_exporter`
+   --> src/telemetry.rs:115:9
+    |
+115 |     let metric_exporter = match metrics_protocol {
+    |         ^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_metric_exporter`
+
+Some errors have detailed explanations: E0599, E0603.
+For more information about an error, try `rustc --explain E0599`.
+error: could not compile `credit-engine-core` (lib) due to 5 previous errors
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `credit-engine-core` (lib test) due to 5 previous errors

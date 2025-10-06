@@ -1,0 +1,11 @@
+error: failed to select a version for `httpdate`.
+    ... required by package `hyper v1.7.0`
+    ... which satisfies dependency `hyper = "^1"` (locked to 1.7.0) of package `credit-engine-core v0.1.0 (/Users/gustavoschneiter/Documents/credit-engine-core)`
+versions that meet the requirements `^1.0` (locked to 1.0.3) are: 1.0.3
+
+all possible versions conflict with previously selected packages.
+
+  previously selected package `httpdate v1.0.0 (/Users/gustavoschneiter/Documents/credit-engine-core/vendor/httpdate)`
+    ... which satisfies dependency `httpdate = "^1"` (locked to 1.0.0) of package `credit-engine-core v0.1.0 (/Users/gustavoschneiter/Documents/credit-engine-core)`
+
+failed to select a version for `httpdate` which could resolve this conflict

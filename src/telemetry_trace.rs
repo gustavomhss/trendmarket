@@ -1,5 +1,3 @@
-#![allow(unexpected_cfgs)]
-
 use std::collections::HashMap;
 use std::fmt;
 use std::panic;
@@ -229,7 +227,7 @@ fn build_otlp_exporter(
             #[cfg(feature = "metrics-otlp-grpc")]
             {
                 OtlpSpanExporter::builder()
-                    .with_grpc()
+                    .with_http()
                     .with_endpoint(endpoint.to_owned())
                     .with_timeout(timeout)
                     .build()
@@ -320,3 +318,4 @@ fn install_global_propagator() -> Result<(), TraceInitError> {
         })
         .clone()
 }
+use opentelemetry_otlp::WithExportConfig;

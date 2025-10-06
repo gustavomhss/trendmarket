@@ -1,0 +1,31 @@
+error: this file contains an unclosed delimiter
+   --> src/telemetry_metrics_otlp.rs:147:34
+    |
+ 19 | pub enum OtlpProtocol {
+    |                       - unclosed delimiter
+...
+ 23 | pub struct MetricsOtlpConfig {
+    |                              - unclosed delimiter
+...
+ 30 | pub struct MetricsGuard {
+    |                         - unclosed delimiter
+ 31 |     provider: Option<SdkMeterProvider>,
+ 32 | impl MetricsGuard {
+    |                   - unclosed delimiter
+...
+ 38 |     pub fn shutdown(&mut self) {
+    |                                - unclosed delimiter
+ 39 |         if let Some(provider) = self.provider.take() {
+    |                                                      - another 21 unclosed delimiters begin from here
+...
+131 |             {
+    |             - this delimiter might not be properly closed...
+...
+139 |     };
+    |     - ...as it matches this but it has different indentation
+...
+147 |         .with_interval(interval)
+    |                                 ^
+
+error: could not compile `credit-engine-core` (lib) due to 1 previous error
+error: could not compile `credit-engine-core` (lib test) due to 1 previous error

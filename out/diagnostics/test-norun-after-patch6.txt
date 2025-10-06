@@ -1,0 +1,37 @@
+   Compiling credit-engine-core v0.1.0 (/Users/gustavoschneiter/Documents/credit-engine-core)
+warning: unused import: `runtime::Tokio`
+ --> src/bin/otel_http_custom.rs:8:5
+  |
+8 |     runtime::Tokio,
+  |     ^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: `credit-engine-core` (bin "otel_http_custom" test) generated 1 warning (1 duplicate)
+warning: `credit-engine-core` (bin "otel_http_custom") generated 1 warning (run `cargo fix --bin "otel_http_custom"` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.84s
+  Executable unittests src/lib.rs (target/debug/deps/credit_engine_core-b604972e28a62154)
+  Executable unittests src/bin/obs_demo.rs (target/debug/deps/obs_demo-2c0941c57fd386cc)
+  Executable unittests src/bin/otel_http_custom.rs (target/debug/deps/otel_http_custom-2fe02cc531ce3273)
+  Executable unittests src/bin/otel_http_custom_client.rs (target/debug/deps/otel_http_custom_client-0def2721c4b0ea06)
+  Executable tests/amm_error_catalog.rs (target/debug/deps/amm_error_catalog-cdda64d48c11590f)
+  Executable tests/amm_error_contract.rs (target/debug/deps/amm_error_contract-d7f3712aadb7f874)
+  Executable tests/catalog_utils.rs (target/debug/deps/catalog_utils-ebfd7b5c5b9968bc)
+  Executable tests/fuzz_invariants.rs (target/debug/deps/fuzz_invariants-099468eae2b6ec00)
+  Executable tests/golden_cpmm.rs (target/debug/deps/golden_cpmm-3a350a0e4d42ff1c)
+  Executable tests/obs_demo_smoke_tests.rs (target/debug/deps/obs_demo_smoke_tests-a681007f79ef4326)
+  Executable tests/obs_policy_lints_tests.rs (target/debug/deps/obs_policy_lints_tests-935dcab68b4b4eed)
+  Executable tests/property.rs (target/debug/deps/property-8b86ba2ff63ef281)
+  Executable tests/readme_examples_didactic.rs (target/debug/deps/readme_examples_didactic-fdb6767548c24f24)
+  Executable tests/readme_examples_realistic.rs (target/debug/deps/readme_examples_realistic-a425adc8daf73112)
+  Executable tests/rounding.rs (target/debug/deps/rounding-409a906cfef38279)
+  Executable tests/telemetry_cfg_tests.rs (target/debug/deps/telemetry_cfg_tests-19b026d594e4c80b)
+  Executable tests/telemetry_identity_tests.rs (target/debug/deps/telemetry_identity_tests-cea9fccf916547fb)
+  Executable tests/telemetry_instruments_tests.rs (target/debug/deps/telemetry_instruments_tests-850335946ec666ff)
+  Executable tests/telemetry_latency_tests.rs (target/debug/deps/telemetry_latency_tests-0c19a066edfe062a)
+  Executable tests/telemetry_logs_tests.rs (target/debug/deps/telemetry_logs_tests-aafc81817cf56a2d)
+  Executable tests/telemetry_metrics_otlp_tests.rs (target/debug/deps/telemetry_metrics_otlp_tests-c898ddce13379094)
+  Executable tests/telemetry_metrics_prom_tests.rs (target/debug/deps/telemetry_metrics_prom_tests-ea3ae8c64e109abf)
+  Executable tests/telemetry_spans_amm_tests.rs (target/debug/deps/telemetry_spans_amm_tests-5b5eebd128d9cd58)
+  Executable tests/telemetry_spans_cdc_tests.rs (target/debug/deps/telemetry_spans_cdc_tests-6a7f5735a45e0088)
+  Executable tests/telemetry_trace_tests.rs (target/debug/deps/telemetry_trace_tests-fb2300fd4be64fd4)

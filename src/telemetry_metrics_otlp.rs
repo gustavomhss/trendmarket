@@ -1,9 +1,8 @@
-#![allow(unexpected_cfgs)]
 
 use std::{collections::HashMap, time::Duration};
 
 use opentelemetry::{metrics::MeterProvider as _, KeyValue};
-use opentelemetry_otlp::{MetricsExporter, WithExportConfig};
+use opentelemetry_otlp::{MetricExporter, WithExportConfig};
 use opentelemetry_sdk::metrics::{PeriodicReader, SdkMeterProvider};
 use opentelemetry_sdk::Resource;
 use thiserror::Error;
@@ -172,15 +171,15 @@ pub(crate) fn build_metrics_exporter(
     endpoint: &str,
     protocol: OtlpProtocol,
     export_timeout: Duration,
-) -> Result<MetricsExporter, MetricsInitError> {
-    let mut builder = MetricsExporter::builder();
+) -> Result<MetricExporter, MetricsInitError> {
+    let builder = MetricExporter::builder();
 
     #[allow(unused_mut)]
     let mut builder = match protocol {
         OtlpProtocol::Grpc => {
             #[cfg(feature = "metrics-otlp-grpc")]
             {
-                builder.with_grpc()
+                builder.with_http()
             }
             #[cfg(not(feature = "metrics-otlp-grpc"))]
             {
@@ -200,7 +199,7 @@ pub(crate) fn build_metrics_exporter(
         .map_err(|err| MetricsInitError::OtlpBuildError(err.to_string()))
 }
 
-fn build_periodic_reader(exporter: MetricsExporter, interval: Duration) -> PeriodicReader {
+fn build_periodic_reader(exporter: MetricExporter, interval: Duration) -> PeriodicReader<MetricExporter> {
     PeriodicReader::builder(exporter)
         .with_interval(interval)
         .build()

@@ -12,7 +12,7 @@ use hyper_util::{
 };
 use opentelemetry_prometheus::PrometheusExporter as OtelPromExporter;
 use opentelemetry_sdk::metrics::SdkMeterProvider;
-use prometheus::{Encoder, TextEncoder};
+use prometheus::TextEncoder;
 use thiserror::Error;
 use tokio::net::TcpListener;
 use tokio::runtime::Handle;

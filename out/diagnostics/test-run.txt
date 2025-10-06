@@ -1,0 +1,231 @@
+warning: unused variable: `span_exporter`
+  --> src/telemetry.rs:80:9
+   |
+80 |     let span_exporter = match trace_protocol {
+   |         ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_span_exporter`
+   |
+   = note: `#[warn(unused_variables)]` on by default
+
+warning: variable does not need to be mutable
+   --> src/telemetry.rs:177:9
+    |
+177 |     let mut builder = SpanExporter::builder();
+    |         ----^^^^^^^
+    |         |
+    |         help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+error[E0433]: failed to resolve: could not find `TracerProvider` in `sdktrace`
+  --> src/bin/otel_http_custom_client.rs:33:24
+   |
+33 |     let tp = sdktrace::TracerProvider::builder()
+   |                        ^^^^^^^^^^^^^^ could not find `TracerProvider` in `sdktrace`
+   |
+help: a struct with a similar name exists
+   |
+33 |     let tp = sdktrace::SdkTracerProvider::builder()
+   |                        +++
+help: consider importing this trait
+   |
+ 1 + use opentelemetry::trace::TracerProvider;
+   |
+help: if you import `TracerProvider`, refer to it directly
+   |
+33 -     let tp = sdktrace::TracerProvider::builder()
+33 +     let tp = TracerProvider::builder()
+   |
+
+error[E0425]: cannot find function `shutdown_tracer_provider` in module `global`
+   --> src/bin/otel_http_custom_client.rs:43:13
+    |
+ 43 |       global::shutdown_tracer_provider();
+    |               ^^^^^^^^^^^^^^^^^^^^^^^^ help: a function with a similar name exists: `set_tracer_provider`
+    |
+   ::: /Users/gustavoschneiter/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-0.29.1/src/global/trace.rs:427:1
+    |
+427 | / pub fn set_tracer_provider<P, T, S>(new_provider: P) -> GlobalTracerProvider
+428 | | where
+429 | |     S: trace::Span + Send + Sync + 'static,
+430 | |     T: trace::Tracer<Span = S> + Send + Sync + 'static,
+431 | |     P: trace::TracerProvider<Tracer = T> + Send + Sync + 'static,
+    | |_________________________________________________________________- similarly named function `set_tracer_provider` defined here
+
+error[E0433]: failed to resolve: could not find `TracerProvider` in `sdktrace`
+  --> src/bin/otel_http_custom.rs:58:24
+   |
+58 |     let tp = sdktrace::TracerProvider::builder()
+   |                        ^^^^^^^^^^^^^^ could not find `TracerProvider` in `sdktrace`
+   |
+help: a struct with a similar name exists
+   |
+58 |     let tp = sdktrace::SdkTracerProvider::builder()
+   |                        +++
+help: consider importing this trait
+   |
+ 1 + use opentelemetry::trace::TracerProvider;
+   |
+help: if you import `TracerProvider`, refer to it directly
+   |
+58 -     let tp = sdktrace::TracerProvider::builder()
+58 +     let tp = TracerProvider::builder()
+   |
+
+error[E0425]: cannot find function `shutdown_tracer_provider` in module `global`
+   --> src/bin/otel_http_custom.rs:80:13
+    |
+ 80 |       global::shutdown_tracer_provider();
+    |               ^^^^^^^^^^^^^^^^^^^^^^^^ help: a function with a similar name exists: `set_tracer_provider`
+    |
+   ::: /Users/gustavoschneiter/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-0.29.1/src/global/trace.rs:427:1
+    |
+427 | / pub fn set_tracer_provider<P, T, S>(new_provider: P) -> GlobalTracerProvider
+428 | | where
+429 | |     S: trace::Span + Send + Sync + 'static,
+430 | |     T: trace::Tracer<Span = S> + Send + Sync + 'static,
+431 | |     P: trace::TracerProvider<Tracer = T> + Send + Sync + 'static,
+    | |_________________________________________________________________- similarly named function `set_tracer_provider` defined here
+
+error[E0599]: no method named `with_endpoint` found for struct `opentelemetry_otlp::span::SpanExporterBuilder` in the current scope
+   --> src/bin/otel_http_custom_client.rs:22:10
+    |
+ 19 |       let span_exporter = SpanExporter::builder()
+    |  _________________________-
+ 20 | |         .with_http()
+ 21 | |         .with_http_client(Client::new())
+ 22 | |         .with_endpoint(traces_endpoint.clone())
+    | |         -^^^^^^^^^^^^^ method not found in `opentelemetry_otlp::span::SpanExporterBuilder<HttpExporterBuilderSet>`
+    | |_________|
+    |
+    |
+   ::: /Users/gustavoschneiter/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-otlp-0.29.0/src/exporter/mod.rs:233:8
+    |
+233 |       fn with_endpoint<T: Into<String>>(self, endpoint: T) -> Self;
+    |          ------------- the method is available for `opentelemetry_otlp::span::SpanExporterBuilder<HttpExporterBuilderSet>` here
+    |
+    = help: items from traits can only be used if the trait is in scope
+help: trait `WithExportConfig` which provides `with_endpoint` is implemented but not in scope; perhaps you want to import it
+    |
+  1 + use opentelemetry_otlp::WithExportConfig;
+    |
+
+error[E0599]: no method named `with_endpoint` found for struct `opentelemetry_otlp::metric::MetricExporterBuilder` in the current scope
+   --> src/bin/otel_http_custom_client.rs:29:10
+    |
+ 26 |       let _metric_exporter = MetricExporter::builder()
+    |  ____________________________-
+ 27 | |         .with_http()
+ 28 | |         .with_http_client(Client::new())
+ 29 | |         .with_endpoint(metrics_endpoint.clone())
+    | |         -^^^^^^^^^^^^^ method not found in `opentelemetry_otlp::metric::MetricExporterBuilder<HttpExporterBuilderSet>`
+    | |_________|
+    |
+    |
+   ::: /Users/gustavoschneiter/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-otlp-0.29.0/src/exporter/mod.rs:233:8
+    |
+233 |       fn with_endpoint<T: Into<String>>(self, endpoint: T) -> Self;
+    |          ------------- the method is available for `opentelemetry_otlp::metric::MetricExporterBuilder<HttpExporterBuilderSet>` here
+    |
+    = help: items from traits can only be used if the trait is in scope
+help: trait `WithExportConfig` which provides `with_endpoint` is implemented but not in scope; perhaps you want to import it
+    |
+  1 + use opentelemetry_otlp::WithExportConfig;
+    |
+
+error[E0624]: associated function `new` is private
+  --> src/bin/otel_http_custom_client.rs:35:34
+   |
+35 |         .with_resource(Resource::new(vec![KeyValue::new("service.name", "credit-engine-core")]))
+   |                                  ^^^ private associated function
+   |
+  ::: /Users/gustavoschneiter/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry_sdk-0.29.0/src/resource/mod.rs:95:5
+   |
+95 |     pub(crate) fn new<T: IntoIterator<Item = KeyValue>>(kvs: T) -> Self {
+   |     ------------------------------------------------------------------- private associated function defined here
+
+error[E0308]: `match` arms have incompatible types
+  --> src/bin/otel_http_custom.rs:34:13
+   |
+31 |       let span_exporter = match trace_protocol {
+   |                           -------------------- `match` arms have incompatible types
+32 |           OtlpProtocol::Grpc => Err(anyhow!("gRPC trace exporter não habilitado (use a feature `grpc-tonic`)")),
+   |                                 ------------------------------------------------------------------------------- this is found to be of type `Result<_, anyhow::Error>`
+33 |           OtlpProtocol::Http => {
+34 | /             SpanExporter::builder()
+35 | |                 .with_http()
+36 | |                 .with_http_client(Client::new())
+37 | |                 .with_endpoint(traces_endpoint.clone())
+38 | |                 .with_protocol(Protocol::HttpBinary)
+39 | |                 .with_timeout(traces_timeout)
+40 | |                 .build()
+   | |________________________^ expected `Result<_, Error>`, found `Result<SpanExporter, ExporterBuildError>`
+   |
+   = note: expected enum `Result<_, anyhow::Error>`
+              found enum `Result<opentelemetry_otlp::SpanExporter, ExporterBuildError>`
+help: try wrapping the expression in `Ok`
+   |
+34 ~             Ok(SpanExporter::builder()
+35 |                 .with_http()
+...
+39 |                 .with_timeout(traces_timeout)
+40 ~                 .build())
+   |
+
+error[E0308]: `match` arms have incompatible types
+  --> src/bin/otel_http_custom.rs:47:13
+   |
+44 |       let metric_exporter = match metrics_protocol {
+   |                             ---------------------- `match` arms have incompatible types
+45 |           OtlpProtocol::Grpc => Err(anyhow!("gRPC metric exporter não habilitado (use a feature `grpc-tonic`)")),
+   |                                 -------------------------------------------------------------------------------- this is found to be of type `Result<_, anyhow::Error>`
+46 |           OtlpProtocol::Http => {
+47 | /             MetricExporter::builder()
+48 | |                 .with_http()
+49 | |                 .with_http_client(Client::new())
+50 | |                 .with_endpoint(metrics_endpoint.clone())
+51 | |                 .with_protocol(Protocol::HttpBinary)
+52 | |                 .with_timeout(metrics_timeout)
+53 | |                 .build()
+   | |________________________^ expected `Result<_, Error>`, found `Result<MetricExporter, ...>`
+   |
+   = note: expected enum `Result<_, anyhow::Error>`
+              found enum `Result<MetricExporter, ExporterBuildError>`
+help: try wrapping the expression in `Ok`
+   |
+47 ~             Ok(MetricExporter::builder()
+48 |                 .with_http()
+...
+52 |                 .with_timeout(metrics_timeout)
+53 ~                 .build())
+   |
+
+error[E0624]: associated function `new` is private
+  --> src/bin/otel_http_custom.rs:60:34
+   |
+60 |         .with_resource(Resource::new(vec![KeyValue::new("service.name", "credit-engine-core")]))
+   |                                  ^^^ private associated function
+   |
+  ::: /Users/gustavoschneiter/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry_sdk-0.29.0/src/resource/mod.rs:95:5
+   |
+95 |     pub(crate) fn new<T: IntoIterator<Item = KeyValue>>(kvs: T) -> Self {
+   |     ------------------------------------------------------------------- private associated function defined here
+
+Some errors have detailed explanations: E0425, E0433, E0599, E0624.
+For more information about an error, try `rustc --explain E0425`.
+error[E0624]: associated function `new` is private
+  --> src/bin/otel_http_custom.rs:67:34
+   |
+67 |         .with_resource(Resource::new(vec![KeyValue::new("service.name", "credit-engine-core")]))
+   |                                  ^^^ private associated function
+   |
+  ::: /Users/gustavoschneiter/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry_sdk-0.29.0/src/resource/mod.rs:95:5
+   |
+95 |     pub(crate) fn new<T: IntoIterator<Item = KeyValue>>(kvs: T) -> Self {
+   |     ------------------------------------------------------------------- private associated function defined here
+
+error: could not compile `credit-engine-core` (bin "otel_http_custom_client") due to 5 previous errors
+Some errors have detailed explanations: E0308, E0425, E0433, E0624.
+For more information about an error, try `rustc --explain E0308`.
+error: could not compile `credit-engine-core` (bin "otel_http_custom") due to 6 previous errors
+error: could not compile `credit-engine-core` (bin "otel_http_custom_client" test) due to 5 previous errors
+error: could not compile `credit-engine-core` (bin "otel_http_custom" test) due to 6 previous errors

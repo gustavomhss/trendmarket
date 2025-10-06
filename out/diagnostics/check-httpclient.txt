@@ -1,0 +1,205 @@
+ Downloading crates ...
+  Downloaded system-configuration v0.6.1
+  Downloaded encoding_rs v0.8.35
+  Downloaded system-configuration-sys v0.6.0
+    Checking memchr v2.7.5
+    Checking stable_deref_trait v1.2.0
+    Checking futures-io v0.3.31
+    Checking core-foundation-sys v0.8.7
+   Compiling syn v2.0.106
+    Checking futures-channel v0.3.31
+   Compiling system-configuration-sys v0.6.0
+    Checking litemap v0.8.0
+    Checking writeable v0.6.1
+   Compiling icu_normalizer_data v2.0.0
+   Compiling icu_properties_data v2.0.1
+    Checking ipnet v2.11.0
+   Compiling native-tls v0.2.14
+    Checking form_urlencoded v1.2.2
+    Checking sync_wrapper v1.0.2
+    Checking core-foundation v0.9.4
+    Checking security-framework-sys v2.15.0
+    Checking utf8_iter v1.0.4
+    Checking iri-string v0.7.8
+    Checking zeroize v1.8.1
+    Checking encoding_rs v0.8.35
+    Checking mime v0.3.17
+    Checking rustls-pki-types v1.12.0
+    Checking serde_json v1.0.145
+    Checking aho-corasick v1.1.3
+    Checking security-framework v2.11.1
+    Checking system-configuration v0.6.1
+    Checking regex-automata v0.4.10
+    Checking matchers v0.2.0
+    Checking regex v1.11.2
+   Compiling synstructure v0.13.2
+   Compiling tokio-macros v2.5.0
+   Compiling zerofrom-derive v0.1.6
+   Compiling yoke-derive v0.8.0
+   Compiling tracing-attributes v0.1.30
+   Compiling futures-macro v0.3.31
+   Compiling zerovec-derive v0.11.1
+   Compiling displaydoc v0.2.5
+   Compiling serde_derive v1.0.222
+   Compiling thiserror-impl v2.0.16
+   Compiling pin-project-internal v1.1.10
+   Compiling prost-derive v0.13.5
+   Compiling async-trait v0.1.89
+    Checking tokio v1.47.1
+    Checking futures-util v0.3.31
+    Checking pin-project v1.1.10
+    Checking zerofrom v0.1.6
+    Checking tracing v0.1.41
+    Checking thiserror v2.0.16
+    Checking prost v0.13.5
+    Checking yoke v0.8.0
+    Checking serde v1.0.222
+    Checking tracing-subscriber v0.3.20
+    Checking opentelemetry v0.29.1
+    Checking futures-executor v0.3.31
+    Checking zerovec v0.11.4
+    Checking zerotrie v0.2.2
+    Checking serde_urlencoded v0.7.1
+    Checking ciborium v0.2.2
+    Checking tinytemplate v1.2.1
+    Checking tokio-util v0.7.16
+    Checking tokio-stream v0.1.17
+    Checking tower v0.5.2
+    Checking tokio-native-tls v0.3.1
+    Checking criterion v0.5.1
+    Checking opentelemetry_sdk v0.29.0
+    Checking tower-http v0.6.6
+    Checking h2 v0.4.12
+    Checking tower v0.4.13
+    Checking tinystr v0.8.1
+    Checking potential_utf v0.1.3
+    Checking icu_collections v2.0.0
+    Checking icu_locale_core v2.0.0
+    Checking icu_provider v2.0.0
+    Checking icu_properties v2.0.1
+    Checking icu_normalizer v2.0.0
+    Checking opentelemetry-prometheus v0.29.1 (/Users/gustavoschneiter/Documents/credit-engine-core/vendor/opentelemetry-prometheus)
+    Checking tracing-opentelemetry v0.30.0
+    Checking hyper v1.7.0
+    Checking idna_adapter v1.2.1
+    Checking idna v1.1.0
+    Checking url v2.5.7
+    Checking hyper-util v0.1.17
+    Checking hyper-tls v0.6.0
+    Checking tonic v0.12.3
+    Checking reqwest v0.12.23
+    Checking opentelemetry-http v0.29.0
+    Checking opentelemetry-proto v0.29.0
+    Checking opentelemetry-otlp v0.29.0
+    Checking credit-engine-core v0.1.0 (/Users/gustavoschneiter/Documents/credit-engine-core)
+error: an inner attribute is not permitted in this context
+ --> src/telemetry_metrics_otlp.rs:2:1
+  |
+2 | #![allow(unexpected_cfgs)]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+3 |
+4 | use std::{collections::HashMap, time::Duration};
+  | ------------------------------------------------ the inner attribute doesn't annotate this `use` import
+  |
+  = note: inner attributes, like `#![no_std]`, annotate the item enclosing them, and are usually found at the beginning of source files
+help: to annotate the `use` import, change the attribute from inner to outer style
+  |
+2 - #![allow(unexpected_cfgs)]
+2 + #[allow(unexpected_cfgs)]
+  |
+
+error: an inner attribute is not permitted in this context
+ --> src/telemetry_trace.rs:2:1
+  |
+2 | #![allow(unexpected_cfgs)]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+3 |
+4 | use std::collections::HashMap;
+  | ------------------------------ the inner attribute doesn't annotate this `use` import
+  |
+  = note: inner attributes, like `#![no_std]`, annotate the item enclosing them, and are usually found at the beginning of source files
+help: to annotate the `use` import, change the attribute from inner to outer style
+  |
+2 - #![allow(unexpected_cfgs)]
+2 + #[allow(unexpected_cfgs)]
+  |
+
+error[E0425]: cannot find value `span_exporter` in this scope
+   --> src/telemetry.rs:109:30
+    |
+ 81 |     let _span_exporter = match trace_protocol {
+    |         -------------- `_span_exporter` defined here
+...
+109 |         .with_batch_exporter(span_exporter)
+    |                              ^^^^^^^^^^^^^
+    |
+help: the leading underscore in `_span_exporter` marks it as unused, consider renaming it to `span_exporter`
+    |
+ 81 -     let _span_exporter = match trace_protocol {
+ 81 +     let span_exporter = match trace_protocol {
+    |
+
+error[E0425]: cannot find value `metric_exporter` in this scope
+   --> src/telemetry.rs:144:42
+    |
+116 |     let _metric_exporter = match metrics_protocol {
+    |         ---------------- `_metric_exporter` defined here
+...
+144 |     let reader = PeriodicReader::builder(metric_exporter)
+    |                                          ^^^^^^^^^^^^^^^
+    |
+help: the leading underscore in `_metric_exporter` marks it as unused, consider renaming it to `metric_exporter`
+    |
+116 -     let _metric_exporter = match metrics_protocol {
+116 +     let metric_exporter = match metrics_protocol {
+    |
+
+error: unused import: `bail`
+ --> src/telemetry.rs:1:22
+  |
+1 | use anyhow::{anyhow, bail, Result};
+  |                      ^^^^
+  |
+  = note: `-D unused-imports` implied by `-D warnings`
+  = help: to override `-D warnings` add `#[allow(unused_imports)]`
+
+error: unused import: `reqwest::Client`
+ --> src/telemetry.rs:3:5
+  |
+3 | use reqwest::Client;
+  |     ^^^^^^^^^^^^^^^
+
+error: unused import: `reqwest::Client`
+ --> src/telemetry_trace.rs:1:5
+  |
+1 | use reqwest::Client;
+  |     ^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `with_http_client` found for struct `opentelemetry_otlp::metric::MetricExporterBuilder` in the current scope
+   --> src/telemetry_metrics_otlp.rs:185:3
+    |
+184 | /                 builder.with_http()
+185 | |  .with_http_client(Client::new())
+    | |__-^^^^^^^^^^^^^^^^
+    |
+   ::: /Users/gustavoschneiter/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-otlp-0.29.0/src/exporter/http/mod.rs:428:8
+    |
+428 |       fn with_http_client<T: HttpClient + 'static>(self, client: T) -> Self;
+    |          ---------------- the method is available for `opentelemetry_otlp::metric::MetricExporterBuilder<HttpExporterBuilderSet>` here
+    |
+    = help: items from traits can only be used if the trait is in scope
+help: there is a method `with_http` with a similar name, but with different arguments
+   --> /Users/gustavoschneiter/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-otlp-0.29.0/src/metric.rs:61:5
+    |
+ 61 |     pub fn with_http(self) -> MetricExporterBuilder<HttpExporterBuilderSet> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: trait `WithHttpConfig` which provides `with_http_client` is implemented but not in scope; perhaps you want to import it
+    |
+  1 + use opentelemetry_otlp::WithHttpConfig;
+    |
+
+Some errors have detailed explanations: E0425, E0599.
+For more information about an error, try `rustc --explain E0425`.
+error: could not compile `credit-engine-core` (lib) due to 8 previous errors
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `credit-engine-core` (lib test) due to 8 previous errors

@@ -1,101 +1,160 @@
-use std::fmt;
-use std::time::{SystemTime, UNIX_EPOCH};
+//! Date and time utils for HTTP.
+//!
+//! Multiple HTTP header fields store timestamps.
+//! For example a response created on May 15, 2015 may contain the header
+//! `Date: Fri, 15 May 2015 15:34:21 GMT`. Since the timestamp does not
+//! contain any timezone or leap second information it is equvivalent to
+//! writing 1431696861 Unix time. Rust’s `SystemTime` is used to store
+//! these timestamps.
+//!
+//! This crate provides two public functions:
+//!
+//! * `parse_http_date` to parse a HTTP datetime string to a system time
+//! * `fmt_http_date` to format a system time to a IMF-fixdate
+//!
+//! In addition it exposes the `HttpDate` type that can be used to parse
+//! and format timestamps. Convert a sytem time to `HttpDate` and vice versa.
+//! The `HttpDate` (8 bytes) is smaller than `SystemTime` (16 bytes) and
+//! using the display impl avoids a temporary allocation.
+#![forbid(unsafe_code)]
 
-/// Representation de datas HTTP (RFC 7231 / IMF-fixdate).
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct HttpDate {
-    seconds: i64,
-}
+use std::error;
+use std::fmt::{self, Display, Formatter};
+use std::io;
+use std::time::SystemTime;
 
-impl From<SystemTime> for HttpDate {
-    fn from(value: SystemTime) -> Self {
-        let seconds = match value.duration_since(UNIX_EPOCH) {
-            Ok(duration) => duration.as_secs() as i64,
-            Err(err) => -(err.duration().as_secs() as i64),
-        };
-        HttpDate { seconds }
+pub use date::HttpDate;
+
+mod date;
+
+/// An opaque error type for all parsing errors.
+#[derive(Debug)]
+pub struct Error(());
+
+impl error::Error for Error {}
+
+impl Display for Error {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error> {
+        f.write_str("string contains no or an invalid date")
     }
 }
 
-impl fmt::Display for HttpDate {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let (year, month, day, weekday, hour, minute, second) = breakdown(self.seconds);
-        write!(
-            f,
-            "{weekday}, {day:02} {month} {year:04} {hour:02}:{minute:02}:{second:02} GMT",
-            weekday = WEEKDAYS[weekday as usize],
-            day = day,
-            month = MONTHS[month as usize - 1],
-            year = year,
-            hour = hour,
-            minute = minute,
-            second = second
-        )
+impl From<Error> for io::Error {
+    fn from(e: Error) -> io::Error {
+        io::Error::new(io::ErrorKind::Other, e)
     }
 }
 
-const SECONDS_PER_DAY: i64 = 86_400;
-const SECONDS_PER_HOUR: i64 = 3_600;
-const SECONDS_PER_MINUTE: i64 = 60;
-const WEEKDAYS: [&str; 7] = ["Thu", "Fri", "Sat", "Sun", "Mon", "Tue", "Wed"];
-const MONTHS: [&str; 12] = [
-    "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-];
-
-fn breakdown(seconds: i64) -> (i32, u32, u32, u32, u32, u32, u32) {
-    let days = div_floor(seconds, SECONDS_PER_DAY);
-    let secs_of_day = seconds - days * SECONDS_PER_DAY;
-
-    let hour = (secs_of_day / SECONDS_PER_HOUR) as u32;
-    let minute = ((secs_of_day % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE) as u32;
-    let second = (secs_of_day % SECONDS_PER_MINUTE) as u32;
-
-    let weekday = ((days + 3).rem_euclid(7)) as u32; // 1970-01-01 = Thursday
-
-    let (year, month, day) = civil_from_days(days + 719_468); // convert to proleptic Gregorian
-
-    (year, month, day, weekday, hour, minute, second)
+/// Parse a date from an HTTP header field.
+///
+/// Supports the preferred IMF-fixdate and the legacy RFC 805 and
+/// ascdate formats. Two digit years are mapped to dates between
+/// 1970 and 2069.
+pub fn parse_http_date(s: &str) -> Result<SystemTime, Error> {
+    s.parse::<HttpDate>().map(|d| d.into())
 }
 
-fn civil_from_days(days: i64) -> (i32, u32, u32) {
-    let mut z = days;
-    let era = div_floor(z, 146_097);
-    z -= era * 146_097;
-    let doe = (z - z / 1_460 + z / 36_524 - z / 146_096) as i64;
-    let yoe = (doe * 400 + 591) / 146_097;
-    let y = yoe + era * 400;
-    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
-    let mp = (5 * doy + 2) / 153;
-    let day = doy - (153 * mp + 2) / 5 + 1;
-    let month = mp + if mp < 10 { 3 } else { -9 };
-    let year = y + if month <= 2 { 1 } else { 0 };
-    (year as i32, month as u32, day as u32)
-}
-
-fn div_floor(a: i64, b: i64) -> i64 {
-    let mut result = a / b;
-    let rem = a % b;
-    if (rem > 0 && b < 0) || (rem < 0 && b > 0) {
-        result -= 1;
-    }
-    result
+/// Format a date to be used in a HTTP header field.
+///
+/// Dates are formatted as IMF-fixdate: `Fri, 15 May 2015 15:34:21 GMT`.
+pub fn fmt_http_date(d: SystemTime) -> String {
+    format!("{}", HttpDate::from(d))
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use std::time::Duration;
+    use std::str;
+    use std::time::{Duration, UNIX_EPOCH};
+
+    use super::{fmt_http_date, parse_http_date, HttpDate};
 
     #[test]
-    fn formats_epoch() {
-        let date = HttpDate::from(UNIX_EPOCH);
-        assert_eq!(date.to_string(), "Thu, 01 Jan 1970 00:00:00 GMT");
+    fn test_rfc_example() {
+        let d = UNIX_EPOCH + Duration::from_secs(784111777);
+        assert_eq!(
+            d,
+            parse_http_date("Sun, 06 Nov 1994 08:49:37 GMT").expect("#1")
+        );
+        assert_eq!(
+            d,
+            parse_http_date("Sunday, 06-Nov-94 08:49:37 GMT").expect("#2")
+        );
+        assert_eq!(d, parse_http_date("Sun Nov  6 08:49:37 1994").expect("#3"));
     }
 
     #[test]
-    fn formats_known_value() {
-        let ts = UNIX_EPOCH + Duration::from_secs(784_111_417);
-        let date = HttpDate::from(ts);
-        assert_eq!(date.to_string(), "Sat, 06 Nov 1994 08:56:57 GMT");
+    fn test2() {
+        let d = UNIX_EPOCH + Duration::from_secs(1475419451);
+        assert_eq!(
+            d,
+            parse_http_date("Sun, 02 Oct 2016 14:44:11 GMT").expect("#1")
+        );
+        assert!(parse_http_date("Sun Nov 10 08:00:00 1000").is_err());
+        assert!(parse_http_date("Sun Nov 10 08*00:00 2000").is_err());
+        assert!(parse_http_date("Sunday, 06-Nov-94 08+49:37 GMT").is_err());
+    }
+
+    #[test]
+    fn test3() {
+        let mut d = UNIX_EPOCH;
+        assert_eq!(d, parse_http_date("Thu, 01 Jan 1970 00:00:00 GMT").unwrap());
+        d += Duration::from_secs(3600);
+        assert_eq!(d, parse_http_date("Thu, 01 Jan 1970 01:00:00 GMT").unwrap());
+        d += Duration::from_secs(86400);
+        assert_eq!(d, parse_http_date("Fri, 02 Jan 1970 01:00:00 GMT").unwrap());
+        d += Duration::from_secs(2592000);
+        assert_eq!(d, parse_http_date("Sun, 01 Feb 1970 01:00:00 GMT").unwrap());
+        d += Duration::from_secs(2592000);
+        assert_eq!(d, parse_http_date("Tue, 03 Mar 1970 01:00:00 GMT").unwrap());
+        d += Duration::from_secs(31536005);
+        assert_eq!(d, parse_http_date("Wed, 03 Mar 1971 01:00:05 GMT").unwrap());
+        d += Duration::from_secs(15552000);
+        assert_eq!(d, parse_http_date("Mon, 30 Aug 1971 01:00:05 GMT").unwrap());
+        d += Duration::from_secs(6048000);
+        assert_eq!(d, parse_http_date("Mon, 08 Nov 1971 01:00:05 GMT").unwrap());
+        d += Duration::from_secs(864000000);
+        assert_eq!(d, parse_http_date("Fri, 26 Mar 1999 01:00:05 GMT").unwrap());
+    }
+
+    #[test]
+    fn test_fmt() {
+        let d = UNIX_EPOCH;
+        assert_eq!(fmt_http_date(d), "Thu, 01 Jan 1970 00:00:00 GMT");
+        let d = UNIX_EPOCH + Duration::from_secs(1475419451);
+        assert_eq!(fmt_http_date(d), "Sun, 02 Oct 2016 14:44:11 GMT");
+    }
+
+    #[allow(dead_code)]
+    fn testcase(data: &[u8]) {
+        if let Ok(s) = str::from_utf8(data) {
+            println!("{:?}", s);
+            if let Ok(d) = parse_http_date(s) {
+                let o = fmt_http_date(d);
+                assert!(!o.is_empty());
+            }
+        }
+    }
+
+    #[test]
+    fn size_of() {
+        assert_eq!(::std::mem::size_of::<HttpDate>(), 8);
+    }
+
+    #[test]
+    fn test_date_comparison() {
+        let a = UNIX_EPOCH + Duration::from_secs(784111777);
+        let b = a + Duration::from_secs(30);
+        assert!(a < b);
+        let a_date: HttpDate = a.into();
+        let b_date: HttpDate = b.into();
+        assert!(a_date < b_date);
+        assert_eq!(a_date.cmp(&b_date), ::std::cmp::Ordering::Less)
+    }
+
+    #[test]
+    fn test_parse_bad_date() {
+        // 1994-11-07 is actually a Monday
+        let parsed = "Sun, 07 Nov 1994 08:48:37 GMT".parse::<HttpDate>();
+        assert!(parsed.is_err())
     }
 }

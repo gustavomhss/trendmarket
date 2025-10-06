@@ -1,0 +1,41 @@
+    Checking credit-engine-core v0.1.0 (/Users/gustavoschneiter/Documents/credit-engine-core)
+error: an inner attribute is not permitted in this context
+ --> src/telemetry_metrics_otlp.rs:2:1
+  |
+2 | #![allow(unexpected_cfgs)]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+3 |
+4 | use std::{collections::HashMap, time::Duration};
+  | ------------------------------------------------ the inner attribute doesn't annotate this `use` import
+  |
+  = note: inner attributes, like `#![no_std]`, annotate the item enclosing them, and are usually found at the beginning of source files
+help: to annotate the `use` import, change the attribute from inner to outer style
+  |
+2 - #![allow(unexpected_cfgs)]
+2 + #[allow(unexpected_cfgs)]
+  |
+
+error[E0432]: unresolved import `opentelemetry_otlp::MetricsExporter`
+ --> src/telemetry_metrics_otlp.rs:7:26
+  |
+7 | use opentelemetry_otlp::{MetricsExporter, WithExportConfig};
+  |                          ^^^^^^^^^^^^^^^
+  |                          |
+  |                          no `MetricsExporter` in the root
+  |                          help: a similar name exists in the module: `MetricExporter`
+
+error: variable does not need to be mutable
+   --> src/telemetry.rs:190:9
+    |
+190 |     let mut builder = SpanExporter::builder();
+    |         ----^^^^^^^
+    |         |
+    |         help: remove this `mut`
+    |
+    = note: `-D unused-mut` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(unused_mut)]`
+
+For more information about this error, try `rustc --explain E0432`.
+error: could not compile `credit-engine-core` (lib) due to 3 previous errors
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `credit-engine-core` (lib test) due to 3 previous errors

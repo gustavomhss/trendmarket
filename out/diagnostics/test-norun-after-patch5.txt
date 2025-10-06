@@ -1,0 +1,34 @@
+   Compiling credit-engine-core v0.1.0 (/Users/gustavoschneiter/Documents/credit-engine-core)
+warning: unused import: `runtime::Tokio`
+ --> src/bin/otel_http_custom.rs:8:5
+  |
+8 |     runtime::Tokio,
+  |     ^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+error[E0277]: the `?` operator can only be applied to values that implement `Try`
+  --> src/bin/otel_http_custom_client.rs:35:30
+   |
+35 |         .with_batch_exporter(span_exporter?)
+   |                              ^^^^^^^^^^^^^^ the `?` operator cannot be applied to type `opentelemetry_otlp::SpanExporter`
+   |
+   = help: the trait `Try` is not implemented for `opentelemetry_otlp::SpanExporter`
+
+For more information about this error, try `rustc --explain E0277`.
+error: could not compile `credit-engine-core` (bin "otel_http_custom_client") due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `credit-engine-core` (bin "otel_http_custom_client" test) due to 1 previous error
+warning: variant `Grpc` is never constructed
+  --> src/bin/otel_http_custom.rs:15:27
+   |
+15 | enum OtlpProtocol { Http, Grpc }
+   |      ------------         ^^^^
+   |      |
+   |      variant in this enum
+   |
+   = note: `OtlpProtocol` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` on by default
+
+warning: `credit-engine-core` (bin "otel_http_custom" test) generated 2 warnings (2 duplicates)
+warning: `credit-engine-core` (bin "otel_http_custom") generated 2 warnings (run `cargo fix --bin "otel_http_custom"` to apply 1 suggestion)

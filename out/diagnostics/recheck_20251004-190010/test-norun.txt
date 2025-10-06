@@ -1,0 +1,6 @@
+error: duplicate key
+  --> Cargo.toml:22:1
+   |
+22 | opentelemetry-otlp = { version = "0.29", default-features = false, features = ["http-proto"] }
+   | ^^^^^^^^^^^^^^^^^^
+   |

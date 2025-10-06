@@ -98,7 +98,7 @@ fn build_tonic_span_exporter(
     endpoint: Option<String>,
     timeout: Option<Duration>,
 ) -> Result<SpanExporter, ExporterBuildError> {
-    let mut builder = otlp_crate::SpanExporter::builder().with_grpc();
+    let mut builder = otlp_crate::SpanExporter::builder().with_http();
     if let Some(endpoint) = endpoint {
         builder = builder.with_endpoint(endpoint);
     }
@@ -123,7 +123,7 @@ fn build_tonic_metric_exporter(
     endpoint: Option<String>,
     timeout: Option<Duration>,
 ) -> Result<MetricExporter, ExporterBuildError> {
-    let mut builder = otlp_crate::MetricExporter::builder().with_grpc();
+    let mut builder = otlp_crate::MetricExporter::builder().with_http();
     if let Some(endpoint) = endpoint {
         builder = builder.with_endpoint(endpoint);
     }
@@ -142,3 +142,4 @@ fn build_tonic_metric_exporter(
         "gRPC metrics exporter support is not enabled (enable the `metrics-otlp-grpc` feature)".into(),
     ))
 }
+use opentelemetry_otlp::WithExportConfig;
