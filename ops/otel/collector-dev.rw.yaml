@@ -1,0 +1,102 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: ${OTELCOL_LISTEN_ADDR:0.0.0.0}:4317
+      http:
+        endpoint: ${OTELCOL_LISTEN_ADDR:0.0.0.0}:4318
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'ce-app'
+          scrape_interval: 15s
+          static_configs:
+            - targets: ['localhost:9464']
+
+processors:
+  memory_limiter:
+    check_interval: 2s
+    limit_percentage: 75
+    spike_limit_percentage: 15
+  batch:
+    send_batch_size: 8192
+    timeout: 2s
+  attributes/drop_high_cardinality:
+    actions:
+      - key: user.id
+        action: delete
+      - key: session.id
+        action: delete
+      - key: http.target
+        action: delete
+  tailsampling:
+    decision_wait: 5s
+    num_traces: 50000
+    expected_new_traces_per_sec: 100
+    policies:
+      - name: always_sample_10pct
+        type: probabilistic
+        probabilistic:
+          sampling_percentage: 10
+      - name: error_spans
+        type: status_code
+        status_code:
+          status_codes: [ ERROR ]
+      - name: slow_spans
+        type: latency
+        latency:
+          threshold_ms: ${TAIL_SLOW_MS:100}
+
+exporters:
+  prometheusremotewrite:
+    endpoint: ${PROM_RW_ENDPOINT:http://localhost:9090/api/v1/write}
+    external_labels:
+      env: dev
+      service: otelcol
+  otlp/tempo:
+    endpoint: ${TEMPO_OTLP_ENDPOINT:http://localhost:4317}
+    tls:
+      insecure: true
+  loki:
+    endpoint: ${LOKI_ENDPOINT:http://localhost:3100/loki/api/v1/push}
+    labels:
+      resource:
+        - service.name
+        - deployment.environment
+      attributes:
+        - log.severity
+        - op
+    default_labels_enabled:
+      exporter: false
+      job: true
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+  pprof:
+    endpoint: 0.0.0.0:1777
+  zpages:
+    endpoint: 0.0.0.0:55679
+
+service:
+  telemetry:
+    logs:
+      level: info
+    metrics:
+      address: 0.0.0.0:8888
+
+  pipelines:
+    metrics:
+      receivers: [ otlp, prometheus ]
+      processors: [ memory_limiter, batch ]
+      exporters: [ prometheusremotewrite ]
+
+    traces:
+      receivers: [ otlp ]
+      processors: [ memory_limiter, batch, tailsampling ]
+      exporters: [ otlp/tempo ]
+
+    logs:
+      receivers: [ otlp ]
+      processors: [ memory_limiter, batch, attributes/drop_high_cardinality ]
+      exporters: [ loki ]
