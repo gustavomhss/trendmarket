@@ -1,0 +1,47 @@
+version: '3.8'
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    command: ["--config=/etc/otelcol/collector.yaml"]
+    volumes:
+      - ./collector-dev.prom.yaml:/etc/otelcol/collector.yaml:ro
+    ports:
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+      - "13133:13133" # health
+      - "1777:1777"   # pprof
+      - "55679:55679" # zpages
+      - "8888:8888"   # collector self-telemetry
+      - "9464:9464"   # prometheus exporter (when using prom variant)
+    environment:
+      - OTELCOL_LISTEN_ADDR=0.0.0.0
+      - TAIL_SLOW_MS=100
+      - TEMPO_OTLP_ENDPOINT=http://tempo:4317
+      - LOKI_ENDPOINT=http://loki:3100/loki/api/v1/push
+      - PROM_RW_ENDPOINT=http://prometheus:9090/api/v1/write
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+
+  tempo:
+    image: grafana/tempo:latest
+    command: ["-config.file=/etc/tempo/tempo-local.yaml"]
+    ports:
+      - "3200:3200"   # Tempo query HTTP
+      - "4317:4317"   # OTLP gRPC
+
+  loki:
+    image: grafana/loki:2.9.2
+    command: ["-config.file=/etc/loki/local-config.yaml"]
+    ports:
+      - "3100:3100"
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    depends_on: [prometheus, tempo, loki]
