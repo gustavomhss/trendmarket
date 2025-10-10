@@ -21,28 +21,48 @@ def read_json(path: Path) -> dict[str, Any]:
         return json.load(handle)
 
 
-def load_instant(dir_path: Path) -> dict[str, list[dict[str, Any]]]:
+def load_instant(dir_path: Path) -> tuple[dict[str, list[dict[str, Any]]], dict[str, str]]:
     result: dict[str, list[dict[str, Any]]] = {}
+    errors: dict[str, str] = {}
     if not dir_path.exists():
-        return result
+        return result, errors
     for file in sorted(dir_path.glob("*.json")):
         payload = read_json(file)
-        if payload.get("status") != "success":
+        status = payload.get("status")
+        if status != "success":
+            errors[file.name] = (
+                f"status={status} "
+                f"{payload.get('error') or payload.get('message') or 'no additional details'}"
+            ).strip()
             continue
-        result[file.name] = payload["data"].get("result", [])
-    return result
+        data = payload.get("data", {}).get("result", [])
+        if not data:
+            errors[file.name] = "no result samples returned"
+            continue
+        result[file.name] = data
+    return result, errors
 
 
-def load_range(dir_path: Path) -> dict[str, list[dict[str, Any]]]:
+def load_range(dir_path: Path) -> tuple[dict[str, list[dict[str, Any]]], dict[str, str]]:
     result: dict[str, list[dict[str, Any]]] = {}
+    errors: dict[str, str] = {}
     if not dir_path.exists():
-        return result
+        return result, errors
     for file in sorted(dir_path.glob("*.json")):
         payload = read_json(file)
-        if payload.get("status") != "success":
+        status = payload.get("status")
+        if status != "success":
+            errors[file.name] = (
+                f"status={status} "
+                f"{payload.get('error') or payload.get('message') or 'no additional details'}"
+            ).strip()
             continue
-        result[file.name] = payload["data"].get("result", [])
-    return result
+        data = payload.get("data", {}).get("result", [])
+        if not data:
+            errors[file.name] = "no result samples returned"
+            continue
+        result[file.name] = data
+    return result, errors
 
 
 def ensure_monotonic(series: TimeSeries) -> bool:
@@ -168,6 +188,42 @@ def collect_quantiles(
     return quantiles
 
 
+def verify_dataset_presence(
+    range_payloads: dict[str, list[dict[str, Any]]],
+    instant_payloads: dict[str, list[dict[str, Any]]],
+    range_errors: dict[str, str],
+    instant_errors: dict[str, str],
+) -> tuple[bool, list[str]]:
+    failures: list[str] = []
+    expected_range = {
+        "amm_op_latency_seconds_bucket.json": "latency histogram buckets",
+        "amm_op_latency_seconds_count.json": "latency histogram counts",
+        "amm_op_latency_seconds_sum.json": "latency histogram sums",
+        "amm_hook_invocations_total.json": "hook invocation counters",
+    }
+    expected_instant = {
+        "latency_p75.json": "latency p75 quantile",
+        "latency_p95.json": "latency p95 quantile",
+        "latency_avg.json": "latency average",
+    }
+
+    for name, description in expected_range.items():
+        dataset = range_payloads.get(name)
+        if dataset:
+            continue
+        detail = range_errors.get(name, "missing dataset")
+        failures.append(f"{description} ({name}) unavailable: {detail}")
+
+    for name, description in expected_instant.items():
+        dataset = instant_payloads.get(name)
+        if dataset:
+            continue
+        detail = instant_errors.get(name, "missing dataset")
+        failures.append(f"{description} ({name}) unavailable: {detail}")
+
+    return (len(failures) == 0, failures)
+
+
 def validate_quantiles(
     quantiles: dict[tuple[str, str], dict[str, float]]
 ) -> tuple[bool, list[str]]:
@@ -250,13 +306,17 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--log", type=Path)
     args = parser.parse_args(argv)
 
-    instant_payloads = load_instant(args.instant_dir)
-    range_payloads = load_range(args.range_dir)
+    instant_payloads, instant_errors = load_instant(args.instant_dir)
+    range_payloads, range_errors = load_range(args.range_dir)
 
     bucket_results = range_payloads.get("amm_op_latency_seconds_bucket.json", [])
     count_results = range_payloads.get("amm_op_latency_seconds_count.json", [])
     sum_results = range_payloads.get("amm_op_latency_seconds_sum.json", [])
     hook_results = range_payloads.get("amm_hook_invocations_total.json", [])
+
+    presence_ok, presence_failures = verify_dataset_presence(
+        range_payloads, instant_payloads, range_errors, instant_errors
+    )
 
     histograms = build_histogram_map(bucket_results)
     histogram_ok, histogram_failures = check_histograms(histograms)
@@ -270,6 +330,7 @@ def main(argv: list[str]) -> int:
     report = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "checks": {
+            "dataset_presence": {"ok": presence_ok, "details": presence_failures},
             "histogram_monotonic": {"ok": histogram_ok, "details": histogram_failures},
             "closure_within_3pct": {"ok": closure_ok_flag, "details": closure_failures},
             "quantile_ordering": {"ok": quantile_ok_flag, "details": quantile_failures},
