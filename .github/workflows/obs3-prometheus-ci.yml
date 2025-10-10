@@ -1,0 +1,208 @@
+name: OBS3 Prometheus CI
+
+on:
+  push:
+    paths:
+      - 'ops/prometheus/**'
+      - 'scripts/**'
+      - 'ops/schemas/**'
+      - 'Makefile'
+      - '.github/workflows/obs3-prometheus-ci.yml'
+  pull_request:
+    paths:
+      - 'ops/prometheus/**'
+      - 'scripts/**'
+      - 'ops/schemas/**'
+      - 'Makefile'
+      - '.github/workflows/obs3-prometheus-ci.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: write
+  pull-requests: read
+
+env:
+  PROMTOOL_VERSION: "2.54.1"
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  lint-promtool:
+    name: lint-promtool
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install promtool
+        run: |
+          set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/bin"
+          curl -sSL "https://github.com/prometheus/prometheus/releases/download/v${PROMTOOL_VERSION}/prometheus-${PROMTOOL_VERSION}.linux-amd64.tar.gz" -o prometheus.tar.gz
+          tar -xzf prometheus.tar.gz "prometheus-${PROMTOOL_VERSION}.linux-amd64/promtool"
+          mv "prometheus-${PROMTOOL_VERSION}.linux-amd64/promtool" "$GITHUB_WORKSPACE/bin/promtool"
+          chmod +x "$GITHUB_WORKSPACE/bin/promtool"
+          rm -rf prometheus.tar.gz "prometheus-${PROMTOOL_VERSION}.linux-amd64"
+          echo "$GITHUB_WORKSPACE/bin" >> "$GITHUB_PATH"
+
+      - name: Run promtool checks
+        run: |
+          set -euo pipefail
+          mkdir -p reports
+          if [ ! -f ops/prometheus/prometheus.dev.yml ]; then
+            echo "Missing ops/prometheus/prometheus.dev.yml" >&2
+            exit 1
+          fi
+          if [ ! -f ops/prometheus/prometheus.prod.yml ]; then
+            echo "Missing ops/prometheus/prometheus.prod.yml" >&2
+            exit 1
+          fi
+          {
+            promtool check config ops/prometheus/prometheus.dev.yml
+            promtool check config ops/prometheus/prometheus.prod.yml
+            if [ -f ops/prometheus/rules/core.rules.yml ]; then
+              promtool check rules ops/prometheus/rules/core.rules.yml
+            else
+              echo "Skipping rules check: ops/prometheus/rules/core.rules.yml not found"
+            fi
+          } | tee reports/prom_check.txt
+
+      - name: Upload promtool report
+        uses: actions/upload-artifact@v4
+        with:
+          name: promtool-report
+          path: reports/prom_check.txt
+
+  rules-test:
+    name: rules-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: lint-promtool
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install promtool
+        run: |
+          set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/bin"
+          curl -sSL "https://github.com/prometheus/prometheus/releases/download/v${PROMTOOL_VERSION}/prometheus-${PROMTOOL_VERSION}.linux-amd64.tar.gz" -o prometheus.tar.gz
+          tar -xzf prometheus.tar.gz "prometheus-${PROMTOOL_VERSION}.linux-amd64/promtool"
+          mv "prometheus-${PROMTOOL_VERSION}.linux-amd64/promtool" "$GITHUB_WORKSPACE/bin/promtool"
+          chmod +x "$GITHUB_WORKSPACE/bin/promtool"
+          rm -rf prometheus.tar.gz "prometheus-${PROMTOOL_VERSION}.linux-amd64"
+          echo "$GITHUB_WORKSPACE/bin" >> "$GITHUB_PATH"
+
+      - name: Run Prometheus rules tests
+        run: |
+          set -euo pipefail
+          if [ ! -f ops/prometheus/tests/core.rules.test.yml ]; then
+            echo "Missing ops/prometheus/tests/core.rules.test.yml" >&2
+            exit 1
+          fi
+          promtool test rules ops/prometheus/tests/core.rules.test.yml
+
+  static-lint:
+    name: static-lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Python tooling
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          pip install ruff jsonschema yamllint
+
+      - name: Install shellcheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+
+      - name: Run yamllint
+        run: |
+          set -euo pipefail
+          yamllint ops/prometheus .github/workflows/obs3-prometheus-ci.yml
+
+      - name: Run shellcheck
+        run: |
+          set -euo pipefail
+          if compgen -G "scripts/*.sh" > /dev/null; then
+            shellcheck -S warning scripts/*.sh
+          else
+            echo "No shell scripts found under scripts/"
+          fi
+
+      - name: Run ruff
+        run: |
+          set -euo pipefail
+          if compgen -G "scripts/*.py" > /dev/null; then
+            ruff check scripts
+          else
+            echo "No Python files found under scripts/"
+          fi
+
+  schema-validate:
+    name: schema-validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install jsonschema
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          pip install jsonschema
+
+      - name: Validate OBS3 manifest schema
+        run: |
+          set -euo pipefail
+          if [ ! -f scripts/obs3_verify_manifest.py ]; then
+            echo "Missing scripts/obs3_verify_manifest.py" >&2
+            exit 1
+          fi
+          if [ ! -f ops/schemas/examples/prom_scrape.example.json ]; then
+            echo "Missing ops/schemas/examples/prom_scrape.example.json" >&2
+            exit 1
+          fi
+          if [ ! -f ops/schemas/manifest.schema.json ]; then
+            echo "Missing ops/schemas/manifest.schema.json" >&2
+            exit 1
+          fi
+          python scripts/obs3_verify_manifest.py --manifest ops/schemas/examples/prom_scrape.example.json --schema ops/schemas/manifest.schema.json
+
+  anti-scans:
+    name: anti-scans
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Scan for placeholders
+        run: |
+          set -euo pipefail
+          ! grep -R -nE 'TODO|FIXME|PLACEHOLDER|CHANGEME|TBD|XXX' -- . ':!docs/CHANGELOG.md' ':!LICENSE'
+
+      - name: Scan for merge conflicts
+        run: |
+          set -euo pipefail
+          ! grep -R -nE '<<<<<<<|>>>>>>>' -- .
