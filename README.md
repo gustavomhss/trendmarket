@@ -50,22 +50,13 @@ Certifique-se de ter `prometheus`, `promtool`, `python3`, `jq`, `yamllint`, `she
 ### Comandos essenciais
 
 ```bash
-# Lints e estática
-yamllint ops/prometheus
-shellcheck scripts/obs_t3_prom_scrape_run.sh
-ruff scripts/obs3_*.py
-
-# Scrapes e evidências
-./scripts/obs_t3_prom_scrape_run.sh --env dev  --output out/obs_gatecheck/evidence
-./scripts/obs_t3_prom_scrape_run.sh --env prod --output out/obs_gatecheck/evidence
-
-# Quality gate e manifesto
-python3 scripts/obs3_quality_checks.py --evidence-dir out/obs_gatecheck/evidence --strict
-python3 scripts/obs3_hash_manifest.py --evidence-dir out/obs_gatecheck/evidence --verbose
-python3 scripts/obs3_verify_manifest.py --manifest out/obs_gatecheck/evidence/prom_scrape.json --schema ops/schemas/manifest.schema.json
+make lint
+make run                   # inicia Prometheus local e coleta evidências básicas
+make evidence              # runner + quality (T5) + hash (T6) + schema verify (T7)
+make pr-check              # verificador único local (T9)
 ```
 
-Os relatórios e manifestos são gravados em `out/obs_gatecheck/evidence/`. Ao executar o runner local, Prometheus fica disponível em `http://localhost:9090` com targets definidos em `ops/prometheus/prometheus.dev.yml`.
+Os relatórios e manifestos são gravados em `out/obs_gatecheck/evidence/`. As execuções de `make run` expõem Prometheus em `http://localhost:9090` com targets definidos em `ops/prometheus/prometheus.dev.yml`.
 
 ## Critérios de Aceite
 
