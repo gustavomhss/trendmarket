@@ -35,8 +35,8 @@ Atualize o campo **Status** após executar cada verificação e anexe evidência
 
 | Item | Comando | Saída esperada | Evidência (path/link) | Status (R/A/G) |
 | --- | --- | --- | --- | --- |
-| Coleta DEV | `./scripts/obs_t3_prom_scrape_run.sh --config ops/prometheus/prometheus.dev.yml --out out/obs_gatecheck` | Exit code 0; JSONs `prom_up_dev.json`, `prom_latency_dev.json`, manifesto parcial. | `out/obs_gatecheck/evidence/prom_up_dev.json` | A |
-| Coleta PROD | `./scripts/obs_t3_prom_scrape_run.sh --config ops/prometheus/prometheus.prod.yml --out out/obs_gatecheck` | Exit code 0; JSONs `prom_up_prod.json`, `prom_latency_prod.json`, readiness true. | `out/obs_gatecheck/evidence/prom_up_prod.json` | A |
+| Coleta DEV | `scripts/obs_t3_prom_scrape_run.sh --env dev --output out/obs_gatecheck/evidence` | Exit code 0; JSONs `prom_up_dev.json`, `prom_latency_dev.json`, manifesto parcial. | `out/obs_gatecheck/evidence/prom_up_dev.json` | A |
+| Coleta PROD | `scripts/obs_t3_prom_scrape_run.sh --env prod --output out/obs_gatecheck/evidence` | Exit code 0; JSONs `prom_up_prod.json`, `prom_latency_prod.json`, readiness true. | `out/obs_gatecheck/evidence/prom_up_prod.json` | A |
 
 ## 5. Quality Checks (Thread 5)
 

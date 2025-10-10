@@ -6,3 +6,11 @@ out/**/*.zip
 /.vscode
 /out/
 Cargo.toml.bak.*
+
+# OBS-3 outputs
+out/obs_gatecheck/
+# Linters
+.ruff_cache/
+.shellcheckrc
+.pytest_cache/
+__pycache__/

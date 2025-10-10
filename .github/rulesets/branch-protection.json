@@ -1,0 +1,62 @@
+{
+  "name": "Default and Release Branch Protection",
+  "target": "branch",
+  "enforcement": "active",
+  "conditions": {
+    "ref_name": {
+      "include": [
+        "refs/heads/main",
+        "refs/heads/release/*"
+      ],
+      "exclude": []
+    }
+  },
+  "rules": [
+    {
+      "type": "required_status_checks",
+      "parameters": {
+        "strict_required_status_checks_policy": true,
+        "do_not_run_if_required_jobs_missing": false,
+        "required_status_checks": [
+          { "context": "lint-promtool", "integration_id": null },
+          { "context": "rules-test", "integration_id": null },
+          { "context": "static-lint", "integration_id": null },
+          { "context": "schema-validate", "integration_id": null },
+          { "context": "anti-scans", "integration_id": null }
+        ]
+      }
+    },
+    {
+      "type": "pull_request",
+      "parameters": {
+        "required_approving_review_count": 2,
+        "require_code_owner_review": true,
+        "dismiss_stale_reviews_on_push": true,
+        "require_last_push_approval": false,
+        "required_review_thread_resolution": true
+      }
+    },
+    {
+      "type": "required_conversation_resolution",
+      "parameters": {}
+    },
+    {
+      "type": "required_signatures",
+      "parameters": {}
+    },
+    {
+      "type": "required_linear_history",
+      "parameters": {}
+    },
+    {
+      "type": "non_fast_forward",
+      "parameters": {}
+    },
+    {
+      "type": "deletion",
+      "parameters": {
+        "block_deletions": true
+      }
+    }
+  ]
+}
