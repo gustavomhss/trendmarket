@@ -1,0 +1,213 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://creditengine.example.com/schemas/obs3/manifest.schema.json",
+  "title": "OBS-3 Evidence Manifest",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "run_id",
+    "spec_version",
+    "git_sha",
+    "ts",
+    "targets",
+    "rules",
+    "up",
+    "p75",
+    "p95",
+    "series_sample",
+    "cardinality_snapshot",
+    "quality_checks",
+    "integrity"
+  ],
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+    },
+    "spec_version": {
+      "const": "5.0"
+    },
+    "git_sha": {
+      "type": "string",
+      "minLength": 1
+    },
+    "ts": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "targets": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "rules": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "up": {
+      "type": ["array", "object"],
+      "minItems": 0
+    },
+    "p75": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["metric", "value", "labels"],
+        "properties": {
+          "metric": {
+            "type": "string",
+            "minLength": 1
+          },
+          "value": {
+            "type": "number"
+          },
+          "labels": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "p95": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["metric", "value", "labels"],
+        "properties": {
+          "metric": {
+            "type": "string",
+            "minLength": 1
+          },
+          "value": {
+            "type": "number"
+          },
+          "labels": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "series_sample": {
+      "type": "array"
+    },
+    "cardinality_snapshot": {
+      "type": "object",
+      "required": [
+        "amm_op_latency_seconds_bucket",
+        "amm_op_latency_seconds_sum",
+        "amm_op_latency_seconds_count",
+        "hook_executions_total"
+      ],
+      "properties": {
+        "amm_op_latency_seconds_bucket": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "amm_op_latency_seconds_sum": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "amm_op_latency_seconds_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "hook_executions_total": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": true
+    },
+    "quality_checks": {
+      "type": "object",
+      "required": [
+        "histogram_monotonic",
+        "bucket_count_closure_error_pct",
+        "avg_le_p75_le_p95",
+        "p95_le_4x_avg",
+        "counters_monotonic",
+        "no_nan_inf",
+        "prom_telemetry"
+      ],
+      "properties": {
+        "histogram_monotonic": {
+          "type": "boolean"
+        },
+        "bucket_count_closure_error_pct": {
+          "type": "object",
+          "required": ["value", "threshold"],
+          "properties": {
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "threshold": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": true
+        },
+        "avg_le_p75_le_p95": {
+          "type": "boolean"
+        },
+        "p95_le_4x_avg": {
+          "type": "boolean"
+        },
+        "counters_monotonic": {
+          "type": "boolean"
+        },
+        "no_nan_inf": {
+          "type": "boolean"
+        },
+        "prom_telemetry": {
+          "type": "object",
+          "required": ["available"],
+          "properties": {
+            "available": {
+              "type": "boolean"
+            },
+            "jobs": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "properties": {
+                  "scrape_p95_s": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "samples_post_relabel_avg": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "interval_length_avg_s": {
+                    "type": "number",
+                    "minimum": 0
+                  }
+                },
+                "additionalProperties": true
+              },
+              "additionalProperties": true
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "integrity": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[a-f0-9]{64}$"
+      }
+    },
+    "notes": {
+      "type": "string",
+      "maxLength": 2000
+    }
+  }
+}
