@@ -1,0 +1,112 @@
+rule_files:
+  - rules/core.rules.yml
+evaluation_interval: 30s
+
+tests:
+  - name: suite_a_steady_latency
+    interval: 1m
+    input_series:
+      - series: 'amm_op_latency_seconds_bucket{le="0.1",op="quote",service="ce-core"}'
+        values: '0 80 160 240 320 400'
+      - series: 'amm_op_latency_seconds_bucket{le="0.2",op="quote",service="ce-core"}'
+        values: '0 160 320 480 640 800'
+      - series: 'amm_op_latency_seconds_bucket{le="0.3",op="quote",service="ce-core"}'
+        values: '0 190 380 570 760 950'
+      - series: 'amm_op_latency_seconds_bucket{le="0.5",op="quote",service="ce-core"}'
+        values: '0 198 396 594 792 990'
+      - series: 'amm_op_latency_seconds_bucket{le="1",op="quote",service="ce-core"}'
+        values: '0 199 398 597 796 995'
+      - series: 'amm_op_latency_seconds_bucket{le="+Inf",op="quote",service="ce-core"}'
+        values: '0 200 400 600 800 1000'
+      - series: 'amm_op_latency_seconds_sum{op="quote",service="ce-core"}'
+        values: '0 36 72 108 144 180'
+      - series: 'amm_op_latency_seconds_count{op="quote",service="ce-core"}'
+        values: '0 200 400 600 800 1000'
+      - series: 'amm_hook_invocations_total{hook="defer-settlement",service="ce-core"}'
+        values: '0 150 300 450 600 750'
+      - series: 'amm_hook_invocations_total{hook="reroute-failover",service="ce-core"}'
+        values: '0 20 40 60 80 100'
+      - series: 'amm_data_feature_value{service="ce-core",source="cdc",stream="loan_decisions",feature="apr"}'
+        values: '10 11 12 13 14 15'
+    promql_expr_test:
+      - expr: ce:amm_op_latency_seconds:p75
+        eval_time: 5m
+        exp_samples:
+          - labels: '{agg="p75",op="quote",service="ce-core"}'
+            value: 0.1875
+      - expr: ce:amm_op_latency_seconds:p95
+        eval_time: 5m
+        exp_samples:
+          - labels: '{agg="p95",op="quote",service="ce-core"}'
+            value: 0.3
+      - expr: ce:amm_op_latency_seconds:avg
+        eval_time: 5m
+        exp_samples:
+          - labels: '{agg="avg",op="quote",service="ce-core"}'
+            value: 0.18
+      - expr: ce:amm_hook_invocations:throughput_5m
+        eval_time: 5m
+        exp_samples:
+          - labels: '{agg="throughput_5m",hook="defer-settlement",service="ce-core"}'
+            value: 2.5
+          - labels: '{agg="throughput_5m",hook="reroute-failover",service="ce-core"}'
+            value: 0.3333333333
+      - expr: ce:data_feature:max_5m
+        eval_time: 5m
+        exp_samples:
+          - labels: '{agg="max_5m",feature="apr",service="ce-core",source="cdc",stream="loan_decisions"}'
+            value: 15
+
+  - name: suite_b_heavy_tail
+    interval: 1m
+    input_series:
+      - series: 'amm_op_latency_seconds_bucket{le="0.1",op="quote",service="ce-core"}'
+        values: '0 40 80 120 160 200'
+      - series: 'amm_op_latency_seconds_bucket{le="0.2",op="quote",service="ce-core"}'
+        values: '0 80 160 240 320 400'
+      - series: 'amm_op_latency_seconds_bucket{le="0.3",op="quote",service="ce-core"}'
+        values: '0 140 280 420 560 700'
+      - series: 'amm_op_latency_seconds_bucket{le="0.5",op="quote",service="ce-core"}'
+        values: '0 200 400 600 800 1000'
+      - series: 'amm_op_latency_seconds_bucket{le="1",op="quote",service="ce-core"}'
+        values: '0 215 430 645 860 1075'
+      - series: 'amm_op_latency_seconds_bucket{le="+Inf",op="quote",service="ce-core"}'
+        values: '0 220 440 660 880 1100'
+      - series: 'amm_op_latency_seconds_sum{op="quote",service="ce-core"}'
+        values: '0 75 150 225 300 375'
+      - series: 'amm_op_latency_seconds_count{op="quote",service="ce-core"}'
+        values: '0 220 440 660 880 1100'
+      - series: 'amm_hook_invocations_total{hook="defer-settlement",service="ce-core"}'
+        values: '0 180 360 540 720 900'
+      - series: 'amm_hook_invocations_total{hook="reroute-failover",service="ce-core"}'
+        values: '0 25 50 75 100 125'
+      - series: 'amm_data_feature_value{service="ce-core",source="cdc",stream="loan_decisions",feature="apr"}'
+        values: '15 17 18 20 21 22'
+    promql_expr_test:
+      - expr: ce:amm_op_latency_seconds:p75
+        eval_time: 5m
+        exp_samples:
+          - labels: '{agg="p75",op="quote",service="ce-core"}'
+            value: 0.3833333333
+      - expr: ce:amm_op_latency_seconds:p95
+        eval_time: 5m
+        exp_samples:
+          - labels: '{agg="p95",op="quote",service="ce-core"}'
+            value: 0.8
+      - expr: ce:amm_op_latency_seconds:avg
+        eval_time: 5m
+        exp_samples:
+          - labels: '{agg="avg",op="quote",service="ce-core"}'
+            value: 0.3409090909
+      - expr: ce:amm_hook_invocations:throughput_5m
+        eval_time: 5m
+        exp_samples:
+          - labels: '{agg="throughput_5m",hook="defer-settlement",service="ce-core"}'
+            value: 3
+          - labels: '{agg="throughput_5m",hook="reroute-failover",service="ce-core"}'
+            value: 0.4166666667
+      - expr: ce:data_feature:max_5m
+        eval_time: 5m
+        exp_samples:
+          - labels: '{agg="max_5m",feature="apr",service="ce-core",source="cdc",stream="loan_decisions"}'
+            value: 22

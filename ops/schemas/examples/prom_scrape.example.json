@@ -1,0 +1,37 @@
+{
+  "spec_version": "5.0",
+  "run_id": "7d2f2be0-13d3-4bb5-8b5c-02f3a1a3ef91",
+  "git_sha": "abcdef1",
+  "ts": "2024-05-21T12:34:56Z",
+  "env": "dev",
+  "artifacts": [
+    {
+      "name": "quality_report",
+      "path": "out/obs_gatecheck/prometheus/7d2f2be0/quality_report.json",
+      "sha256": "d4b463b6aa3da8633b9cd13dc4b6d01974d2d393f65158a55b5c2bdded92b4e8",
+      "size_bytes": 1820,
+      "content_type": "application/json"
+    },
+    {
+      "name": "prometheus_targets_snapshot",
+      "path": "out/obs_gatecheck/prometheus/7d2f2be0/telemetry/targets.json",
+      "sha256": "9f308ca9345f13b0b4a2a8168f372ec437d72d9174f40a3138d02effbd3453a7",
+      "size_bytes": 942,
+      "description": "Raw Prometheus /api/v1/targets response"
+    }
+  ],
+  "quality_gates": {
+    "histogram_monotonic": true,
+    "closure_within_3pct": true,
+    "quantile_ordering": true,
+    "counter_monotonic": true,
+    "nan_inf_zero": true,
+    "cardinality_snapshot": {
+      "total_series": 148,
+      "by_service": {
+        "ce-core": 96,
+        "otelcol": 52
+      }
+    }
+  }
+}

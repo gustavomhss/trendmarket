@@ -1,0 +1,35 @@
+{
+  "required_status_checks": {
+    "strict": true,
+    "checks": [
+      {
+        "context": "OBS-3 Prometheus CI / lint-promtool"
+      },
+      {
+        "context": "OBS-3 Prometheus CI / rules-test"
+      },
+      {
+        "context": "OBS-3 Prometheus CI / static-lint"
+      },
+      {
+        "context": "OBS-3 Prometheus CI / schema-validate"
+      },
+      {
+        "context": "OBS-3 Prometheus CI / anti-scans"
+      }
+    ]
+  },
+  "required_pull_request_reviews": {
+    "required_approving_review_count": 2,
+    "require_code_owner_reviews": true,
+    "dismiss_stale_reviews": true,
+    "require_last_push_approval": true
+  },
+  "enforce_admins": true,
+  "required_conversation_resolution": true,
+  "allow_force_pushes": false,
+  "allow_deletions": false,
+  "block_creations": false,
+  "required_linear_history": true,
+  "signed_commit_mandatory": true
+}

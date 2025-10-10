@@ -1,0 +1,15 @@
+- name: obs::prometheus
+  color: '1f77b4'
+  description: OBS-3 Prometheus related changes
+- name: obs::schema
+  color: 'ff7f0e'
+  description: Manifest schemas and validation tooling
+- name: ci::obs3
+  color: '2ca02c'
+  description: OBS-3 CI workflow updates
+- name: docs::observability
+  color: '9467bd'
+  description: Documentation for observability and evidence flows
+- name: needs::evidence
+  color: 'd62728'
+  description: Requires updated OBS-3 evidence bundle

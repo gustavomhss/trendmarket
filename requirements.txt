@@ -1,0 +1,5 @@
+jsonschema>=4.21.1
+requests>=2.31.0
+rich>=13.7.1
+ruff>=0.4.1
+yamllint>=1.35.1

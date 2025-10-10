@@ -1,0 +1,23 @@
+[
+  {
+    "labels": {
+      "service": "otelcol",
+      "env": "prod",
+      "availability": "primary"
+    },
+    "targets": [
+      "10.22.12.40:8888",
+      "10.22.12.41:8888"
+    ]
+  },
+  {
+    "labels": {
+      "service": "otelcol",
+      "env": "prod",
+      "availability": "dr"
+    },
+    "targets": [
+      "10.22.18.52:8888"
+    ]
+  }
+]

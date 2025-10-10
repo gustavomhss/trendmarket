@@ -5,4 +5,5 @@ out/**/*.zip
 /.idea
 /.vscode
 /out/
+out/obs_gatecheck/**
 Cargo.toml.bak.*
