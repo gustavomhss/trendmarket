@@ -1,54 +1,34 @@
-# Recording rules for CreditEngine core observability packs (OBS-3).
-# Naming: prefix ce:, units in _seconds/_total, snake_case metrics, aligned with audit catalog.
-# Labels: keep stable dimensions (op, service, env, version); avoid IDs/URLs/hashes in labels.
-# Hygiene: never drop histogram bucket label le; aggregations must not introduce dynamic labels.
 groups:
-  - name: ce-core-latency
+  - name: ce_core_latency
     interval: 30s
-    # rate[5m] suaviza ruído sem mascarar regressões rápidas; interval: 30s garante atualização frequente.
     rules:
-      # sum by (le, op, service) preserva buckets por operação/serviço para quantis estáveis sem agregar por labels dinâmicas.
       - record: ce:amm_op_latency_seconds:p75
         expr: |
           histogram_quantile(
             0.75,
-            sum by (le, op, service) (rate(amm_op_latency_seconds_bucket[5m]))
+            sum by (le, op, service) (
+              rate(amm_op_latency_seconds_bucket[5m])
+            )
           )
-      # sum by (le, op, service) preserva buckets por operação/serviço para quantis estáveis sem agregar por labels dinâmicas.
       - record: ce:amm_op_latency_seconds:p95
         expr: |
           histogram_quantile(
             0.95,
-            sum by (le, op, service) (rate(amm_op_latency_seconds_bucket[5m]))
+            sum by (le, op, service) (
+              rate(amm_op_latency_seconds_bucket[5m])
+            )
           )
-  - name: ce-core-avg
-    interval: 30s
-    rules:
-      # Média coerente com buckets e necessária para checks semânticos (Thread 5).
       - record: ce:amm_op_latency_seconds:avg_by_op
-        labels:
-          agg: "avg"
         expr: |
-          rate(amm_op_latency_seconds_sum[5m])
-            /
-          ignoring(le) rate(amm_op_latency_seconds_count[5m])
-  - name: ce-core-hooks
+          sum by (op) (
+            rate(amm_op_latency_seconds_sum[5m])
+          )
+          /
+          sum by (op) (
+            rate(amm_op_latency_seconds_count[5m])
+          )
+  - name: ce_hooks
     interval: 30s
     rules:
-      # Throughput por hook_id,status para SLIs de hooks.
       - record: ce:hook_executions_total:rate5m
-        expr: |
-          sum by (hook_id, status) (rate(hook_executions_total[5m]))
-  - name: ce-core-data
-    interval: 30s
-    rules:
-      # Materializa séries estáveis para dashboards/alertas (OBS-10/11) sem aumentar cardinalidade.
-      - record: ce:data_freshness_seconds:max_by_source
-        expr: |
-          max by (source) (data_freshness_seconds)
-      - record: ce:cdc_lag_seconds:max_by_stream
-        expr: |
-          max by (stream) (cdc_lag_seconds)
-      - record: ce:drift_score:max_by_feature
-        expr: |
-          max by (feature) (drift_score)
+        expr: rate(hook_executions_total[5m])
