@@ -1,106 +1,105 @@
-# OBS-3 Thread 4 Runner — Prometheus Evidence Scraper
+## Quality Checks (Thread 5)
 
-This runner orchestrates the observability evidence workflow for OBS-3 Thread 4. It validates Prometheus configuration, optionally boots a local Prometheus instance bound to loopback, waits for readiness, collects HTTP API evidence, and performs minimal dataset checks before delegating to downstream threads when available.
+The OBS-3 quality checks script (`obs3_quality_checks.py`) validates Prometheus
+evidence gathered by Thread 4 or retrieved live from a Prometheus endpoint. It
+confirms histogram integrity, quantile ordering, counter monotonicity, and
+basic scrape telemetry health before materialising the `prom_scrape.json`
+manifest.
 
-## Pré-requisitos
+### Validations performed
 
-Execute the script on Linux ou macOS com os binários abaixo disponíveis no `PATH` (ou informe caminhos via flags):
+* **Histogram monotonicity** for `amm_op_latency_seconds_bucket` using
+  `increase(...)` grouped by `op, service, le`.
+* **Bucket/count closure** by comparing
+  `sum(rate(amm_op_latency_seconds_bucket))` with
+  `rate(amm_op_latency_seconds_count)` (max error 3%).
+* **Quantile ordering** (`avg ≤ p75 ≤ p95`) and **tail guard** (`p95 ≤ 4× avg`,
+  unless `avg < 1e-9`).
+* **Hook counter monotonicity** ensuring `rate(hook_executions_total) ≥ 0` per
+  `hook_id,status`.
+* **Numeric health** by rejecting any NaN/Inf values.
+* **Prometheus scrape telemetry** snapshotting p95 duration, average samples
+  post relabel, and average target interval length by job.
 
-- `prometheus`
-- `promtool`
-- `curl`
-- `jq`
-- `grep`
-- `awk`
-- `sed`
-- `date`
+### Inputs
 
-Scripts opcionais requerem `python3` quando presentes.
+The script reads evidence JSON files from Thread 4 (default directory
+`out/obs_gatecheck/evidence`). Expected artifacts include queries for `up`,
+latency histogram buckets (`increase`, `rate`), quantiles (`p75`, `p95`),
+latency averages, hook execution counters, and Prometheus telemetry. The
+collector typically exports files such as `prom_up.json`, `prom_p75_rec.json`,
+`prom_p95_rec.json`, `prom_p75_adhoc.json`, `prom_p95_adhoc.json`,
+`prom_series.json`, and Prometheus telemetry snapshots. When the `--live` flag
+is used the script performs HTTP queries against the configured Prometheus
+address instead of loading local files.
 
-## Uso
+### Usage
 
-### Ambiente de desenvolvimento
-
-Inicie uma coleta completa usando a configuração padrão de desenvolvimento:
-
-```sh
-./scripts/obs_t3_prom_scrape_run.sh --config ops/prometheus/prometheus.dev.yml
+```bash
+python3 scripts/obs3_quality_checks.py \
+  --evidence-dir out/obs_gatecheck/evidence \
+  --addr :9090 --live --window 5m --strict
 ```
 
-### Ambiente de produção / Prometheus já ativo
+Key flags:
 
-Se um Prometheus confiável já estiver rodando (ex.: `ops/prometheus/prometheus.prod.yml`), apenas colete as evidências sem reiniciar o serviço:
+* `--manifest` – override output location (`prom_scrape.json` by default).
+* `--timeout` – HTTP read timeout (connect timeout fixed at 3 s).
+* `--dry-run` – print JSON to stdout without writing.
+* `--verbose` – emit additional progress logs.
+* `--strict` – treat any incomplete check or missing telemetry as a failure.
 
-```sh
-./scripts/obs_t3_prom_scrape_run.sh \
-  --config ops/prometheus/prometheus.prod.yml \
-  --addr 127.0.0.1:9090 \
-  --skip-start \
-  --no-stop
+### Outputs
+
+The script updates (or creates) `prom_scrape.json` within the evidence
+directory. The manifest contains aggregated booleans for each check, the bucket
+closure error percentage, a Prometheus telemetry section, and a
+`cardinality_snapshot`. Example excerpt:
+
+```json
+{
+  "quality_checks": {
+    "histogram_monotonic": true,
+    "bucket_count_closure_error_pct": {"value": 1.2, "threshold": 3.0},
+    "avg_le_p75_le_p95": true,
+    "p95_le_4x_avg": true,
+    "counters_monotonic": true,
+    "no_nan_inf": true,
+    "prom_telemetry": {
+      "available": true,
+      "jobs": {
+        "prometheus": {
+          "scrape_p95_s": 0.22,
+          "samples_post_relabel_avg": 4500.0,
+          "interval_length_avg_s": 15.0
+        }
+      }
+    }
+  },
+  "cardinality_snapshot": {
+    "amm_op_latency_seconds_bucket": 96,
+    "amm_op_latency_seconds_sum": 8,
+    "amm_op_latency_seconds_count": 8,
+    "hook_executions_total": 6
+  }
+}
 ```
 
-> **Importante:** O runner sempre força loopback (`127.0.0.1`/`::1`). Nunca exponha o Prometheus publicamente.
+### Exit codes & troubleshooting
 
-### Flags relevantes
+| Code | Meaning | Suggested action |
+| --- | --- | --- |
+| 0 | Success | Checks passed and manifest written. |
+| 6 | Required datasets missing | Ensure Thread 4 evidence exists or use `--live`. |
+| 8 | Validation failure | Inspect which check failed (`--verbose`). |
+| 9 | HTTP or timeout error | Verify Prometheus address, increase `--timeout`. |
+| 10 | Malformed JSON | Re-generate evidence or repair corrupted files. |
+| 11 | NaN/Inf detected | Investigate source metrics for invalid values. |
+| 12 | Telemetry absent (strict) | Provide scrape telemetry data or drop `--strict`. |
 
-- `--out <dir>`: diretório raiz para artefatos (`out/obs_gatecheck` padrão).
-- `--retention <dur>`: retenção TSDB quando Prometheus é iniciado localmente (`7d`).
-- `--ready-attempts` / `--ready-sleep`: controle do polling de readiness (padrões `30` tentativas e `1s`).
-- `--skip-lint`: desativa `promtool check`. Útil para investigações rápidas.
-- `--adhoc-only`: evita consultas `ce:*`, limitando-se aos quantis ad-hoc (latência).
-- `--skip-start` / `--no-stop`: reutiliza processos externos existentes.
-- `--prometheus-bin`, `--promtool-bin`, `--curl-bin`, `--jq-bin`: caminhos explícitos para binários.
+### Best practices
 
-## Artefatos gerados
-
-Todos os arquivos ficam em `<out>/obs_gatecheck/{logs,evidence}` (ou no diretório fornecido via `--out`):
-
-- `logs/prom_check.txt`
-- `logs/prometheus.txt` (quando o runner inicia o Prometheus)
-- `logs/prom.pid` (quando o runner inicia o Prometheus)
-- `evidence/prom_targets.json`
-- `evidence/prom_rules.json`
-- `evidence/prom_up.json`
-- `evidence/prom_p75_rec.json`
-- `evidence/prom_p95_rec.json`
-- `evidence/prom_p75_adhoc.json`
-- `evidence/prom_p95_adhoc.json`
-- `evidence/prom_series.json`
-
-## Exit codes
-
-| Código | Significado |
-| ------ | ----------- |
-| 0 | Execução concluída com sucesso. |
-| 2 | Falha nos checks do `promtool`. |
-| 3 | Prometheus não ficou pronto dentro da janela configurada. |
-| 5 | Não foi possível gravar alguma evidência obrigatória. |
-| 6 | Falha na validação mínima de datasets (evidências insuficientes). |
-| 7 | Dependência obrigatória ausente (binário ou `python3` para integrações). |
-| 10+ | Exit codes propagados de scripts opcionais (Threads 5–7). |
-
-## Fail-fast de coleta
-
-O runner valida automaticamente as evidências capturadas. Ele falha (`exit 6`) quando:
-
-- A consulta `up` não retorna status `success` com pelo menos uma série `value[1] == 1`.
-- Nenhum dataset de latência está disponível (`ce:*` ou quantis ad-hoc) com resultados.
-- As séries coletadas não incluem `amm_op_latency_seconds_bucket`.
-
-## Integrações opcionais
-
-Quando presentes na pasta `scripts/`, os artefatos abaixo são executados em sequência após a coleta e possuem exit codes propagados:
-
-1. `obs3_quality_checks.py`
-2. `obs3_hash_manifest.py`
-3. `obs3_verify_manifest.py`
-
-Ausências são ignoradas silenciosamente (com logging). Falhas interrompem o runner.
-
-## Boas práticas
-
-- Execute o runner somente em ambientes confiáveis; nunca exponha `:9090` para redes públicas.
-- Faça rotação periódica do diretório `prom-data` usado em desenvolvimento para evitar crescimento indefinido.
-- Versione os artefatos produzidos (logs + evidências) junto com o commit de observabilidade.
-- Ajuste `--ready-attempts`/`--ready-sleep` conforme SLAs locais para evitar falsos negativos.
-- Combine com watchers/gates das demais threads para garantir cobertura completa do pack OBS-3.
+* Run after at least 5–10 minutes of steady traffic to capture representative
+  rates.
+* Keep evidence directories versioned together with Thread 4 outputs.
+* Investigate and remediate any NaN/Inf values before re-running.
