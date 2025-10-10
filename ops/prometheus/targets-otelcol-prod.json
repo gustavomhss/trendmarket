@@ -1,0 +1,3 @@
+[
+  { "labels": { "service": "otelcol", "env": "prod" }, "targets": ["10.0.0.20:8888"] }
+]
