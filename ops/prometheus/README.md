@@ -1,21 +1,19 @@
-# Prometheus scrape configs — CE stack
+# Recording Rules (OBS-3)
 
-## Visão geral
-Os ambientes **DEV** e **PROD** compartilham a mesma estrutura de scrapes para garantir paridade de telemetria do CreditEngine. No DEV usamos `static_configs` apontando para os exporters locais, enquanto em PROD a seleção de endpoints usa `file_sd` para permitir rotação dinâmica das instâncias sem alterar o arquivo principal do Prometheus.
+| Record | Window | Interval | Rationale |
+| --- | --- | --- | --- |
+| `ce:amm_op_latency_seconds:p75` | `rate()[5m]` buckets | 30s | Quantil p75 para acompanhar latência típica por operação/serviço, mantendo buckets alinhados com histogramas de origem. |
+| `ce:amm_op_latency_seconds:p95` | `rate()[5m]` buckets | 30s | Quantil p95 para capturar regressões de cauda sem ruído excessivo, usando mesma agregação que o p75. |
+| `ce:amm_op_latency_seconds:avg_by_op` | `rate()[5m]` sum/count | 30s | Média compatível com histogramas para checks semânticos e comparações contra contratos. |
+| `ce:hook_executions_total:rate5m` | `rate()[5m]` | 30s | Throughput de hooks por `hook_id,status`, suporte direto a SLIs de automação. |
+| `ce:data_freshness_seconds:max_by_source` | ponto instantâneo | 30s | Máximo de freshness por fonte para painéis de OBS-10/11 sem explosão de cardinalidade. |
+| `ce:cdc_lag_seconds:max_by_stream` | ponto instantâneo | 30s | Maior lag por stream para validar SLAs de CDC e acionar watchers. |
+| `ce:drift_score:max_by_feature` | ponto instantâneo | 30s | Valor máximo de drift por feature, destacando riscos em modelos e dados. |
 
-## Endpoints monitorados
-- **ce-app** expõe métricas no `:9464`.
-- **otelcol** expõe métricas no `:8888`.
+Os quantis usam `sum by (le, op, service)` para preservar os buckets por operação/serviço, evitando perda de fidelidade e mantendo estimativas estáveis mesmo com várias instâncias.
 
-Em DEV ambos são referenciados como `localhost` para simplificar o ambiente de engenharia. Em PROD, as listas de targets residem nos arquivos `targets-prod.json` e `targets-otelcol-prod.json`, respeitando o escopo RFC1918.
+A média (`ce:amm_op_latency_seconds:avg_by_op`) deriva do par `*_sum` e `*_count` com `rate()[5m]`, garantindo coerência com a instrumentação do histograma e evitando discrepâncias com alertas de latência.
 
-## Higiene de labels
-Aplicamos `metric_relabel_configs` com `action: labeldrop` e regex `^(instance|pod|container|namespace|endpoint)$` para remover apenas os rótulos efêmeros gerados pelos orchestrators. Isso garante séries mais estáveis e evita que o label `le` (necessário para histogramas) seja removido.
-
-## Paridade DEV ↔ PROD
-Todos os scrapes carregam labels estáveis (`service`, `env` e `stack`) para permitir a correlação consistente de métricas, dashboards e alertas entre ambientes. O arquivo de PROD herda os mesmos nomes de jobs e regras (`rules/core.rules.yml`) garantindo equivalência operacional.
-
-## Sanidade rápida
-1. Valide a sintaxe das configurações: `promtool check config ops/prometheus/prometheus.dev.yml` e `promtool check config ops/prometheus/prometheus.prod.yml`.
-2. Com o Prometheus em execução, confirme os targets via `curl -sS http://localhost:9090/api/v1/targets` (ajuste host/porta conforme o deployment seguro) para verificar se as instâncias foram descobertas.
-
+Sanidade rápida:
+- `promtool check rules ops/prometheus/rules/core.rules.yml`
+- Consultar `ce:amm_op_latency_seconds:p95` no console `/graph` para validar séries agregadas.
