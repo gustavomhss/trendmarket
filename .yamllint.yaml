@@ -1,0 +1,11 @@
+extends: default
+ignore: |
+  vendor/
+  otelcol-contrib/
+  out/
+
+rules:
+  line-length:
+    max: 120
+  truthy:
+    allowed-values: ['true', 'false', 'on', 'off', 'yes', 'no']

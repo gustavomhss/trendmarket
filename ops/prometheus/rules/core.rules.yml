@@ -1,0 +1,49 @@
+# Recording rules that back the OBS-3 (CRD-8) latency, throughput, and data quality SLOs.
+groups:
+  - name: ce-core-latency
+    interval: 30s
+    rules:
+      # sum by (le, op, service) keeps histogram buckets monotonic per operation when deriving quantiles.
+      - record: ce:amm_op_latency_seconds:p75
+        expr: |
+          histogram_quantile(
+            0.75,
+            sum by (le, op, service) (
+              rate(amm_op_latency_seconds_bucket[5m])
+            )
+          )
+        labels:
+          agg: "p75"
+      - record: ce:amm_op_latency_seconds:p95
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le, op, service) (
+              rate(amm_op_latency_seconds_bucket[5m])
+            )
+          )
+        labels:
+          agg: "p95"
+      - record: ce:amm_op_latency_seconds:avg
+        expr: |
+          (
+            rate(amm_op_latency_seconds_sum[5m])
+              / ignoring(le)
+            rate(amm_op_latency_seconds_count[5m])
+          )
+        labels:
+          agg: "avg"
+      - record: ce:amm_hook_invocations:throughput_5m
+        expr: |
+          sum by (hook, service) (
+            rate(amm_hook_invocations_total[5m])
+          )
+        labels:
+          agg: "throughput_5m"
+      - record: ce:data_feature:max_5m
+        expr: |
+          max by (service, source, stream, feature) (
+            max_over_time(amm_data_feature_value[5m])
+          )
+        labels:
+          agg: "max_5m"

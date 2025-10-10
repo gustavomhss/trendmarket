@@ -1,0 +1,204 @@
+name: OBS-3 Prometheus CI
+
+on:
+  push:
+    paths:
+      - 'ops/prometheus/**'
+      - 'ops/schemas/**'
+      - 'scripts/obs3_*'
+      - 'scripts/obs_t3_prom_scrape_run.sh'
+      - '.github/workflows/obs3-prometheus-ci.yml'
+      - '.pre-commit-config.yaml'
+      - '.yamllint.yaml'
+      - '.github/labels.yml'
+      - '.github/rulesets/**'
+      - 'docs/**'
+      - 'Makefile'
+      - 'requirements.txt'
+      - 'pyproject.toml'
+  pull_request:
+    paths:
+      - 'ops/prometheus/**'
+      - 'ops/schemas/**'
+      - 'scripts/obs3_*'
+      - 'scripts/obs_t3_prom_scrape_run.sh'
+      - '.github/workflows/obs3-prometheus-ci.yml'
+      - '.pre-commit-config.yaml'
+      - '.yamllint.yaml'
+      - '.github/labels.yml'
+      - '.github/rulesets/**'
+      - 'docs/**'
+      - 'Makefile'
+      - 'requirements.txt'
+      - 'pyproject.toml'
+
+permissions:
+  contents: read
+  actions: read
+  checks: write
+  pull-requests: write
+
+jobs:
+  lint-promtool:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install promtool
+        run: |
+          set -euo pipefail
+          PROM_VERSION=2.49.1
+          curl -sSL -o promtool.tar.gz "https://github.com/prometheus/prometheus/releases/download/v${PROM_VERSION}/prometheus-${PROM_VERSION}.linux-amd64.tar.gz"
+          tar -xzf promtool.tar.gz
+          sudo mv "prometheus-${PROM_VERSION}.linux-amd64/promtool" /usr/local/bin/promtool
+          promtool --version
+
+      - name: promtool check config
+        run: |
+          set -euo pipefail
+          promtool check config ops/prometheus/prometheus.dev.yml
+          promtool check config ops/prometheus/prometheus.prod.yml
+        continue-on-error: false
+
+      - name: Upload promtool logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: obs3-promtool-check
+          path: ops/prometheus
+
+  rules-test:
+    runs-on: ubuntu-latest
+    needs: lint-promtool
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install promtool
+        run: |
+          set -euo pipefail
+          PROM_VERSION=2.49.1
+          curl -sSL -o promtool.tar.gz "https://github.com/prometheus/prometheus/releases/download/v${PROM_VERSION}/prometheus-${PROM_VERSION}.linux-amd64.tar.gz"
+          tar -xzf promtool.tar.gz
+          sudo mv "prometheus-${PROM_VERSION}.linux-amd64/promtool" /usr/local/bin/promtool
+
+      - name: promtool test rules
+        run: |
+          set -euo pipefail
+          promtool test rules ops/prometheus/tests/core.rules.test.yml | tee promtool_rules_test.txt
+
+      - name: Upload rule test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: obs3-promtool-tests
+          path: promtool_rules_test.txt
+
+  static-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install linters
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install yamllint ruff
+
+      - name: Run ruff
+        run: ruff check scripts ops/prometheus
+
+      - name: Run yamllint
+        run: yamllint ops/prometheus ops/schemas .github/workflows
+
+      - name: Run shellcheck
+        run: shellcheck scripts/obs_t3_prom_scrape_run.sh scripts/obs3_all_checks.sh scripts/gh_setup_repo_policies.sh
+
+      - name: Upload lint logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: obs3-static-lint
+          path: .
+
+  schema-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install jsonschema
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Validate schema example
+        run: |
+          python scripts/obs3_verify_manifest.py --schema ops/schemas/manifest.schema.json --manifest ops/schemas/examples/prom_scrape.example.json
+
+      - name: Upload schema logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: obs3-schema-validate
+          path: ops/schemas
+
+  anti-scans:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Scan for conflict markers
+        run: |
+          if git grep -n "<<<<<<<"; then
+            echo "Conflict markers detected" >&2
+            exit 1
+          fi
+
+      - name: Scan for placeholders
+        run: |
+          if git grep -nE 'TODO|FIXME|CHANGEME|XXX' -- \
+            ops/prometheus \
+            ops/schemas \
+            scripts/obs3_* \
+            scripts/obs_t3_prom_scrape_run.sh \
+            scripts/obs3_all_checks.sh \
+            scripts/gh_setup_repo_policies.sh \
+            .github \
+            docs/EXEC_SUMMARY.md \
+            docs/QA_CHECKLIST.md \
+            docs/CHANGELOG.md \
+            docs/RFC_TEMPLATE.md \
+            README.md \
+            Makefile \
+            requirements.txt \
+            pyproject.toml \
+            .pre-commit-config.yaml \
+            .yamllint.yaml \
+            .editorconfig \
+            VERSION \
+            CONTRIBUTING.md \
+            SECURITY.md; then
+            echo "Placeholder tokens detected" >&2
+            exit 1
+          fi
+
+      - name: Upload scan report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: obs3-anti-scan
+          path: .

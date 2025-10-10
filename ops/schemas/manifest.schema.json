@@ -1,0 +1,119 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OBS-3 Evidence Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "spec_version",
+    "run_id",
+    "git_sha",
+    "ts",
+    "env",
+    "artifacts",
+    "quality_gates"
+  ],
+  "properties": {
+    "spec_version": {
+      "const": "5.0",
+      "description": "Version of the OBS-3 canonical specification"
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "description": "UUIDv4 correlating the evidence bundle"
+    },
+    "git_sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{7,40}$",
+      "description": "Git commit SHA at which the evidence was produced"
+    },
+    "ts": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO8601 timestamp when the manifest was generated"
+    },
+    "env": {
+      "type": "string",
+      "enum": ["dev", "prod"],
+      "description": "Environment of the Prometheus target"
+    },
+    "artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "path", "sha256", "size_bytes"],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "content_type": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "quality_gates": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "histogram_monotonic",
+        "closure_within_3pct",
+        "quantile_ordering",
+        "counter_monotonic",
+        "nan_inf_zero",
+        "cardinality_snapshot"
+      ],
+      "properties": {
+        "histogram_monotonic": {
+          "type": "boolean"
+        },
+        "closure_within_3pct": {
+          "type": "boolean"
+        },
+        "quantile_ordering": {
+          "type": "boolean"
+        },
+        "counter_monotonic": {
+          "type": "boolean"
+        },
+        "nan_inf_zero": {
+          "type": "boolean"
+        },
+        "cardinality_snapshot": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["total_series", "by_service"],
+          "properties": {
+            "total_series": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "by_service": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

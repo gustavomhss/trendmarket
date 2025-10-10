@@ -118,6 +118,26 @@ Como guardrail adicional, todas as divisões críticas usam `U256` antes do down
 | `pricing_min_out_with_tolerance` | apply_slippage_discount       | Q128.18 | 18       | floor   | after_amount_out         | n/a             | Aplica desconto conservador antes do check de slippage para proteger LPs e usuários | `src/amm/pricing.rs:84..88`   |
 | `pricing_max_in_with_tolerance`  | apply_slippage_markup         | Q128.18 | 18       | ceil    | after_amount_in          | n/a             | Gross-up garante margem suficiente para honrar a tolerância informada               | `src/amm/pricing.rs:107..110` |
 | `pricing_execution_price_x_to_y` | compute_execution_price       | Q128.18 | 18       | bankers | after_amount_out         | half-even       | Preço percebido sem viés direcional mesmo em empates                                | `src/amm/pricing.rs:38..40`   |
+
+## OBS-3 / CRD-8 Prometheus Pack
+
+The OBS-3 pack extends this repository with production-grade Prometheus assets:
+
+- **Configs:** `ops/prometheus/prometheus.dev.yml` and `.prod.yml` share the same recording rules and hygiene while adapting discovery to local vs. production needs. Targets live in `targets-*.json` and adhere to RFC1918 ranges.
+- **Recording rules:** `ops/prometheus/rules/core.rules.yml` defines latency p75/p95, rolling averages, hook throughput, and data-feature maxima. Tests in `ops/prometheus/tests/core.rules.test.yml` cover steady-state and heavy-tail behaviours via `promtool test rules`.
+- **Evidence scripts:** run `make pr-check` or `./scripts/obs_t3_prom_scrape_run.sh --env dev` to execute promtool checks, collect telemetry, and generate `quality_report.json` plus an audit manifest validated against `ops/schemas/manifest.schema.json`.
+- **CI & Governance:** `.github/workflows/obs3-prometheus-ci.yml` enforces promtool, lint, schema, and anti-placeholder gates. Use `.github/rulesets/branch-protection.json` together with `scripts/gh_setup_repo_policies.sh` to replicate branch protection and labels.
+- **Docs:** see `docs/EXEC_SUMMARY.md`, `docs/QA_CHECKLIST.md`, and `docs/CHANGELOG.md` for context and acceptance criteria.
+
+### Local quickstart
+
+```bash
+pip install -r requirements.txt
+pre-commit install
+make pr-check
+```
+
+Evidence artifacts are emitted under `out/obs_gatecheck/prometheus/<run_id>/` and can be hashed with `scripts/obs3_hash_manifest.py` for compliance submissions.
 | `pricing_spot_price_x_in_y`      | compute_spot_price            | Q128.18 | 18       | bankers | after_reserve_validation | half-even       | Mantém simetria entre pares e evita drift no spot                                   | `src/amm/pricing.rs:19..22`   |
 | `pricing_spot_price_y_in_x`      | compute_spot_price            | Q128.18 | 18       | bankers | after_reserve_validation | half-even       | Idem acima, invertendo o par                                                        | `src/amm/pricing.rs:26..29`   |
 | `pricing_slippage_ppm_x_to_y`    | normalize_slippage_ratio      | Q32.6   | 6        | bankers | after_execution_price    | half-even       | Normaliza `spot` vs `exec` sem viés e sem inflar alertas                            | `src/amm/pricing.rs:52..60`   |

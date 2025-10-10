@@ -1,0 +1,9 @@
+# Global defaults
+* @gustavomhss
+
+# OBS-3 packs
+ops/prometheus/** @gustavomhss
+ops/schemas/** @gustavomhss
+scripts/obs3_* @gustavomhss
+scripts/obs_t3_prom_scrape_run.sh @gustavomhss
+.github/** @gustavomhss
