@@ -1,0 +1,77 @@
+{
+  "run_id": "7c52f3f0-1f6a-4cc2-9d9d-9a5b64f6e1a2",
+  "spec_version": "5.0",
+  "git_sha": "unknown",
+  "ts": "2025-01-12T10:15:30Z",
+  "targets": {
+    "status": "success",
+    "data": {
+      "activeTargets": 5
+    }
+  },
+  "rules": {
+    "evaluation_interval_seconds": 30
+  },
+  "up": [],
+  "p75": [
+    {
+      "metric": "http_request_duration_seconds",
+      "value": 0.245,
+      "labels": {
+        "job": "prometheus",
+        "instance": "prometheus-0"
+      }
+    }
+  ],
+  "p95": [
+    {
+      "metric": "http_request_duration_seconds",
+      "value": 0.412,
+      "labels": {
+        "job": "prometheus",
+        "instance": "prometheus-0"
+      }
+    }
+  ],
+  "series_sample": [
+    {
+      "metric": "up",
+      "value": 1,
+      "labels": {
+        "job": "node",
+        "instance": "node-0"
+      }
+    }
+  ],
+  "cardinality_snapshot": {
+    "amm_op_latency_seconds_bucket": 96,
+    "amm_op_latency_seconds_sum": 4321,
+    "amm_op_latency_seconds_count": 512,
+    "hook_executions_total": 28
+  },
+  "quality_checks": {
+    "histogram_monotonic": true,
+    "bucket_count_closure_error_pct": {
+      "value": 0.0,
+      "threshold": 5.0
+    },
+    "avg_le_p75_le_p95": true,
+    "p95_le_4x_avg": true,
+    "counters_monotonic": true,
+    "no_nan_inf": true,
+    "prom_telemetry": {
+      "available": true,
+      "jobs": {
+        "prometheus": {
+          "scrape_p95_s": 0.35,
+          "samples_post_relabel_avg": 4500,
+          "interval_length_avg_s": 15
+        }
+      }
+    }
+  },
+  "integrity": {
+    "ops/evidence/prom_scrape.json": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+  },
+  "notes": "Sample manifest produced during local smoke validation."
+}
