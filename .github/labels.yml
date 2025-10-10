@@ -1,0 +1,24 @@
+- name: type:observability
+  color: "8E44AD"
+  description: Itens de observabilidade (OBS-3/telemetria).
+- name: scope:obs-3
+  color: "16A085"
+  description: Escopo específico do épico CRD-8 / OBS-3.
+- name: status:ready-for-gate
+  color: "2ECC71"
+  description: Pronto para gate/ORR (evidências anexadas).
+- name: status:needs-repo-standards
+  color: "E67E22"
+  description: Requer alinhamento a padrões do repositório.
+- name: ci:blocked
+  color: "E74C3C"
+  description: Pipeline/CI falhando ou bloqueado.
+- name: security:review
+  color: "C0392B"
+  description: Requer revisão de segurança.
+- name: do-not-merge
+  color: "34495E"
+  description: Bloquear merge até liberação formal.
+- name: docs
+  color: "2980B9"
+  description: Mudanças de documentação.

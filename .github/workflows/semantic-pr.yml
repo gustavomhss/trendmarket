@@ -1,0 +1,34 @@
+name: Semantic PR Title
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - synchronize
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate pull request title
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enforce Conventional Commit title
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          pattern='^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\([^)]+\))?!?: .+'
+          echo "Checking pull request title: $PR_TITLE"
+          if printf '%s\n' "$PR_TITLE" | grep -Eq "$pattern"; then
+            echo "Title matches Conventional Commit format."
+            exit 0
+          fi
+          cat <<'MSG'
+::error::Invalid pull request title. Use Conventional Commit format such as:
+  - feat: add telemetry collector
+  - fix(api)!: handle contract breach
+  - docs(observability): update dashboards
+MSG
+          exit 1
