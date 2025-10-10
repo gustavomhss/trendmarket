@@ -1,0 +1,3 @@
+[
+  { "labels": { "service": "ce-core", "env": "prod" }, "targets": ["10.0.0.12:9464", "10.0.0.13:9464"] }
+]
