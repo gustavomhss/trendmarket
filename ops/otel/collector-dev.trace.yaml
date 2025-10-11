@@ -19,6 +19,7 @@ processors:
       - name: slow-critical-traces
         type: latency
         latency:
+          threshold_ms: ${env:TAIL_SLOW_MS:200}
           threshold: ${env:TAIL_SLOW_MS:200}ms
           attributes:
             - key: service.name
