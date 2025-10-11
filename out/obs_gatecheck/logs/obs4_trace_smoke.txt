@@ -34,3 +34,9 @@ POST http://127.0.0.1:4318/v1/traces -> 200
 [2025-10-11T05:44:19Z] [INFO] Nenhum arquivo otelcol_trace.* encontrado; anotado placeholder
 [2025-10-11T05:44:19Z] [INFO] Evidência escrita em /workspace/trendmarket/out/obs_gatecheck/evidence/traces_sample.json
 [2025-10-11T05:44:19Z] [INFO] Smoke concluído
+{"event":"pricing.quote.start","level":"INFO","message":"simulating pricing quote span","span_id":"0afc0a79ce07ce55","target":"obs4_trace_smoke","timestamp":"1760161414.318589962","trace_id":"1a3af08768834277b181aeef321ed9ab"}
+{"event":"pricing.quote.complete","level":"INFO","span_id":"0afc0a79ce07ce55","status":"ok","target":"obs4_trace_smoke","timestamp":"1760161414.394146125","trace_id":"1a3af08768834277b181aeef321ed9ab"}
+{"event":"amm.swap.start","level":"INFO","message":"beginning AMM swap span","span_id":"ca0d3f4a8900e4d7","target":"obs4_trace_smoke","timestamp":"1760161414.394436390","trace_id":"6d44228326abfbebfe1280d2aee8b1bd"}
+{"event":"amm.swap.complete","filled":42,"level":"INFO","span_id":"ca0d3f4a8900e4d7","status":"ok","target":"obs4_trace_smoke","timestamp":"1760161414.484989121","trace_id":"6d44228326abfbebfe1280d2aee8b1bd"}
+{"event":"amm.swap.start","level":"INFO","message":"starting AMM swap error span","span_id":"212ee8cca59177fe","target":"obs4_trace_smoke","timestamp":"1760161414.485304570","trace_id":"da403157539b7670decdc9e42094c0d8"}
+{"event":"amm.swap.failed","level":"ERROR","reason":"slippage limit exceeded","span_id":"212ee8cca59177fe","target":"obs4_trace_smoke","timestamp":"1760161414.605731982","trace_id":"da403157539b7670decdc9e42094c0d8"}
