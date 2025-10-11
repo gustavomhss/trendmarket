@@ -1,0 +1,36 @@
+[2025-10-11T05:44:15Z] [INFO] Validando collector em 127.0.0.1:4318
+[2025-10-11T05:44:15Z] [INFO] Collector acessível
+[2025-10-11T05:44:15Z] [INFO] Executando obs_demo com 5 operações
+{"env":"dev","extra":{"message":"","name":"MeterProvider.GlobalSet"},"level":"info","msg":"Global meter provider is set. Meters can now be created using global::meter() or global::meter_with_scope().","op":"unknown","service":"ce-amm","span_id":"0000000000000000","trace_id":"00000000000000000000000000000000","ts":"2025-10-11T05:44:16Z","version":"0.0.0-dev"}
+obs_demo starting: service=ce-amm version=0.0.0-dev env=dev operations=5
+{"env":"dev","extra":{"amm":{"delta_k_ratio":0.03340624473855775,"direction":"quote_to_base","fee_ppm":491,"input":85.75638485641322,"k_after":992069.9949490154,"k_before":960000.0,"output":116.12902339482184},"latency_seconds":0.08360087},"level":"info","msg":"swap executed","op":"swap","service":"ce-amm","span_id":"a2c9db9e9fd35313","trace_id":"e27c84e0696ce2ce5e01c485a9434b95","ts":"2025-10-11T05:44:16Z","version":"0.0.0-dev"}
+{"env":"dev","extra":{"amm":{"delta_k_ratio":-0.01890133633088235,"fee_ppm":414,"input":69.50028852570958,"k_after":973318.5463107073,"k_before":992069.9949490154,"output":53.40336608897394},"latency_seconds":0.040571407,"pricing":{"mid_price":0.7231154830183395}},"level":"info","msg":"pricing quote generated","op":"pricing","service":"ce-amm","span_id":"99f4ec99da015ad6","trace_id":"511cfabeb4eaa261afa5305fce2a340b","ts":"2025-10-11T05:44:16Z","version":"0.0.0-dev"}
+{"env":"dev","extra":{"amm":{"delta_k_ratio":0.009993489827257623,"fee_ppm":254,"input":32.0,"k_after":983045.3953019446,"k_before":973318.5463107073,"output":0.0},"cdc":{"lag_seconds":2.864085531730254,"offset_after":32,"offset_before":0,"partition":"p1","records":32,"stream":"trades"},"latency_seconds":0.087584851},"level":"info","msg":"cdc batch consumed","op":"cdc_consume","service":"ce-amm","span_id":"aaf5e425c9656b1e","trace_id":"32a155366ce4596f86c512d2c0db6b2b","ts":"2025-10-11T05:44:16Z","version":"0.0.0-dev"}
+{"env":"dev","extra":{"amm":{"delta_k_ratio":-0.04771354107596157,"direction":"base_to_quote","fee_ppm":209,"input":94.12091938366662,"k_after":936140.8184536704,"k_before":983045.3953019446,"output":70.82119293154278},"latency_seconds":0.050554863},"level":"info","msg":"swap executed","op":"swap","service":"ce-amm","span_id":"ce3202bc72e0168d","trace_id":"ab26106eb55ec6dce8e07ded5c0235dd","ts":"2025-10-11T05:44:16Z","version":"0.0.0-dev"}
+{"env":"dev","extra":{"amm":{"delta_k_ratio":0.018845892459610488,"fee_ppm":131,"input":14.429671897158249,"k_after":953783.2276453,"k_before":936140.8184536704,"output":9.87781152987202},"latency_seconds":0.023291965,"pricing":{"mid_price":0.6762428741466413}},"level":"info","msg":"pricing quote generated","op":"pricing","service":"ce-amm","span_id":"3957b5635263776c","trace_id":"356ced13e5105791373d4d66c5d51f0a","ts":"2025-10-11T05:44:16Z","version":"0.0.0-dev"}
+
+thread 'OpenTelemetry.Metrics.PeriodicReader' panicked at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/ops/function.rs:250:5:
+there is no reactor running, must be called from the context of a Tokio 1.x runtime
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+obs_demo completed: swap=2 pricing=2 cdc=1
+[2025-10-11T05:44:16Z] [INFO] Executando obs_demo com 5 operações
+{"env":"dev","extra":{"message":"","name":"MeterProvider.GlobalSet"},"level":"info","msg":"Global meter provider is set. Meters can now be created using global::meter() or global::meter_with_scope().","op":"unknown","service":"ce-amm","span_id":"0000000000000000","trace_id":"00000000000000000000000000000000","ts":"2025-10-11T05:44:17Z","version":"0.0.0-dev"}
+obs_demo starting: service=ce-amm version=0.0.0-dev env=dev operations=5
+{"env":"dev","extra":{"amm":{"delta_k_ratio":0.03340624473855775,"direction":"quote_to_base","fee_ppm":491,"input":85.75638485641322,"k_after":992069.9949490154,"k_before":960000.0,"output":116.12902339482184},"latency_seconds":0.08257921},"level":"info","msg":"swap executed","op":"swap","service":"ce-amm","span_id":"41fb849792aec8be","trace_id":"bf36d3c6e091e0004cbd4ef81f85ec24","ts":"2025-10-11T05:44:17Z","version":"0.0.0-dev"}
+{"env":"dev","extra":{"amm":{"delta_k_ratio":-0.01890133633088235,"fee_ppm":414,"input":69.50028852570958,"k_after":973318.5463107073,"k_before":992069.9949490154,"output":53.40336608897394},"latency_seconds":0.040494759,"pricing":{"mid_price":0.7231154830183395}},"level":"info","msg":"pricing quote generated","op":"pricing","service":"ce-amm","span_id":"cf62cbe8c2bd6866","trace_id":"2c476e10431c7778c93de88efa5cfffb","ts":"2025-10-11T05:44:17Z","version":"0.0.0-dev"}
+{"env":"dev","extra":{"amm":{"delta_k_ratio":0.009993489827257623,"fee_ppm":254,"input":32.0,"k_after":983045.3953019446,"k_before":973318.5463107073,"output":0.0},"cdc":{"lag_seconds":2.864085531730254,"offset_after":32,"offset_before":0,"partition":"p1","records":32,"stream":"trades"},"latency_seconds":0.088511791},"level":"info","msg":"cdc batch consumed","op":"cdc_consume","service":"ce-amm","span_id":"ad2ba2bcb19d2817","trace_id":"7f7e8c1f5051336888f63824d3c9a0fd","ts":"2025-10-11T05:44:17Z","version":"0.0.0-dev"}
+{"env":"dev","extra":{"amm":{"delta_k_ratio":-0.04771354107596157,"direction":"base_to_quote","fee_ppm":209,"input":94.12091938366662,"k_after":936140.8184536704,"k_before":983045.3953019446,"output":70.82119293154278},"latency_seconds":0.050535022},"level":"info","msg":"swap executed","op":"swap","service":"ce-amm","span_id":"1db79c1a97fc8e71","trace_id":"53df3a4d2ef015409c0ba98c3d301891","ts":"2025-10-11T05:44:17Z","version":"0.0.0-dev"}
+{"env":"dev","extra":{"amm":{"delta_k_ratio":0.018845892459610488,"fee_ppm":131,"input":14.429671897158249,"k_after":953783.2276453,"k_before":936140.8184536704,"output":9.87781152987202},"latency_seconds":0.02352063,"pricing":{"mid_price":0.6762428741466413}},"level":"info","msg":"pricing quote generated","op":"pricing","service":"ce-amm","span_id":"252221157775e0bc","trace_id":"2df01f5b01f1e899efba1a6d096d21e6","ts":"2025-10-11T05:44:17Z","version":"0.0.0-dev"}
+
+thread 'OpenTelemetry.Metrics.PeriodicReader' panicked at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/core/src/ops/function.rs:250:5:
+there is no reactor running, must be called from the context of a Tokio 1.x runtime
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+obs_demo completed: swap=2 pricing=2 cdc=1
+[2025-10-11T05:44:17Z] [INFO] Enviando span lento synthetic amm.swap (280 ms)
+POST http://127.0.0.1:4318/v1/traces -> 200
+[2025-10-11T05:44:18Z] [INFO] Enviando span synthetic pricing.quote com status ERROR
+POST http://127.0.0.1:4318/v1/traces -> 200
+[2025-10-11T05:44:19Z] [INFO] Coletando amostra de debug do otelcol
+[2025-10-11T05:44:19Z] [INFO] Nenhum arquivo otelcol_trace.* encontrado; anotado placeholder
+[2025-10-11T05:44:19Z] [INFO] Evidência escrita em /workspace/trendmarket/out/obs_gatecheck/evidence/traces_sample.json
+[2025-10-11T05:44:19Z] [INFO] Smoke concluído

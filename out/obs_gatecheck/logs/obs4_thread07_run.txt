@@ -1,0 +1,11 @@
+[2025-10-11T05:44:15Z] [INFO] Validando collector em 127.0.0.1:4318
+[2025-10-11T05:44:15Z] [INFO] Collector acessível
+[2025-10-11T05:44:15Z] [INFO] Executando obs_demo com 5 operações
+[2025-10-11T05:44:16Z] [INFO] Executando obs_demo com 5 operações
+[2025-10-11T05:44:17Z] [INFO] Enviando span lento synthetic amm.swap (280 ms)
+[2025-10-11T05:44:18Z] [INFO] Enviando span synthetic pricing.quote com status ERROR
+[2025-10-11T05:44:19Z] [INFO] Coletando amostra de debug do otelcol
+[2025-10-11T05:44:19Z] [INFO] Nenhum arquivo otelcol_trace.* encontrado; anotado placeholder
+[2025-10-11T05:44:19Z] [INFO] Evidência escrita em /workspace/trendmarket/out/obs_gatecheck/evidence/traces_sample.json
+[2025-10-11T05:44:19Z] [INFO] Smoke concluído
+ACCEPTANCE_OK
