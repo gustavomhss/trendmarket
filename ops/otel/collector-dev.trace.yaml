@@ -20,6 +20,7 @@ processors:
         type: latency
         latency:
           threshold_ms: ${env:TAIL_SLOW_MS:200}
+          threshold: ${env:TAIL_SLOW_MS:200}ms
           attributes:
             - key: service.name
               value: ${env:SERVICE_NAME:credit-engine-core}
