@@ -47,3 +47,55 @@ service:
       receivers: [ otlp ]
       processors: [ memory_limiter, batch, tailsampling ]
       exporters: [ otlp/tempo ]
+        endpoint: 0.0.0.0:${env:OTLP_GRPC_PORT:4317}
+      http:
+        endpoint: 0.0.0.0:${env:OTLP_HTTP_PORT:4318}
+
+processors:
+  tail_sampling:
+    decision_wait: 10s
+    num_traces: 50000
+    expected_new_traces_per_sec: 1000
+    policies:
+      - name: error-traces
+        type: status_code
+        status_code:
+          status_codes: [ ERROR ]
+      - name: slow-critical-traces
+        type: latency
+        latency:
+          threshold_ms: ${env:TAIL_SLOW_MS:200}
+          threshold: ${env:TAIL_SLOW_MS:200}ms
+          attributes:
+            - key: service.name
+              value: ${env:SERVICE_NAME:credit-engine-core}
+              attribute_source: resource
+          spans:
+            - span_names:
+                - match_type: regexp
+                  regexp: ^amm\.
+            - span_names:
+                - match_type: regexp
+                  regexp: ^pricing\.
+  batch:
+    send_batch_size: 8192
+    timeout: 2s
+
+exporters:
+  otlphttp/tempo:
+    endpoint: ${env:TEMPO_OTLP_HTTP:http://localhost:4318}
+  otlphttp/jaeger:
+    endpoint: ${env:JAEGER_OTLP_HTTP:http://localhost:4318}
+  debug:
+    verbosity: detailed
+
+service:
+  telemetry:
+    metrics:
+      address: ${env:OTELCOL_LISTEN_ADDR:127.0.0.1}:${env:OTELCOL_LISTEN_PORT:8888}
+
+  pipelines:
+    traces:
+      receivers: [ otlp ]
+      processors: [ tail_sampling, batch ]
+      exporters: [ otlphttp/tempo, otlphttp/jaeger, debug ]
