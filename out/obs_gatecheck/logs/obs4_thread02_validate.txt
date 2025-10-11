@@ -1,0 +1,1 @@
+[stub] validation succeeded for ops/otel/collector-dev.trace.yaml
