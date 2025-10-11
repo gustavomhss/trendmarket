@@ -1,0 +1,11 @@
+==> out/obs_gatecheck/logs/otelcol_trace.err <==
+[stub] exporter tempo connection failed: [Errno 111] Connection refused
+[stub] exporter jaeger connection failed: [Errno 111] Connection refused
+
+==> out/obs_gatecheck/logs/otelcol_trace.out <==
+[stub] starting metrics endpoint on http://127.0.0.1:8888/metrics
+[metrics] "GET /metrics HTTP/1.1" 200 -
+[metrics] "GET /metrics HTTP/1.1" 200 -
+
+==> out/obs_gatecheck/logs/otelcol_trace.pid <==
+6115
