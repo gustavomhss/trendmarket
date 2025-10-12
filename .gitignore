@@ -14,3 +14,9 @@ out/obs_gatecheck/
 .shellcheckrc
 .pytest_cache/
 __pycache__/
+
+# gatecheck artifacts
+out/
+out/
+.tools/
+tools/obs4smoke/target/

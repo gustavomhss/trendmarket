@@ -1,18 +1,13 @@
+extensions:
+  health_check:
+    endpoint: 127.0.0.1:13133
 receivers:
   otlp:
     protocols:
       grpc:
-        endpoint: ${OTELCOL_LISTEN_ADDR:0.0.0.0}:4317
+        endpoint: ${env:OTELCOL_LISTEN_ADDR}:4317
       http:
-        endpoint: ${OTELCOL_LISTEN_ADDR:0.0.0.0}:4318
-  prometheus:
-    config:
-      scrape_configs:
-        - job_name: 'ce-app'
-          scrape_interval: 15s
-          static_configs:
-            - targets: ['localhost:9464']  # app's /metrics if exposed in dev
-
+        endpoint: ${env:OTELCOL_LISTEN_ADDR}:4318
 processors:
   memory_limiter:
     check_interval: 2s
@@ -21,79 +16,53 @@ processors:
   batch:
     send_batch_size: 8192
     timeout: 2s
-  attributes/drop_high_cardinality:
-    actions:
-      - key: user.id
-        action: delete
-      - key: session.id
-        action: delete
-      - key: http.target
-        action: delete
-  tailsampling:
+  resource:
+    attributes:
+      - key: service.name
+        value: ce-app
+        action: upsert
+      - key: service.namespace
+        value: credit-engine
+        action: upsert
+  tail_sampling:
     decision_wait: 5s
     num_traces: 50000
     expected_new_traces_per_sec: 100
     policies:
-      - name: always_sample_10pct
+      - name: baseline_10pct
         type: probabilistic
         probabilistic:
           sampling_percentage: 10
-      - name: error_spans
+      - name: status_error_100pct
         type: status_code
         status_code:
           status_codes: [ ERROR ]
-      - name: slow_spans
+      - name: slow_over_250ms
         type: latency
         latency:
-          threshold_ms: ${TAIL_SLOW_MS:100}
-
+          threshold_ms: 250
 exporters:
-  prometheus:
-    endpoint: 0.0.0.0:9464
-  otlp/tempo:
-    endpoint: ${TEMPO_OTLP_ENDPOINT:http://localhost:4317}
+  otlphttp/otlp_http_sink:
+    endpoint: http://127.0.0.1:4318
     tls:
       insecure: true
-  loki:
-    endpoint: ${LOKI_ENDPOINT:http://localhost:3100/loki/api/v1/push}
-    labels:
-      resource:
-        - service.name
-        - deployment.environment
-      attributes:
-        - log.severity
-        - op
-    default_labels_enabled:
-      exporter: false
-      job: true
-
-extensions:
-  health_check:
-    endpoint: 0.0.0.0:13133
-  pprof:
-    endpoint: 0.0.0.0:1777
-  zpages:
-    endpoint: 0.0.0.0:55679
-
+  otlp/otlp_grpc_sink:
+    endpoint: 127.0.0.1:4317
+    tls:
+      insecure: true
 service:
+  extensions: [health_check]
   telemetry:
-    logs:
-      level: info
     metrics:
-      address: 0.0.0.0:8888
-
+      level: normal
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 127.0.0.1
+                port: 8888
   pipelines:
-    metrics:
-      receivers: [ otlp, prometheus ]
-      processors: [ memory_limiter, batch ]
-      exporters: [ prometheus ]
-
     traces:
-      receivers: [ otlp ]
-      processors: [ memory_limiter, batch, tailsampling ]
-      exporters: [ otlp/tempo ]
-
-    logs:
-      receivers: [ otlp ]
-      processors: [ memory_limiter, batch, attributes/drop_high_cardinality ]
-      exporters: [ loki ]
+      receivers: [otlp]
+      processors: [memory_limiter, batch, resource, tail_sampling]
+      exporters: [otlphttp/otlp_http_sink, otlp/otlp_grpc_sink]
