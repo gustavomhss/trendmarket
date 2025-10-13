@@ -1,0 +1,1 @@
+{"title":"D2 — Staleness","panels":[{"title":"Freshness por Fonte (RAW)","type":"timeseries","expr":"max by (source) (data_freshness_seconds)"},{"title":"Freshness por Fonte (Recording)","type":"timeseries","expr":"ce:data_freshness_seconds:max_by_source"},{"title":"Top 5 (Agora)","type":"stat","expr":"topk(5, data_freshness_seconds)"}]}
