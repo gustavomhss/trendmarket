@@ -1,0 +1,9 @@
+{
+  "ts": "2025-10-12T15:20:30Z",
+  "level": "INFO",
+  "msg": "Swap concluído para rota ce-amm.usdc-usdt com liquidez suficiente",
+  "service": "ce-amm-router",
+  "env": "prod",
+  "op": "swap",
+  "trace_id": "4c5d6e708192a3b4c5d6e708192a3b4c"
+}
