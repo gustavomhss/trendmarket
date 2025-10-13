@@ -1,0 +1,77 @@
+extensions:
+  health_check: {}
+
+receivers:
+  otlp:
+    protocols:
+      grpc: {}
+      http: {}
+
+processors:
+  memory_limiter:
+    check_interval: 2s
+    limit_percentage: 75
+    spike_limit_percentage: 15
+  attributes/log_sanitize:
+    actions:
+      - key: cpf
+        action: delete
+      - key: email
+        action: delete
+      - key: address
+        action: delete
+      - key: phone
+        action: delete
+      - key: user.id
+        action: delete
+      - key: user_id
+        action: delete
+      - key: authorization
+        action: delete
+      - key: set-cookie
+        action: delete
+      - key: session
+        action: delete
+      - key: token
+        action: delete
+      - key: secret
+        action: delete
+      - key: password
+        action: delete
+  transform/ensure_trace_fields:
+    log_statements:
+      - context: log
+        statements:
+          - set(attributes["ts"], time_format(time_now(), "RFC3339")) where attributes["ts"] == nil
+          - set(attributes["msg"], body) where attributes["msg"] == nil and is_string(body)
+          - set(attributes["trace_id"], attributes["otel.trace_id"]) where attributes["trace_id"] == nil and attributes["otel.trace_id"] != nil
+          - set(attributes["span_id"], attributes["otel.span_id"]) where attributes["span_id"] == nil and attributes["otel.span_id"] != nil
+  batch:
+    send_batch_size: 8192
+    timeout: 2s
+
+exporters:
+  loki:
+    endpoint: http://127.0.0.1:3100/loki/api/v1/push
+    labels:
+      resource:
+        - service.name
+        - deployment.environment
+        - service.version
+      attributes:
+        - level
+        - op
+    default_labels_enabled:
+      exporter: false
+      job: true
+
+service:
+  extensions: [health_check]
+  telemetry:
+    logs:
+      level: info
+  pipelines:
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, attributes/log_sanitize, transform/ensure_trace_fields, batch]
+      exporters: [loki]

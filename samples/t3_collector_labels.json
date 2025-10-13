@@ -1,0 +1,5 @@
+{
+  "resource": ["service.name", "deployment.environment", "service.version"],
+  "attributes": ["level", "op"],
+  "forbidden": ["trace_id", "span_id"]
+}

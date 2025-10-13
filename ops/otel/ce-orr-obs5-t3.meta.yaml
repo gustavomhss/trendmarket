@@ -1,0 +1,37 @@
+ce-orr-obs5-t3:
+  files:
+    config: ops/otel/collector-logs.yaml
+    spec: ops/otel/collector-logs.spec.md
+    labels_ref: samples/t3_collector_labels.json
+  processors:
+    order: ["memory_limiter","attributes/log_sanitize","transform/ensure_trace_fields","batch"]
+    sanitize_delete:
+      - cpf
+      - email
+      - address
+      - phone
+      - user.id
+      - user_id
+      - authorization
+      - set-cookie
+      - session
+      - token
+      - secret
+      - password
+  exporter_loki:
+    endpoint: "http://127.0.0.1:3100/loki/api/v1/push"
+    labels:
+      resource: ["service.name","deployment.environment","service.version"]
+      attributes: ["level","op"]
+    default_labels_enabled:
+      exporter: false
+      job: true
+  acceptance:
+    schema_shape: pending
+    sanitize_active: pending
+    labels_policy: pending
+
+ce-orr-obs5-t3-env:
+  mode: "direct_git"  # direct_git | offline_patch
+  repo_base_branch: "main"
+  create_branch: "obs5/t3-collector-logs"
