@@ -1,0 +1,22 @@
+version: 1
+sources:
+  - source: oracle
+    domain: pricing
+    expected_interval_seconds: 5
+    warn_seconds: 5
+    crit_seconds: 15
+  - source: market_feed
+    domain: market
+    expected_interval_seconds: 30
+    warn_seconds: 30
+    crit_seconds: 90
+  - source: cdc_topic:orders
+    domain: cdc
+    expected_interval_seconds: 10
+    warn_seconds: 20
+    crit_seconds: 60
+  - source: chain_header
+    domain: chain
+    expected_interval_seconds: 6
+    warn_seconds: 12
+    crit_seconds: 30
