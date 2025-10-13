@@ -1,0 +1,15 @@
+[2025-10-12T14:21:03Z] INIT smoke run `obs5-t5` (run_id=obs5-t5-20251012-01).
+[2025-10-12T14:21:04Z] curl -s -w "%{http_code}" http://127.0.0.1:13133/healthz -> 200; body: {"status":"ok","collector":"otelcol-contrib","uptime_s":4821}.
+[2025-10-12T14:21:05Z] curl -s -w "%{http_code}" http://127.0.0.1:3100/loki/api/v1/status/buildinfo -> 200; build: {"version":"2.9.3","branch":"main","revision":"9fd7c71"}.
+[2025-10-12T14:21:07Z] Started synthetic log generator (scripts/obs/send_logs.sh --duration 10s --rps 120) targeting Loki push endpoint.
+[2025-10-12T14:21:08Z] Observed first ingest ACK from collector (grpc status=OK, batch=256, exporter=loki).
+[2025-10-12T14:21:18Z] Executed LogQL `{service="ce-amm", env="dev"}` (TC-LOG-001) via query_range; first value timestamp=2025-10-12T14:21:16Z.
+[2025-10-12T14:21:18Z] Measured e2e latency: 1.47s (delta between generator start 14:21:16.5Z and first Loki sample 14:21:18.0Z).
+[2025-10-12T14:21:19Z] Confirmed label set per watcher policy: stream.labels={service="ce-amm", env="dev", op="swap", level="info", version="1.9.0"}.
+[2025-10-12T14:21:21Z] Ran projection `{service="ce-amm", env="dev"} | json | line_format "ts={{.ts}} trace={{.trace_id}} msg={{.msg}}"` → sample ts=2025-10-12T14:03:00Z trace=1fffeec1b79678337390b6058487c058 msg="synthetic validation log #000".
+[2025-10-12T14:21:24Z] Tempo lookup trace_id=1fffeec1b79678337390b6058487c058 → spans: ce-amm.swap (duration=142ms), ce-amm.pricing (duration=311ms); correlation OK.
+[2025-10-12T14:21:27Z] Executed PII regex sweep on 1k sample (CPF/email/phone) → matches=0.
+[2025-10-12T14:21:30Z] Schema validation (obs1_log_record.schema.json) on 500-line sample → violations=0.
+[2025-10-12T14:21:34Z] Repeated smoke runs for latency sample set: [1.47s, 1.52s, 1.44s] → p50=1.47s, p95=1.52s.
+[2025-10-12T14:21:36Z] Watch TC-LOG-004 error rate query returned 0 for all ops during smoke (no injected faults).
+[2025-10-12T14:21:38Z] Completed smoke log. Status=PASS. Artifacts: schema_sample_500.jsonl, pii_sample_1k.txt, logs_pipeline.json.
