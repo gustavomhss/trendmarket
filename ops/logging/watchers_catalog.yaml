@@ -1,0 +1,86 @@
+watchers:
+  - id: watcher.obs5.t1.schema_required
+    thread: T1
+    validates:
+      - "required_count=7"
+      - "additionalProperties=false"
+      - "types/patterns"
+  - id: watcher.obs5.t1.schema_version_pin
+    thread: T1
+    validates:
+      - "schema_version=v1.3"
+      - "hash_mismatch=0"
+  - id: watcher.obs5.t2.pii_scan
+    thread: T2
+    validates:
+      - "denylist=0 matches"
+      - "masking=enabled"
+  - id: watcher.obs5.t2.emitter_health
+    thread: T2
+    validates:
+      - "otlp_export_retries=0"
+      - "latency_p95<=500ms"
+  - id: watcher.obs5.t3.labels_policy
+    thread: T3
+    validates:
+      - "labels permitidas"
+      - "forbidden ausentes"
+  - id: watcher.obs5.t3.collector_errors
+    thread: T3
+    validates:
+      - "error_logs=0"
+      - "otelcol_warnings<=threshold"
+  - id: watcher.obs5.t4.yaml_shape
+    thread: T4
+    validates:
+      - "limites presentes"
+      - "schema v13"
+  - id: watcher.obs5.t4.loki_retention
+    thread: T4
+    validates:
+      - "retention>=7d"
+      - "ingester_limits_applied"
+  - id: watcher.obs5.t5.manifest_schema
+    thread: T5
+    validates:
+      - "conformidade com schema v1"
+      - "latência p95"
+  - id: watcher.obs5.t5.pii_zero
+    thread: T5
+    validates:
+      - "pii_matches=0"
+      - "regex_allowlist_ok"
+  - id: watcher.obs5.t6.report_shape
+    thread: T6
+    validates:
+      - "relatório cardinalidade"
+      - "limites"
+  - id: watcher.obs5.t6.version_spread
+    thread: T6
+    validates:
+      - "version.distinct<=50"
+      - "op.distinct<=6"
+  - id: watcher.obs5.merge.block
+    thread: T7
+    validates:
+      - "bloco ce-orr-obs5-merge presente/parseável"
+  - id: watcher.obs5.merge.manifest
+    thread: T7
+    validates:
+      - "merge_manifest.json keys"
+      - "verdict.status=ready"
+  - id: watcher.obs5.merge.links
+    thread: T7
+    validates:
+      - "artifacts paths exist"
+      - "samples readable"
+  - id: watcher.obs5.merge.labels
+    thread: T7
+    validates:
+      - "labels obs5|orr|ready-for-merge"
+  - id: watcher.obs5.merge.approvals
+    thread: T7
+    validates:
+      - "EL approval"
+      - "OBS approval"
+      - "PM signoff"

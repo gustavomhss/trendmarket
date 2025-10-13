@@ -1,0 +1,44 @@
+{
+  "run_id": "obs5-merge-20251012-1",
+  "timestamp": "2025-10-12T23:20:00Z",
+  "commits": {
+    "t1": "b22883e08d7c8572870dddfd9a523d3450a2b0ae",
+    "t2": "0d86dde50a39c9567ed5f206c4d7d3c87ec9ddc7",
+    "t3": "4019e837650026ae266e7ca588bd6237a76eae8e",
+    "t4": "1f187b8c346779fb458ed1c97f99c80723f913d5",
+    "t5": "2530f7bf32cf61220e22411caae7a8a48fa7c38c",
+    "t6": "bc9f38556ab844fc4e68b60eb859b73405e02a64"
+  },
+  "watchers": {
+    "t1": "GREEN",
+    "t2": "GREEN",
+    "t3": "GREEN",
+    "t4": "GREEN",
+    "t5": "GREEN",
+    "t6": "GREEN"
+  },
+  "acceptance": {
+    "A1": true,
+    "A2": true,
+    "A3": true,
+    "A4": true,
+    "A5": true,
+    "A6": true
+  },
+  "slo_dev": {
+    "e2e_latency_seconds_p95": 0.0,
+    "throughput_lps_sustained": 0
+  },
+  "links": {
+    "manifest": "out/obs_gatecheck/evidence/logs_pipeline.json",
+    "schema_sample": "out/obs_gatecheck/evidence/schema_sample_500.jsonl",
+    "pii_sample": "out/obs_gatecheck/evidence/pii_sample_1k.txt",
+    "cardinality_report": "out/obs_gatecheck/evidence/cardinality_report.json",
+    "labels_series_snapshot": "out/obs_gatecheck/evidence/labels_series_snapshot.json",
+    "smoke_log": "out/obs_gatecheck/logs/obs5_logs_smoke.txt"
+  },
+  "verdict": {
+    "status": "ready",
+    "notes": "Todos os gates A1–A6 atendidos; watchers GREEN."
+  }
+}
