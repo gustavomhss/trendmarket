@@ -1,0 +1,38 @@
+version: 1
+op:
+  - swap
+  - add_liquidity
+  - remove_liquidity
+  - pricing
+  - cdc_consume
+  - other
+op_detail:
+  swap:
+    - exact_in.single_hop
+    - exact_in.multi_hop
+    - exact_out.single_hop
+    - exact_out.multi_hop
+    - quote_only
+    - slippage_check
+  add_liquidity:
+    - dual_sided.balanced
+    - dual_sided.imbalanced
+    - single_sided.base
+    - single_sided.quote
+  remove_liquidity:
+    - partial
+    - full
+    - imbalanced
+  pricing:
+    - spot
+    - quote_calc
+    - slippage_calc
+    - invariant_check
+  cdc_consume:
+    - kafka_poll
+    - decode_transform
+    - rule_eval
+    - write_result
+  other:
+    - other
+notes: "`op` é label; `op_detail` é payload (não label). Para fora de catálogo: `op=other` + `op_raw`."

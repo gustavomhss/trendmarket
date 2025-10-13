@@ -1,0 +1,16 @@
+{
+  "ts": "2025-10-12T21:03:45Z",
+  "level": "INFO",
+  "msg": "swap executed",
+  "service": "ce-amm",
+  "env": "dev",
+  "version": "1.4.2",
+  "op": "swap",
+  "op_detail": "exact_in.multi_hop",
+  "trace_id": "8b2f4e0d3d2a4f79b1c2a3d4e5f6a7b8",
+  "resource": {
+    "service.name": "ce-amm",
+    "deployment.environment": "dev",
+    "service.version": "1.4.2"
+  }
+}
