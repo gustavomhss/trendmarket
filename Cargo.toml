@@ -18,8 +18,7 @@ metrics = "0.21"
 metrics-exporter-prometheus = { version = "0.13", optional = true }
 once_cell = "1"
 opentelemetry = { version = "0.29", features = ["trace", "metrics"] }
-opentelemetry-otlp = { version = "0.29", default-features = false, features = ["http-proto", "metrics", "reqwest-client", "trace"] }
-opentelemetry-otlp = { version = "0.29", default-features = false, features = ["grpc-tonic", "http", "http-proto", "metrics", "reqwest-client", "trace"] }
+opentelemetry-otlp = { version = "0.29", default-features = false, features = ["http", "http-proto", "metrics", "reqwest-client", "trace"] }
 opentelemetry-http = "0.29"
 opentelemetry-prometheus = "0.29.1"
 opentelemetry_sdk = { version = "0.29", features = ["trace", "metrics", "rt-tokio", "testing"] }
