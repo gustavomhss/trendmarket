@@ -1,0 +1,18 @@
+{
+  "ok": true,
+  "loki_ingest": true,
+  "labels": ["service", "env", "op", "level", "version"],
+  "fields_expected": ["ts", "level", "msg", "service", "env", "trace_id", "span_id"],
+  "service": "ce-amm",
+  "env": "dev",
+  "e2e_latency_seconds": 1.47,
+  "e2e_latency_seconds_p50": 1.47,
+  "e2e_latency_seconds_p95": 1.52,
+  "throughput_lps_sustained": 120.0,
+  "sample_count": 500,
+  "pii_matches": 0,
+  "schema_violations": 0,
+  "run_id": "obs5-t5-20251012-01",
+  "generated_at": "2025-10-12T14:21:38Z",
+  "notes": "Smoke OBS-5/T5 executado com gerador synthetic (120 lps) e correlação Tempo trace_id=1fffeec1b79678337390b6058487c058."
+}

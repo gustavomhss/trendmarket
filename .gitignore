@@ -14,3 +14,18 @@ out/obs_gatecheck/
 .shellcheckrc
 .pytest_cache/
 __pycache__/
+
+# OBS-5 T5 evidences
+!out/
+out/*
+!out/obs_gatecheck/
+out/obs_gatecheck/*
+!out/obs_gatecheck/evidence/
+out/obs_gatecheck/evidence/*
+!out/obs_gatecheck/evidence/logs_pipeline.json
+!out/obs_gatecheck/evidence/schema_sample_500.jsonl
+!out/obs_gatecheck/evidence/pii_sample_1k.txt
+!out/obs_gatecheck/logs/
+out/obs_gatecheck/logs/*
+!out/obs_gatecheck/logs/obs5_logs_smoke.txt
+!out/obs_gatecheck/bundle.sha256.txt
