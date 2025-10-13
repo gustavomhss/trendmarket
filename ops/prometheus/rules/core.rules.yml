@@ -32,3 +32,7 @@ groups:
     rules:
       - record: ce:hook_executions_total:rate5m
         expr: rate(hook_executions_total[5m])
+  - name: ce-core-data
+    rules:
+      - record: ce:data_freshness_seconds:max_by_source
+        expr: max by (source) (data_freshness_seconds)
