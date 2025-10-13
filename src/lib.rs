@@ -4,6 +4,7 @@ pub mod ce_core; // expõe o namespace ce_core
 
 pub mod obs;
 pub mod obs4;
+pub mod obs_staleness;
 pub mod obs_policy_lints;
 pub mod otlp_exporter;
 // Telemetry modules (auto-exported from src diagnostics)
