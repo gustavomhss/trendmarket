@@ -1,0 +1,4 @@
+max by (source) (data_freshness_seconds) | Freshness por fonte (gauge cru)
+ce:data_freshness_seconds:max_by_source | Freshness por fonte (recording)
+topk(5, data_freshness_seconds) | Top 5 fontes mais "velhas" agora
+avg_over_time(data_freshness_seconds[15m]) | Tendência de freshness (15m)
