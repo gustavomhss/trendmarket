@@ -1,0 +1,185 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://creditengine/specs/obs5/logs.schema.v1.json",
+  "title": "CE Log Schema v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "ts",
+    "level",
+    "msg",
+    "service",
+    "env",
+    "trace_id",
+    "span_id"
+  ],
+  "properties": {
+    "ts": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+      "description": "Timestamp UTC no formato RFC3339 básico (com sufixo Z)."
+    },
+    "level": {
+      "type": "string",
+      "enum": ["TRACE", "DEBUG", "INFO", "WARN", "ERROR"],
+      "description": "Nível de severidade em maiúsculas, compatível com Loki."
+    },
+    "msg": {
+      "type": "string",
+      "maxLength": 2048,
+      "description": "Mensagem principal do evento, sujeita a truncamento controlado."
+    },
+    "service": {
+      "type": "string",
+      "maxLength": 128,
+      "pattern": "^[a-z0-9][a-z0-9-]{1,127}$",
+      "description": "Identificador do serviço emissor (kebab-case, sem espaços)."
+    },
+    "env": {
+      "type": "string",
+      "enum": ["dev", "stg", "prod"],
+      "description": "Ambiente lógico onde o serviço está operando."
+    },
+    "version": {
+      "type": "string",
+      "maxLength": 64,
+      "description": "Versão do componente emissor."
+    },
+    "op": {
+      "type": "string",
+      "enum": [
+        "swap",
+        "add_liquidity",
+        "remove_liquidity",
+        "pricing",
+        "cdc_consume",
+        "other"
+      ],
+      "description": "Operação observada no domínio AMM/OBS."
+    },
+    "op_detail": {
+      "type": "string",
+      "maxLength": 64,
+      "description": "Detalhe granular da operação registrada no payload."
+    },
+    "trace_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{32}$",
+      "description": "Identificador hexadecimal (32 chars) do trace, minúsculo."
+    },
+    "span_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{16}$",
+      "description": "Identificador hexadecimal (16 chars) do span, minúsculo."
+    },
+    "code": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "filepath": {
+          "type": "string",
+          "description": "Caminho relativo do arquivo fonte."
+        },
+        "lineno": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Linha do arquivo fonte associada ao evento."
+        }
+      }
+    },
+    "error": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "validation",
+            "timeout",
+            "upstream",
+            "downstream",
+            "conflict",
+            "not_found",
+            "rate_limit",
+            "internal",
+            "auth",
+            "permission"
+          ],
+          "description": "Taxonomia padronizada do tipo de erro."
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^CE-(AMM|PRC|CDC|API|OBS|STO|SEC|INF|GEN)-[A-Z_]+-[0-9]{4}$",
+          "description": "Código CE-<DOM>-<KIND>-<NNN> conforme Apêndice A."
+        }
+      }
+    },
+    "hook_id": {
+      "type": "string",
+      "maxLength": 64,
+      "description": "Identificador do hook A110 que reagiu ou será acionado."
+    },
+    "amm": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "k_before": {
+          "type": "number",
+          "description": "Valor de k (produto de reservas) antes da operação."
+        },
+        "k_after": {
+          "type": "number",
+          "description": "Valor de k após a operação."
+        },
+        "delta_k_ratio": {
+          "type": "number",
+          "description": "Variação relativa de k durante a operação."
+        }
+      }
+    },
+    "msg_truncated": {
+      "type": "boolean",
+      "description": "Indicador de truncamento da mensagem original."
+    },
+    "op_raw": {
+      "type": "string",
+      "maxLength": 64,
+      "description": "Valor bruto da operação quando op='other' (sem PII)."
+    }
+  },
+  "examples": [
+    {
+      "ts": "2025-10-12T12:34:56Z",
+      "level": "INFO",
+      "msg": "Swap executado no pool ce-amm.usdc-usdt com slippage 0.12%",
+      "service": "ce-amm-router",
+      "env": "prod",
+      "version": "2025.10.1",
+      "op": "swap",
+      "op_detail": "exact_in.single_hop",
+      "trace_id": "0a1b2c3d4e5f67890123456789abcdef",
+      "span_id": "0123abcd4567ef89",
+      "code": {
+        "filepath": "router/swap_executor.rs",
+        "lineno": 214
+      },
+      "hook_id": "swap-latency-monitor",
+      "amm": {
+        "k_before": 12345.67,
+        "k_after": 12355.89,
+        "delta_k_ratio": 0.0008
+      },
+      "msg_truncated": false
+    },
+    {
+      "ts": "2025-10-12T12:34:56Z",
+      "level": "INFO",
+      "msg": "Swap executado no pool ce-amm.usdc-usdt com slippage 0.12%",
+      "service": "ce-amm-router",
+      "env": "prod",
+      "op": "swap",
+      "trace_id": "0a1b2c3d4e5f67890123456789abcdef"
+    }
+  ]
+}

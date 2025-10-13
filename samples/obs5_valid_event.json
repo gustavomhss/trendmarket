@@ -1,0 +1,23 @@
+{
+  "ts": "2025-10-12T15:20:30Z",
+  "level": "INFO",
+  "msg": "Swap concluído para rota ce-amm.usdc-usdt com liquidez suficiente",
+  "service": "ce-amm-router",
+  "env": "prod",
+  "version": "2025.10.2",
+  "op": "swap",
+  "op_detail": "exact_in.multi_hop",
+  "trace_id": "4c5d6e708192a3b4c5d6e708192a3b4c",
+  "span_id": "cdef0123456789ab",
+  "code": {
+    "filepath": "router/paths/mod.rs",
+    "lineno": 142
+  },
+  "amm": {
+    "k_before": 23567.42,
+    "k_after": 23580.11,
+    "delta_k_ratio": 0.00054
+  },
+  "hook_id": "swap-latency-monitor",
+  "msg_truncated": false
+}
