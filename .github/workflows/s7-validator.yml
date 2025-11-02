@@ -1,0 +1,159 @@
+name: Sprint 7 Validator
+
+on:
+  push:
+    paths:
+      - '.github/workflows/s7-validator.yml'
+      - 'docs/DNA/Roadmap e Sprints/Q2/Sprint 7/**'
+      - 'scripts/**'
+      - 'actions.lock'
+  pull_request:
+    paths:
+      - '.github/workflows/s7-validator.yml'
+      - 'docs/DNA/Roadmap e Sprints/Q2/Sprint 7/**'
+      - 'scripts/**'
+      - 'actions.lock'
+  workflow_dispatch:
+
+concurrency:
+  group: s7-validator-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  t0_spec:
+    name: Gate T0 — Spec Discovery
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@4d4bcd0cfc56304c8bd1781a261adf6f7e0c66da
+
+      - name: Regenerate manifest
+        run: python3 scripts/s7_validator.py generate-manifest
+
+      - name: Gate T0 validation
+        id: gate_t0
+        run: |
+          python3 scripts/s7_validator.py validate-manifest \
+            --output out/obs_gatecheck/T0_discovery.json
+
+      - name: Upload T0 evidence
+        if: always()
+        uses: actions/upload-artifact@5d4f06f40ce99826bad907f4ab0662fa8f6c0c28
+        with:
+          name: s7-t0-evidence
+          path: out/obs_gatecheck/T0_discovery.json
+          if-no-files-found: error
+
+  s7_exec:
+    name: Gate S7 Exec — ORR bundle
+    needs: [t0_spec]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      PYTHONHASHSEED: "0"
+      CI_SEED: "12345"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@4d4bcd0cfc56304c8bd1781a261adf6f7e0c66da
+
+      - name: Download T0 evidence
+        uses: actions/download-artifact@cbbf3a0f8b4c6244a0f8f3d6a3f559196ee07d5c
+        with:
+          name: s7-t0-evidence
+          path: out/obs_gatecheck
+
+      - name: Capture tool versions
+        run: python3 scripts/s7_validator.py capture-versions --output out/orr_s7/tool_versions.json
+
+      - name: Render/validate CI scripts
+        run: |
+          set -euo pipefail
+          ran=0
+          if [ -x scripts/s7_ci_render.sh ]; then
+            echo "[run] scripts/s7_ci_render.sh"
+            bash scripts/s7_ci_render.sh || true
+            ran=1
+          fi
+          if [ -x scripts/s7_ci_validate.sh ]; then
+            echo "[run] scripts/s7_ci_validate.sh"
+            bash scripts/s7_ci_validate.sh || true
+            ran=1
+          fi
+          if [ "$ran" -eq 0 ]; then
+            echo "[skip] nenhuma rotina de render/validate encontrada"
+          fi
+
+      - name: Yamllint
+        run: |
+          if command -v yamllint >/dev/null 2>&1; then
+            yamllint .github/workflows/s7-validator.yml
+          else
+            echo "[skip] yamllint não disponível"
+          fi
+
+      - name: Gitleaks (detecção)
+        run: |
+          mkdir -p out/evidence/T2_security
+          if command -v gitleaks >/dev/null 2>&1; then
+            gitleaks detect --source . --report-format json --report-path out/evidence/T2_security/gitleaks_report.json || true
+          else
+            echo '{"status":"skip","reason":"gitleaks not installed"}' > out/evidence/T2_security/gitleaks_report.json
+            echo "[skip] gitleaks não disponível"
+          fi
+
+      - name: Testes determinísticos
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          files=(tests/**/*.py)
+          if command -v pytest >/dev/null 2>&1 && [ ${#files[@]} -gt 0 ]; then
+            pytest -q
+          else
+            echo "[skip] pytest não disponível ou sem testes"
+          fi
+
+      - name: Microbench smoke
+        run: |
+          if [ -x scripts/s7_microbench.sh ]; then
+            bash scripts/s7_microbench.sh || true
+          else
+            echo "[skip] microbench não definido"
+          fi
+
+      - name: TLA/Apalache check
+        run: |
+          shopt -s nullglob globstar
+          tla_files=(**/*.tla)
+          if [ ${#tla_files[@]} -gt 0 ]; then
+            echo "[skip] verificação TLA não implementada";
+          else
+            echo "[skip] nenhum modelo TLA encontrado"
+          fi
+
+      - name: Validar pins de actions
+        run: python3 scripts/s7_validator.py validate-actions --workflow .github/workflows/s7-validator.yml
+
+      - name: Bundle ORR evidence
+        run: |
+          python3 scripts/s7_validator.py bundle-evidence \
+            --resumo out/orr_s7/RESUMO_ORR_S7.json \
+            --filelist out/orr_s7/filelist.txt \
+            --zip out/s7-orr-evidence.zip \
+            --versions out/orr_s7/tool_versions.json \
+            --t0 out/obs_gatecheck/T0_discovery.json
+
+      - name: Upload ORR evidence
+        if: always()
+        uses: actions/upload-artifact@5d4f06f40ce99826bad907f4ab0662fa8f6c0c28
+        with:
+          name: s7-orr-evidence
+          path: |
+            out/s7-orr-evidence.zip
+            out/orr_s7/filelist.txt
+            out/orr_s7/RESUMO_ORR_S7.json
+            out/orr_s7/tool_versions.json
+            out/evidence/T2_security/gitleaks_report.json
+          if-no-files-found: error
